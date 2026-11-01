@@ -91,7 +91,6 @@
             <span class="text-[10px] sm:text-xs bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow whitespace-nowrap">v5.7 Live</span>
             <span class="text-[10px] text-slate-400 hidden sm:inline font-normal">by duycongta@gmail.com</span>
           </div>
-          <!-- TIÊU ĐỀ PHỤ HIỂN THỊ CẢ TRÊN MOBILE & DESKTOP -->
           <div class="text-[11px] sm:text-xs text-slate-300 truncate">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm</div>
         </div>
       </div>
@@ -757,7 +756,7 @@
     let uploadedFilesList = [];
     let map = null, targetMarker = null, compMarkers = [], radiusCircle = null, satLayer = null, osmLayer = null;
 
-    // KHỞI ĐỘNG ỨNG DỤNG & KIỂM TRA MÃ PIN KHÓA (LUÔN KHÓA KHI TẢI TRANG)
+    // KHỞI ĐỘNG ỨNG DỤNG & KIỂM TRA MÃ PIN KHÓA (LUÔN BẮT BUỘC NHẬP PIN MỖI PHIÊN)
     window.addEventListener('DOMContentLoaded', () => {
       initLeafletMap();
       recalculateTargetValues();
@@ -1320,200 +1319,175 @@
       }
     }
 
-    // === TÍNH TOÁN BẢNG SO SÁNH & GỌI AI ===
-    async function replaceCompWithNext(index) {
-      if (index < 0 || index >= currentComps.length) return;
-      showToast(`Đang thay thế TSSS #${index + 1}...`);
+    // === GIAO DIỆN VẬN HÀNH BẢN ĐỒ & TIỆN ÍCH ===
+    function setFloatingStatus(state, message) {
+      const bar = document.getElementById('floatingStatusBar');
+      const icon = document.getElementById('floatingStatusIcon');
+      const text = document.getElementById('floatingStatusText');
+      if (!bar) return;
 
-      if (backupCompsPool.length > 0) {
-        const nextComp = backupCompsPool.shift();
-        currentComps.splice(index, 1, nextComp);
-        renderMapElements();
-        recalculateTargetValues();
-        showToast(`Đã thay thế #${index + 1} & cập nhật lại đơn giá!`);
+      if (state === 'hide') {
+        bar.classList.add('hidden');
         return;
       }
 
-      const otherComps = currentComps.filter((_, i) => i !== index);
-      let avgValidUnitPrice = 20.0;
-      if (otherComps.length > 0) {
-        const sumPrice = otherComps.reduce((acc, c) => acc + ((c.rawPrice * 1000) / c.area), 0);
-        avgValidUnitPrice = sumPrice / otherComps.length;
+      bar.classList.remove('hidden');
+      text.innerText = message;
+
+      if (state === 'ocr') {
+        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-blue-900/90 text-white border-blue-500 max-w-[92vw] truncate";
+        icon.innerHTML = `<i class="ph-bold ph-spinner animate-spin text-blue-300 text-base"></i>`;
+      } else if (state === 'survey') {
+        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-indigo-900/90 text-white border-indigo-400 max-w-[92vw] truncate";
+        icon.innerHTML = `<i class="ph-bold ph-globe-hemisphere-east animate-pulse text-amber-300 text-base"></i>`;
+      } else if (state === 'success') {
+        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-emerald-900/95 text-white border-emerald-400 max-w-[92vw] truncate";
+        icon.innerHTML = `<i class="ph-fill ph-check-circle text-emerald-400 text-base"></i>`;
+        setTimeout(() => { bar.classList.add('hidden'); }, 3000);
+      } else if (state === 'error') {
+        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-rose-900/95 text-white border-rose-400 max-w-[92vw] truncate";
+        icon.innerHTML = `<i class="ph-fill ph-x-circle text-rose-400 text-base"></i>`;
+        setTimeout(() => { bar.classList.add('hidden'); }, 4000);
       }
-
-      const targetArea = parseFloat(document.getElementById('targetArea').value) || 80;
-      const targetWard = document.getElementById('targetWard').value.trim() || "Khu vực";
-      const targetStreet = document.getElementById('targetStreet').value.trim() || "Tuyến đường chính";
-
-      const repArea = Math.round((targetArea * (0.85 + Math.random() * 0.3)) * 10) / 10;
-      const repFrontage = Math.round((4.0 + Math.random() * 1.5) * 10) / 10;
-      const repDepth = Math.round((repArea / repFrontage) * 10) / 10;
-      const repPrice = Math.round(((repArea * avgValidUnitPrice * (0.95 + Math.random() * 0.1)) / 1000) * 100) / 100;
-
-      const channels = [
-        { type: "batdongsan", name: "Batdongsan.com.vn", link: "https://batdongsan.com.vn" },
-        { type: "chotot", name: "Chợ Tốt Nhà", link: "https://chotot.com" },
-        { type: "facebook", name: "Facebook BĐS Địa Phương", link: "https://facebook.com/groups" },
-        { type: "alonhadat", name: "Alonhadat.com.vn", link: "https://alonhadat.com.vn" },
-        { type: "thuviennhadat", name: "Thư Viện Nhà Đất", link: "https://thuviennhadat.vn" }
-      ];
-      const ch = channels[Math.floor(Math.random() * channels.length)];
-
-      const nextComp = {
-        id: currentComps.length + 1,
-        address: `Đoạn gần ${targetStreet}, ${targetWard} (Tin thay thế)`,
-        roadType: document.getElementById('targetPosType').value || "hem_oto",
-        roadDesc: "Đường bê tông / nhựa ô tô lưu thông tốt",
-        area: repArea,
-        frontage: repFrontage,
-        depth: repDepth,
-        rawPrice: repPrice,
-        link: ch.link,
-        sourceType: ch.type,
-        sourceName: ch.name,
-        distanceMeters: Math.floor(Math.random() * 300 + 100),
-        lat: targetCoords.lat + (Math.random() - 0.5) * 0.005,
-        lng: targetCoords.lng + (Math.random() - 0.5) * 0.005
-      };
-
-      currentComps.splice(index, 1, nextComp);
-      renderMapElements();
-      recalculateTargetValues();
-      showToast(`Đã thay thế #${index + 1} & cập nhật đơn giá bình quân!`);
     }
 
-    function deleteSingleComp(index) {
-      if (index < 0 || index >= currentComps.length) return;
-      if (currentComps.length <= 1) {
-        showToast("Cần giữ lại tối thiểu 1 tài sản so sánh!");
-        return;
-      }
-      currentComps.splice(index, 1);
-      renderMapElements();
-      recalculateTargetValues();
-      showToast(`Đã xóa TSSS #${index + 1} & cập nhật lại đơn giá!`);
+    function initLeafletMap() {
+      try {
+        map = L.map('gisMap', { zoomControl: true, attributionControl: false }).setView([targetCoords.lat, targetCoords.lng], 14);
+        satLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20 });
+        osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+        satLayer.addTo(map);
+        setTimeout(() => { map.invalidateSize(); renderMapElements(); }, 350);
+      } catch (e) {}
     }
 
-    function recalculateTargetValues() {
+    function setMapLayer(type) {
+      if (!map) return;
+      const btnSat = document.getElementById('btnMapSat');
+      const btnOSM = document.getElementById('btnMapOSM');
+      if (type === 'satellite') {
+        if (map.hasLayer(osmLayer)) map.removeLayer(osmLayer);
+        satLayer.addTo(map);
+        btnSat.className = "text-[11px] bg-blue-600 text-white px-2 py-1 rounded font-medium shadow-sm";
+        btnOSM.className = "text-[11px] bg-slate-100 text-slate-700 hover:bg-slate-200 px-2 py-1 rounded font-medium border border-slate-300";
+      } else {
+        if (map.hasLayer(satLayer)) map.removeLayer(satLayer);
+        osmLayer.addTo(map);
+        btnOSM.className = "text-[11px] bg-blue-600 text-white px-2 py-1 rounded font-medium shadow-sm";
+        btnSat.className = "text-[11px] bg-slate-100 text-slate-700 hover:bg-slate-200 px-2 py-1 rounded font-medium border border-slate-300";
+      }
+    }
+
+    function renderMapElements() {
+      if (!map) return;
+      if (targetMarker) map.removeLayer(targetMarker);
+      if (radiusCircle) map.removeLayer(radiusCircle);
+      compMarkers.forEach(m => map.removeLayer(m));
+      compMarkers = [];
+
       const area = parseFloat(document.getElementById('targetArea').value) || 0;
-      const bldArea = parseFloat(document.getElementById('targetBuildingArea').value) || 0;
-      const bldCost = parseFloat(document.getElementById('targetBuildingCost').value) || 0;
-      const bldQuality = parseFloat(document.getElementById('targetBuildingQuality').value) || 0;
-      const discountPercent = parseFloat(document.getElementById('discountRate').value) || 10;
-      const ltvRate = parseFloat(document.getElementById('ltvSelect').value) || 0.7;
+      if (area > 0) {
+        const targetIcon = L.divIcon({
+          className: 'custom-pin-target',
+          html: `<div style="background-color:#e11d48; width:30px; height:30px; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; box-shadow:0 3px 8px rgba(0,0,0,0.4);"><i class="ph-bold ph-house"></i></div>`,
+          iconSize: [30, 30], iconAnchor: [15, 15]
+        });
+        targetMarker = L.marker([targetCoords.lat, targetCoords.lng], { icon: targetIcon }).addTo(map);
+        radiusCircle = L.circle([targetCoords.lat, targetCoords.lng], {
+          radius: 1000, color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.1, weight: 1.5, dashArray: '4, 4'
+        }).addTo(map);
+      }
 
-      const bldTotalValue = (bldArea * (bldCost * 1000000) * (bldQuality / 100)) / 1000000000;
-      document.getElementById('targetBuildingValueDisplay').innerText = `${bldTotalValue.toFixed(2)} Tỷ VNĐ`;
+      currentComps.forEach((comp, idx) => {
+        const compIcon = L.divIcon({
+          className: 'custom-pin-comp',
+          html: `<div style="background-color:#2563eb; width:26px; height:26px; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; font-size:11px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">${idx + 1}</div>`,
+          iconSize: [26, 26], iconAnchor: [13, 13]
+        });
+        const m = L.marker([comp.lat, comp.lng], { icon: compIcon }).addTo(map);
+        compMarkers.push(m);
+      });
+    }
 
-      let totalWeightedPrice = 0, totalWeight = 0;
-      const tbody = document.getElementById('comparisonTableBody');
-      const printTbody = document.getElementById('printCompareTbody');
-      tbody.innerHTML = '';
-      printTbody.innerHTML = '';
+    function zoomToTarget() { if (map) map.setView([targetCoords.lat, targetCoords.lng], 17, { animate: true }); }
 
-      if (currentComps.length === 0) {
-        document.getElementById('compsCountBadge').innerText = "Chưa có tài sản so sánh";
-        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-slate-400"><i class="ph-bold ph-magnifying-glass text-2xl mb-1 block"></i>Chưa có tài sản so sánh. Nhập xã/phường hoặc nạp ảnh GCN để bắt đầu.</td></tr>`;
-        document.getElementById('statAvgSurveyPrice').innerHTML = `-- <span class="text-xs font-normal text-slate-500">tr/m²</span>`;
-        document.getElementById('statProposedPrice').innerHTML = `-- <span class="text-xs font-normal text-emerald-700">tr/m²</span>`;
-        document.getElementById('statTotalAssetValue').innerHTML = `-- <span class="text-xs font-normal text-slate-500">Tỷ VNĐ</span>`;
-        document.getElementById('statAssetBreakdown').innerText = `Chưa có dữ liệu định giá`;
-        document.getElementById('statMaxLoanLimit').innerHTML = `-- <span class="text-xs font-normal text-slate-300">Tỷ VNĐ</span>`;
+    function fitAllMarkersSafe() {
+      if (!map) return;
+      const pts = [];
+      const area = parseFloat(document.getElementById('targetArea').value) || 0;
+      if (area > 0) pts.push([targetCoords.lat, targetCoords.lng]);
+      currentComps.forEach(c => pts.push([c.lat, c.lng]));
+      if (pts.length > 0) {
+        const bounds = L.latLngBounds(pts);
+        if (bounds.isValid()) map.fitBounds(bounds, { padding: [25, 25], maxZoom: 16 });
+      }
+    }
+
+    function handleFileSelected(event) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+      for (let i = 0; i < files.length; i++) uploadedFilesList.push(files[i]);
+      event.target.value = '';
+      renderUploadedFiles();
+      executeOCRWithRealAI();
+    }
+
+    function renderUploadedFiles() {
+      const container = document.getElementById('loadedFilesContainer');
+      const list = document.getElementById('thumbnailsList');
+      const countBadge = document.getElementById('filesCountBadge');
+
+      if (uploadedFilesList.length === 0) {
+        container.classList.add('hidden');
+        list.innerHTML = '';
         return;
       }
 
-      document.getElementById('compsCountBadge').innerText = `Đã chọn lọc ${currentComps.length} tài sản so sánh lân cận`;
-      currentComps.forEach((comp, idx) => {
-        comp.rawPrice = normalizePriceToTy(comp.rawPrice, comp.address + " " + (comp.roadDesc || ""));
-        const rawUnitPrice = (comp.rawPrice * 1000) / comp.area;
-        const discountedUnitPrice = rawUnitPrice * (1 - discountPercent / 100);
-        let score = 85;
-        if (comp.roadType === document.getElementById('targetPosType').value) score += 10;
-        if (area > 0 && Math.abs(comp.area - area) < 40) score += 5;
-        score = Math.min(score, 98);
+      container.classList.remove('hidden');
+      countBadge.innerText = `Đã nạp ${uploadedFilesList.length} tệp tài liệu GCN`;
+      list.innerHTML = '';
 
-        const weight = score / 100;
-        totalWeightedPrice += discountedUnitPrice * weight;
-        totalWeight += weight;
+      uploadedFilesList.forEach((file, index) => {
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        const item = document.createElement('div');
+        item.className = "relative group bg-slate-100 rounded-lg border border-slate-300 overflow-hidden shadow-sm flex flex-col items-center justify-center p-1";
 
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 transition " + (rawUnitPrice < 10 && rawUnitPrice > 0 && currentComps.length > 2 ? "bg-rose-50/40" : "");
-        tr.innerHTML = `
-          <td class="py-3 px-2 text-center font-bold text-slate-700">#${idx + 1}</td>
-          <td class="py-3 px-3" style="min-width: 270px; max-width: 320px;">
-            <div class="font-medium text-slate-800 leading-snug whitespace-normal">${comp.address}</div>
-            <div class="text-[11px] text-slate-500 mt-0.5 whitespace-normal">${comp.roadDesc}</div>
-          </td>
-          <td class="py-3 px-2 text-center font-semibold">${comp.area}</td>
-          <td class="py-3 px-2 text-center text-slate-600">${comp.frontage}m × ${comp.depth}m</td>
-          <td class="py-3 px-3 text-right font-bold text-slate-800 whitespace-nowrap">
-            ${comp.rawPrice.toFixed(2)} Tỷ 
-            <span class="text-[10px] text-slate-500 font-normal block">(${rawUnitPrice.toFixed(1)} tr/m²)</span>
-          </td>
-          <td class="py-3 px-3 text-right font-bold text-emerald-700 whitespace-nowrap text-sm">${discountedUnitPrice.toFixed(2)}</td>
-          <td class="py-3 px-2 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-[11px] font-bold ${score >= 90 ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${score}%</span></td>
-          <td class="py-3 px-2 text-center text-slate-500 whitespace-nowrap">~${comp.distanceMeters}m</td>
-          <td class="py-3 px-2 text-center">
-            <div class="flex flex-col items-center gap-1">
-              ${getSourceBadge(comp.sourceType, comp.sourceName)}
-              <a href="${comp.link}" target="_blank" class="inline-flex items-center gap-1 text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded border border-slate-300 font-medium"><i class="ph-bold ph-arrow-square-out"></i> Xem tin</a>
+        if (isPdf) {
+          item.innerHTML = `
+            <div class="w-full h-20 bg-rose-50 text-rose-600 flex flex-col items-center justify-center rounded">
+              <i class="ph-bold ph-file-pdf text-2xl mb-0.5"></i>
+              <span class="text-[9px] font-bold uppercase">PDF</span>
             </div>
-          </td>
-          <td class="py-3 px-2 text-center">
-            <div class="flex flex-col items-center gap-1">
-              <button onclick="replaceCompWithNext(${idx})" class="w-full text-indigo-700 hover:text-white hover:bg-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-1 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 shadow-xs" title="Xóa & đổi TSSS khác">
-                <i class="ph-bold ph-arrows-clockwise"></i> Đổi TSSS
-              </button>
-              <button onclick="deleteSingleComp(${idx})" class="w-full text-rose-600 hover:text-white hover:bg-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded text-[10px] font-medium transition flex items-center justify-center gap-1" title="Xóa hẳn">
-                <i class="ph-bold ph-trash"></i> Xóa bỏ
-              </button>
-            </div>
-          </td>
-        `;
-        tbody.appendChild(tr);
-
-        const ptr = document.createElement('tr');
-        ptr.innerHTML = `
-          <td class="border border-slate-300 p-1.5 text-center font-bold">#${idx + 1}</td>
-          <td class="border border-slate-300 p-1.5"><b>${comp.address}</b><br><span class="text-[10px] text-slate-500">${comp.roadDesc}</span></td>
-          <td class="border border-slate-300 p-1.5 text-center">${comp.area}</td>
-          <td class="border border-slate-300 p-1.5 text-center">${comp.frontage}m × ${comp.depth}m</td>
-          <td class="border border-slate-300 p-1.5 text-right font-semibold">${comp.rawPrice.toFixed(2)} Tỷ</td>
-          <td class="border border-slate-300 p-1.5 text-right font-bold text-emerald-700">${discountedUnitPrice.toFixed(2)} tr/m²</td>
-          <td class="border border-slate-300 p-1.5 text-center font-bold">${score}%</td>
-          <td class="border border-slate-300 p-1.5 text-center font-medium">${comp.sourceName}</td>
-        `;
-        printTbody.appendChild(ptr);
+            <div class="w-full px-1 py-0.5 text-[10px] truncate text-slate-700 text-center font-medium">${file.name}</div>
+            <button onclick="removeFile(${index})" class="absolute top-1 right-1 w-4 h-4 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] shadow hover:bg-rose-700"><i class="ph-bold ph-x"></i></button>
+          `;
+        } else {
+          const imgUrl = URL.createObjectURL(file);
+          item.innerHTML = `
+            <img src="${imgUrl}" alt="${file.name}" class="w-full h-20 object-cover rounded bg-white">
+            <div class="w-full px-1 py-0.5 text-[10px] truncate text-slate-700 text-center font-medium">${file.name}</div>
+            <button onclick="removeFile(${index})" class="absolute top-1 right-1 w-4 h-4 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] shadow hover:bg-rose-700"><i class="ph-bold ph-x"></i></button>
+          `;
+        }
+        list.appendChild(item);
       });
-
-      const avgDiscountedPrice = totalWeight > 0 ? (totalWeightedPrice / totalWeight) : 18.5;
-      const rawAvgPrice = avgDiscountedPrice / (1 - discountPercent / 100);
-      const totalLandValue = area > 0 ? (area * (avgDiscountedPrice * 1000000)) / 1000000000 : 0;
-      const grandTotalAsset = totalLandValue + bldTotalValue;
-      const maxLoan = grandTotalAsset * ltvRate;
-
-      document.getElementById('statAvgSurveyPrice').innerHTML = `${rawAvgPrice.toFixed(1)} <span class="text-xs font-normal text-slate-500">tr/m²</span>`;
-      document.getElementById('statProposedPrice').innerHTML = `${avgDiscountedPrice.toFixed(2)} <span class="text-xs font-normal text-emerald-700">tr/m²</span>`;
-      document.getElementById('statTotalAssetValue').innerHTML = `${grandTotalAsset.toFixed(2)} <span class="text-xs font-normal text-slate-500">Tỷ</span>`;
-      document.getElementById('statAssetBreakdown').innerText = `Đất: ${totalLandValue.toFixed(2)}T | Nhà: ${bldTotalValue.toFixed(2)}T`;
-      document.getElementById('statMaxLoanLimit').innerHTML = `${maxLoan.toFixed(2)} <span class="text-xs font-normal text-slate-300">Tỷ</span>`;
-
-      document.getElementById('pLotNumber').innerText = document.getElementById('targetLot').value || "Chưa có thông tin số thửa";
-      document.getElementById('pAddress').innerText = `${document.getElementById('targetStreet').value || ''}, ${document.getElementById('targetHamlet').value || ''}, ${document.getElementById('targetWard').value || ''}, ${document.getElementById('targetDistrictProvince').value || ''}`.replace(/^[\s,]+|[\s,]+$/g, '');
-      document.getElementById('pAreaStructure').innerText = area > 0 ? `${area} m² (Đất ở lâu dài)` : "--";
-      document.getElementById('pShape').innerText = `Mặt tiền ${document.getElementById('targetFrontage').value || '--'}m, Sâu ${document.getElementById('targetDepth').value || '--'}m`;
-      document.getElementById('pRoadWidth').innerText = `${document.getElementById('targetStreet').value || 'Đường tiếp giáp'} (Rộng ~${document.getElementById('targetRoadWidth').value || '--'}m)`;
-      document.getElementById('pBuilding').innerText = bldArea > 0 ? `${document.getElementById('targetBuildingType').value} (DT: ${bldArea} m², CLCL: ${bldQuality}%)` : "Không có / Đất trống";
-      
-      document.getElementById('pLandArea').innerText = `${area} m²`;
-      document.getElementById('pLandUnitPrice').innerText = `${avgDiscountedPrice.toFixed(2)} tr/m²`;
-      document.getElementById('pLandTotalVal').innerText = `${totalLandValue.toFixed(2)} Tỷ`;
-      document.getElementById('pBldArea').innerText = `${bldArea} m²`;
-      document.getElementById('pBldTotalVal').innerText = `${bldTotalValue.toFixed(2)} Tỷ`;
-      document.getElementById('pGrandTotalVal').innerText = `${grandTotalAsset.toFixed(2)} Tỷ VNĐ`;
-      document.getElementById('pMaxLoanVal').innerText = `${maxLoan.toFixed(2)} Tỷ VNĐ`;
     }
 
+    function removeFile(index) {
+      uploadedFilesList.splice(index, 1);
+      renderUploadedFiles();
+    }
+
+    function clearAllFiles() {
+      uploadedFilesList = [];
+      renderUploadedFiles();
+      const input = document.getElementById('gcnFileInput');
+      if (input) input.value = '';
+      document.getElementById('ocrStatusNotice').classList.add('hidden');
+      setFloatingStatus('hide');
+    }
+
+    // === HÀM ĐỌC ẢNH & FILE PDF BẰNG GEMINI AI (PHỤC HỒI) ===
     async function executeOCRWithRealAI() {
       if (uploadedFilesList.length === 0) return;
 
@@ -1651,6 +1625,38 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
       }
     }
 
+    // === HÀM ĐIỀN DỮ LIỆU ĐÃ TRÍCH XUẤT VÀO GIAO DIỆN ===
+    function applyParsedData(data) {
+      if (data.lot !== undefined) document.getElementById('targetLot').value = data.lot;
+      if (data.street) document.getElementById('targetStreet').value = data.street;
+      if (data.hamlet) document.getElementById('targetHamlet').value = data.hamlet;
+      if (data.ward) document.getElementById('targetWard').value = data.ward;
+      if (data.districtProvince) document.getElementById('targetDistrictProvince').value = data.districtProvince;
+      if (data.area) document.getElementById('targetArea').value = data.area;
+      if (data.resArea) document.getElementById('targetResArea').value = data.resArea;
+      if (data.agriArea !== undefined) document.getElementById('targetAgriArea').value = data.agriArea;
+      if (data.frontage) document.getElementById('targetFrontage').value = data.frontage;
+      if (data.depth) document.getElementById('targetDepth').value = data.depth;
+      if (data.roadType) document.getElementById('targetPosType').value = data.roadType;
+      if (data.roadWidth) document.getElementById('targetRoadWidth').value = data.roadWidth;
+      if (data.buildingType) document.getElementById('targetBuildingType').value = data.buildingType;
+      if (data.buildingArea) document.getElementById('targetBuildingArea').value = data.buildingArea;
+      if (data.buildingCost) document.getElementById('targetBuildingCost').value = data.buildingCost;
+      if (data.buildingQuality) document.getElementById('targetBuildingQuality').value = data.buildingQuality;
+
+      if (data.lat && data.lng) targetCoords = { lat: data.lat, lng: data.lng };
+
+      document.getElementById('targetBadgeLot').innerText = data.lot || "Tài sản mục tiêu";
+      document.getElementById('targetBadgeLot').className = "text-xs font-semibold px-2.5 py-1 rounded bg-slate-200 text-slate-700";
+      document.getElementById('targetBadgeType').innerText = `Đất ${data.area || 0}m² + ${data.buildingType || 'CTXD'}`;
+      document.getElementById('targetBadgeType').className = "text-xs font-semibold px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
+
+      renderMapElements();
+      recalculateTargetValues();
+      generateSmartCompsForArea(data);
+    }
+
+    // === HÀM KHẢO SÁT THỊ TRƯỜNG & TẠO TSSS BẰNG GEMINI AI ===
     async function generateSmartCompsForArea(target) {
       updateMultiChannelSearchLinks(target.ward, target.districtProvince);
 
@@ -1843,6 +1849,128 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       recalculateTargetValues();
     }
 
+    // === HÀM TÍNH TOÁN BẢNG ĐỊNH GIÁ & ĐƠN GIÁ BÌNH QUÂN ===
+    function recalculateTargetValues() {
+      const area = parseFloat(document.getElementById('targetArea').value) || 0;
+      const bldArea = parseFloat(document.getElementById('targetBuildingArea').value) || 0;
+      const bldCost = parseFloat(document.getElementById('targetBuildingCost').value) || 0;
+      const bldQuality = parseFloat(document.getElementById('targetBuildingQuality').value) || 0;
+      const discountPercent = parseFloat(document.getElementById('discountRate').value) || 10;
+      const ltvRate = parseFloat(document.getElementById('ltvSelect').value) || 0.7;
+
+      const bldTotalValue = (bldArea * (bldCost * 1000000) * (bldQuality / 100)) / 1000000000;
+      document.getElementById('targetBuildingValueDisplay').innerText = `${bldTotalValue.toFixed(2)} Tỷ VNĐ`;
+
+      let totalWeightedPrice = 0, totalWeight = 0;
+      const tbody = document.getElementById('comparisonTableBody');
+      const printTbody = document.getElementById('printCompareTbody');
+      tbody.innerHTML = '';
+      printTbody.innerHTML = '';
+
+      if (currentComps.length === 0) {
+        document.getElementById('compsCountBadge').innerText = "Chưa có tài sản so sánh";
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-slate-400"><i class="ph-bold ph-magnifying-glass text-2xl mb-1 block"></i>Chưa có tài sản so sánh. Nhập xã/phường hoặc nạp ảnh GCN để bắt đầu.</td></tr>`;
+        document.getElementById('statAvgSurveyPrice').innerHTML = `-- <span class="text-xs font-normal text-slate-500">tr/m²</span>`;
+        document.getElementById('statProposedPrice').innerHTML = `-- <span class="text-xs font-normal text-emerald-700">tr/m²</span>`;
+        document.getElementById('statTotalAssetValue').innerHTML = `-- <span class="text-xs font-normal text-slate-500">Tỷ</span>`;
+        document.getElementById('statAssetBreakdown').innerText = `Chưa có dữ liệu định giá`;
+        document.getElementById('statMaxLoanLimit').innerHTML = `-- <span class="text-xs font-normal text-slate-300">Tỷ</span>`;
+        return;
+      }
+
+      document.getElementById('compsCountBadge').innerText = `Đã chọn lọc ${currentComps.length} tài sản so sánh lân cận`;
+      currentComps.forEach((comp, idx) => {
+        comp.rawPrice = normalizePriceToTy(comp.rawPrice, comp.address + " " + (comp.roadDesc || ""));
+        const rawUnitPrice = (comp.rawPrice * 1000) / comp.area;
+        const discountedUnitPrice = rawUnitPrice * (1 - discountPercent / 100);
+        let score = 85;
+        if (comp.roadType === document.getElementById('targetPosType').value) score += 10;
+        if (area > 0 && Math.abs(comp.area - area) < 40) score += 5;
+        score = Math.min(score, 98);
+
+        const weight = score / 100;
+        totalWeightedPrice += discountedUnitPrice * weight;
+        totalWeight += weight;
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition " + (rawUnitPrice < 10 && rawUnitPrice > 0 && currentComps.length > 2 ? "bg-rose-50/40" : "");
+        tr.innerHTML = `
+          <td class="py-3 px-2 text-center font-bold text-slate-700">#${idx + 1}</td>
+          <td class="py-3 px-3" style="min-width: 270px; max-width: 320px;">
+            <div class="font-medium text-slate-800 leading-snug whitespace-normal">${comp.address}</div>
+            <div class="text-[11px] text-slate-500 mt-0.5 whitespace-normal">${comp.roadDesc}</div>
+          </td>
+          <td class="py-3 px-2 text-center font-semibold">${comp.area}</td>
+          <td class="py-3 px-2 text-center text-slate-600">${comp.frontage}m × ${comp.depth}m</td>
+          <td class="py-3 px-3 text-right font-bold text-slate-800 whitespace-nowrap">
+            ${comp.rawPrice.toFixed(2)} Tỷ 
+            <span class="text-[10px] text-slate-500 font-normal block">(${rawUnitPrice.toFixed(1)} tr/m²)</span>
+          </td>
+          <td class="py-3 px-3 text-right font-bold text-emerald-700 whitespace-nowrap text-sm">${discountedUnitPrice.toFixed(2)}</td>
+          <td class="py-3 px-2 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-[11px] font-bold ${score >= 90 ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${score}%</span></td>
+          <td class="py-3 px-2 text-center text-slate-500 whitespace-nowrap">~${comp.distanceMeters}m</td>
+          <td class="py-3 px-2 text-center">
+            <div class="flex flex-col items-center gap-1">
+              ${getSourceBadge(comp.sourceType, comp.sourceName)}
+              <a href="${comp.link}" target="_blank" class="inline-flex items-center gap-1 text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded border border-slate-300 font-medium"><i class="ph-bold ph-arrow-square-out"></i> Xem tin</a>
+            </div>
+          </td>
+          <td class="py-3 px-2 text-center">
+            <div class="flex flex-col items-center gap-1">
+              <button onclick="replaceCompWithNext(${idx})" class="w-full text-indigo-700 hover:text-white hover:bg-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-1 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 shadow-xs" title="Xóa & đổi TSSS khác">
+                <i class="ph-bold ph-arrows-clockwise"></i> Đổi TSSS
+              </button>
+              <button onclick="deleteSingleComp(${idx})" class="w-full text-rose-600 hover:text-white hover:bg-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded text-[10px] font-medium transition flex items-center justify-center gap-1" title="Xóa hẳn">
+                <i class="ph-bold ph-trash"></i> Xóa bỏ
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+
+        const ptr = document.createElement('tr');
+        ptr.innerHTML = `
+          <td class="border border-slate-300 p-1.5 text-center font-bold">#${idx + 1}</td>
+          <td class="border border-slate-300 p-1.5"><b>${comp.address}</b><br><span class="text-[10px] text-slate-500">${comp.roadDesc}</span></td>
+          <td class="border border-slate-300 p-1.5 text-center">${comp.area}</td>
+          <td class="border border-slate-300 p-1.5 text-center">${comp.frontage}m × ${comp.depth}m</td>
+          <td class="border border-slate-300 p-1.5 text-right font-semibold">${comp.rawPrice.toFixed(2)} Tỷ</td>
+          <td class="border border-slate-300 p-1.5 text-right font-bold text-emerald-700">${discountedUnitPrice.toFixed(2)} tr/m²</td>
+          <td class="border border-slate-300 p-1.5 text-center font-bold">${score}%</td>
+          <td class="border border-slate-300 p-1.5 text-center font-medium">${comp.sourceName}</td>
+        `;
+        printTbody.appendChild(ptr);
+      });
+
+      const avgDiscountedPrice = totalWeight > 0 ? (totalWeightedPrice / totalWeight) : 18.5;
+      const rawAvgPrice = avgDiscountedPrice / (1 - discountPercent / 100);
+      const totalLandValue = area > 0 ? (area * (avgDiscountedPrice * 1000000)) / 1000000000 : 0;
+      const grandTotalAsset = totalLandValue + bldTotalValue;
+      const maxLoan = grandTotalAsset * ltvRate;
+
+      document.getElementById('statAvgSurveyPrice').innerHTML = `${rawAvgPrice.toFixed(1)} <span class="text-xs font-normal text-slate-500">tr/m²</span>`;
+      document.getElementById('statProposedPrice').innerHTML = `${avgDiscountedPrice.toFixed(2)} <span class="text-xs font-normal text-emerald-700">tr/m²</span>`;
+      document.getElementById('statTotalAssetValue').innerHTML = `${grandTotalAsset.toFixed(2)} <span class="text-xs font-normal text-slate-500">Tỷ</span>`;
+      document.getElementById('statAssetBreakdown').innerText = `Đất: ${totalLandValue.toFixed(2)}T | Nhà: ${bldTotalValue.toFixed(2)}T`;
+      document.getElementById('statMaxLoanLimit').innerHTML = `${maxLoan.toFixed(2)} <span class="text-xs font-normal text-slate-300">Tỷ</span>`;
+
+      document.getElementById('pLotNumber').innerText = document.getElementById('targetLot').value || "Chưa có thông tin số thửa";
+      document.getElementById('pAddress').innerText = `${document.getElementById('targetStreet').value || ''}, ${document.getElementById('targetHamlet').value || ''}, ${document.getElementById('targetWard').value || ''}, ${document.getElementById('targetDistrictProvince').value || ''}`.replace(/^[\s,]+|[\s,]+$/g, '');
+      document.getElementById('pAreaStructure').innerText = area > 0 ? `${area} m² (Đất ở lâu dài)` : "--";
+      document.getElementById('pShape').innerText = `Mặt tiền ${document.getElementById('targetFrontage').value || '--'}m, Sâu ${document.getElementById('targetDepth').value || '--'}m`;
+      document.getElementById('pRoadWidth').innerText = `${document.getElementById('targetStreet').value || 'Đường tiếp giáp'} (Rộng ~${document.getElementById('targetRoadWidth').value || '--'}m)`;
+      document.getElementById('pBuilding').innerText = bldArea > 0 ? `${document.getElementById('targetBuildingType').value} (DT: ${bldArea} m², CLCL: ${bldQuality}%)` : "Không có / Đất trống";
+      
+      document.getElementById('pLandArea').innerText = `${area} m²`;
+      document.getElementById('pLandUnitPrice').innerText = `${avgDiscountedPrice.toFixed(2)} tr/m²`;
+      document.getElementById('pLandTotalVal').innerText = `${totalLandValue.toFixed(2)} Tỷ`;
+      document.getElementById('pBldArea').innerText = `${bldArea} m²`;
+      document.getElementById('pBldTotalVal').innerText = `${bldTotalValue.toFixed(2)} Tỷ`;
+      document.getElementById('pGrandTotalVal').innerText = `${grandTotalAsset.toFixed(2)} Tỷ VNĐ`;
+      document.getElementById('pMaxLoanVal').innerText = `${maxLoan.toFixed(2)} Tỷ VNĐ`;
+    }
+
+    // === HÀM KHẢO SÁT THỦ CÔNG & ĐỔI TSSS ===
     function triggerManualSurvey() {
       const ward = document.getElementById('targetWard').value.trim();
       const dist = document.getElementById('targetDistrictProvince').value.trim();
@@ -1885,34 +2013,132 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       });
     }
 
-    function applyParsedData(data) {
-      if (data.lot !== undefined) document.getElementById('targetLot').value = data.lot;
-      if (data.street) document.getElementById('targetStreet').value = data.street;
-      if (data.hamlet) document.getElementById('targetHamlet').value = data.hamlet;
-      if (data.ward) document.getElementById('targetWard').value = data.ward;
-      if (data.districtProvince) document.getElementById('targetDistrictProvince').value = data.districtProvince;
-      if (data.area) document.getElementById('targetArea').value = data.area;
-      if (data.resArea) document.getElementById('targetResArea').value = data.resArea;
-      if (data.agriArea !== undefined) document.getElementById('targetAgriArea').value = data.agriArea;
-      if (data.frontage) document.getElementById('targetFrontage').value = data.frontage;
-      if (data.depth) document.getElementById('targetDepth').value = data.depth;
-      if (data.roadType) document.getElementById('targetPosType').value = data.roadType;
-      if (data.roadWidth) document.getElementById('targetRoadWidth').value = data.roadWidth;
-      if (data.buildingType) document.getElementById('targetBuildingType').value = data.buildingType;
-      if (data.buildingArea) document.getElementById('targetBuildingArea').value = data.buildingArea;
-      if (data.buildingCost) document.getElementById('targetBuildingCost').value = data.buildingCost;
-      if (data.buildingQuality) document.getElementById('targetBuildingQuality').value = data.buildingQuality;
+    async function replaceCompWithNext(index) {
+      if (index < 0 || index >= currentComps.length) return;
+      showToast(`Đang thay thế TSSS #${index + 1}...`);
 
-      if (data.lat && data.lng) targetCoords = { lat: data.lat, lng: data.lng };
+      if (backupCompsPool.length > 0) {
+        const nextComp = backupCompsPool.shift();
+        currentComps.splice(index, 1, nextComp);
+        renderMapElements();
+        recalculateTargetValues();
+        showToast(`Đã thay thế #${index + 1} & cập nhật lại đơn giá!`);
+        return;
+      }
 
-      document.getElementById('targetBadgeLot').innerText = data.lot || "Tài sản mục tiêu";
-      document.getElementById('targetBadgeLot').className = "text-xs font-semibold px-2.5 py-1 rounded bg-slate-200 text-slate-700";
-      document.getElementById('targetBadgeType').innerText = `Đất ${data.area || 0}m² + ${data.buildingType || 'CTXD'}`;
-      document.getElementById('targetBadgeType').className = "text-xs font-semibold px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
+      const otherComps = currentComps.filter((_, i) => i !== index);
+      let avgValidUnitPrice = 20.0;
+      if (otherComps.length > 0) {
+        const sumPrice = otherComps.reduce((acc, c) => acc + ((c.rawPrice * 1000) / c.area), 0);
+        avgValidUnitPrice = sumPrice / otherComps.length;
+      }
 
+      const targetArea = parseFloat(document.getElementById('targetArea').value) || 80;
+      const targetWard = document.getElementById('targetWard').value.trim() || "Khu vực";
+      const targetStreet = document.getElementById('targetStreet').value.trim() || "Tuyến đường chính";
+
+      const repArea = Math.round((targetArea * (0.85 + Math.random() * 0.3)) * 10) / 10;
+      const repFrontage = Math.round((4.0 + Math.random() * 1.5) * 10) / 10;
+      const repDepth = Math.round((repArea / repFrontage) * 10) / 10;
+      const repPrice = Math.round(((repArea * avgValidUnitPrice * (0.95 + Math.random() * 0.1)) / 1000) * 100) / 100;
+
+      const channels = [
+        { type: "batdongsan", name: "Batdongsan.com.vn", link: "https://batdongsan.com.vn" },
+        { type: "chotot", name: "Chợ Tốt Nhà", link: "https://chotot.com" },
+        { type: "facebook", name: "Facebook BĐS Địa Phương", link: "https://facebook.com/groups" },
+        { type: "alonhadat", name: "Alonhadat.com.vn", link: "https://alonhadat.com.vn" },
+        { type: "thuviennhadat", name: "Thư Viện Nhà Đất", link: "https://thuviennhadat.vn" }
+      ];
+      const ch = channels[Math.floor(Math.random() * channels.length)];
+
+      const nextComp = {
+        id: currentComps.length + 1,
+        address: `Đoạn gần ${targetStreet}, ${targetWard} (Tin thay thế)`,
+        roadType: document.getElementById('targetPosType').value || "hem_oto",
+        roadDesc: "Đường bê tông / nhựa ô tô lưu thông tốt",
+        area: repArea,
+        frontage: repFrontage,
+        depth: repDepth,
+        rawPrice: repPrice,
+        link: ch.link,
+        sourceType: ch.type,
+        sourceName: ch.name,
+        distanceMeters: Math.floor(Math.random() * 300 + 100),
+        lat: targetCoords.lat + (Math.random() - 0.5) * 0.005,
+        lng: targetCoords.lng + (Math.random() - 0.5) * 0.005
+      };
+
+      currentComps.splice(index, 1, nextComp);
       renderMapElements();
       recalculateTargetValues();
-      generateSmartCompsForArea(data);
+      showToast(`Đã thay thế #${index + 1} & cập nhật đơn giá bình quân!`);
+    }
+
+    function deleteSingleComp(index) {
+      if (index < 0 || index >= currentComps.length) return;
+      if (currentComps.length <= 1) {
+        showToast("Cần giữ lại tối thiểu 1 tài sản so sánh!");
+        return;
+      }
+      currentComps.splice(index, 1);
+      renderMapElements();
+      recalculateTargetValues();
+      showToast(`Đã xóa TSSS #${index + 1} & cập nhật lại đơn giá!`);
+    }
+
+    // === CÁC HÀM TIỆN ÍCH DỮ LIỆU ===
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = error => reject(error);
+      });
+    }
+
+    function normalizePriceToTy(inputVal, contextStr = "") {
+      if (inputVal === null || inputVal === undefined) return 1.5;
+      let s = (typeof inputVal === 'string' ? inputVal : String(inputVal)).trim().toLowerCase();
+      if (contextStr) s += " " + contextStr.toLowerCase();
+      s = s.replace(/(\d+),(\d+)/g, '$1.$2');
+
+      if (s.includes('tỷ') || s.includes('ty') || /\bt\b/.test(s)) {
+        const mTyXx = s.match(/(\d+)[\s\.\,\-]*(?:tỷ|ty|\bt\b)[\s\.\,\-]*(\d)[x\*]+/i);
+        if (mTyXx) return parseFloat(mTyXx[1] + "." + mTyXx[2] + "5");
+        const mTyOnlyXx = s.match(/(\d+)[\s\.\,\-]*(?:tỷ|ty|\bt\b)[\s\.\,\-]*[x\*]+/i);
+        if (mTyOnlyXx) return parseFloat(mTyOnlyXx[1]) + 0.35;
+        const mDotXTy = s.match(/(\d+)\.[x\*]+\s*(?:tỷ|ty|\bt\b)/i);
+        if (mDotXTy) return parseFloat(mDotXTy[1]) + 0.35;
+
+        const mTyTr = s.match(/(\d+(?:\.\d+)?)\s*(?:tỷ|ty|\bt\b)\s*(\d+)?/i);
+        if (mTyTr) {
+          let mainTy = parseFloat(mTyTr[1]);
+          if (mTyTr[2]) {
+            let sub = mTyTr[2];
+            if (sub.length === 1) mainTy += parseFloat("0." + sub);
+            else if (sub.length === 2) mainTy += parseFloat("0." + sub);
+            else if (sub.length === 3) mainTy += parseFloat("0." + sub);
+            else if (parseFloat(sub) >= 1000) mainTy += parseFloat(sub) / 1000000000;
+          }
+          return Math.round(mainTy * 1000) / 1000;
+        }
+      }
+
+      const mTrXx = s.match(/(\d)[x\*]{2}\s*(?:tr|triệu|trieu)?/i);
+      if (mTrXx) return parseFloat(mTrXx[1] + "50") / 1000.0;
+      const mTrOnly = s.match(/(\d+(?:\.\d+)?)\s*(?:tr|triệu|trieu)(?!\w)/i);
+      if (mTrOnly) return Math.round((parseFloat(mTrOnly[1]) / 1000.0) * 1000) / 1000;
+
+      const numMatches = s.match(/\d+(?:\.\d+)?/);
+      if (!numMatches) return 1.5;
+      let num = parseFloat(numMatches[0]);
+      if (isNaN(num) || num <= 0) return 1.5;
+      if (num >= 10000000) return Math.round((num / 1000000000) * 1000) / 1000;
+      if (num >= 50 && num < 10000) {
+        if (s.includes('tỷ') || s.includes('ty')) return num;
+        return Math.round((num / 1000.0) * 1000) / 1000;
+      }
+      return Math.round(num * 1000) / 1000;
     }
 
     function resetAllData() {
@@ -1985,60 +2211,6 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         case 'alonhadat': return `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><i class="ph-bold ph-house"></i> ${sourceName}</span>`;
         default: return `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200"><i class="ph-bold ph-globe"></i> ${sourceName}</span>`;
       }
-    }
-
-    function normalizePriceToTy(inputVal, contextStr = "") {
-      if (inputVal === null || inputVal === undefined) return 1.5;
-      let s = (typeof inputVal === 'string' ? inputVal : String(inputVal)).trim().toLowerCase();
-      if (contextStr) s += " " + contextStr.toLowerCase();
-      s = s.replace(/(\d+),(\d+)/g, '$1.$2');
-
-      if (s.includes('tỷ') || s.includes('ty') || /\bt\b/.test(s)) {
-        const mTyXx = s.match(/(\d+)[\s\.\,\-]*(?:tỷ|ty|\bt\b)[\s\.\,\-]*(\d)[x\*]+/i);
-        if (mTyXx) return parseFloat(mTyXx[1] + "." + mTyXx[2] + "5");
-        const mTyOnlyXx = s.match(/(\d+)[\s\.\,\-]*(?:tỷ|ty|\bt\b)[\s\.\,\-]*[x\*]+/i);
-        if (mTyOnlyXx) return parseFloat(mTyOnlyXx[1]) + 0.35;
-        const mDotXTy = s.match(/(\d+)\.[x\*]+\s*(?:tỷ|ty|\bt\b)/i);
-        if (mDotXTy) return parseFloat(mDotXTy[1]) + 0.35;
-
-        const mTyTr = s.match(/(\d+(?:\.\d+)?)\s*(?:tỷ|ty|\bt\b)\s*(\d+)?/i);
-        if (mTyTr) {
-          let mainTy = parseFloat(mTyTr[1]);
-          if (mTyTr[2]) {
-            let sub = mTyTr[2];
-            if (sub.length === 1) mainTy += parseFloat("0." + sub);
-            else if (sub.length === 2) mainTy += parseFloat("0." + sub);
-            else if (sub.length === 3) mainTy += parseFloat("0." + sub);
-            else if (parseFloat(sub) >= 1000) mainTy += parseFloat(sub) / 1000000000;
-          }
-          return Math.round(mainTy * 1000) / 1000;
-        }
-      }
-
-      const mTrXx = s.match(/(\d)[x\*]{2}\s*(?:tr|triệu|trieu)?/i);
-      if (mTrXx) return parseFloat(mTrXx[1] + "50") / 1000.0;
-      const mTrOnly = s.match(/(\d+(?:\.\d+)?)\s*(?:tr|triệu|trieu)(?!\w)/i);
-      if (mTrOnly) return Math.round((parseFloat(mTrOnly[1]) / 1000.0) * 1000) / 1000;
-
-      const numMatches = s.match(/\d+(?:\.\d+)?/);
-      if (!numMatches) return 1.5;
-      let num = parseFloat(numMatches[0]);
-      if (isNaN(num) || num <= 0) return 1.5;
-      if (num >= 10000000) return Math.round((num / 1000000000) * 1000) / 1000;
-      if (num >= 50 && num < 10000) {
-        if (s.includes('tỷ') || s.includes('ty')) return num;
-        return Math.round((num / 1000.0) * 1000) / 1000;
-      }
-      return Math.round(num * 1000) / 1000;
-    }
-
-    function fileToBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = error => reject(error);
-      });
     }
 
     async function pasteFromClipboard() {
