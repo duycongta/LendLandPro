@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LendLand Pro v4.7 - Thẩm Định Giá BĐS Tín Dụng</title>
+  <title>LendLand Pro v4.8 - Thẩm Định Giá BĐS Tín Dụng</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -27,7 +27,7 @@
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col">
 
-  <!-- HEADER v4.7 -->
+  <!-- HEADER v4.8 -->
   <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md no-print border-b border-slate-700">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
@@ -37,15 +37,15 @@
         <div>
           <div class="font-bold text-base tracking-wide flex items-center gap-2">
             LendLand Pro
-            <span class="text-xs bg-emerald-500 text-slate-900 font-extrabold px-2 py-0.5 rounded shadow">v4.7 Live</span>
+            <span class="text-xs bg-emerald-500 text-slate-900 font-extrabold px-2 py-0.5 rounded shadow">v4.8 Live</span>
           </div>
           <div class="text-xs text-slate-400">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm ngân hàng</div>
         </div>
       </div>
       
       <div class="flex items-center gap-2">
-        <button onclick="openApiKeyModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-2 rounded-lg border border-slate-600 flex items-center gap-1.5 transition">
-          <i class="ph-bold ph-key"></i> <span id="apiKeyBtnText">Gemini API Key</span>
+        <button onclick="openApiKeyModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-2 rounded-lg border border-slate-600 flex items-center gap-1.5 transition shadow-sm">
+          <i class="ph-bold ph-key"></i> <span id="apiKeyBtnText">Cấu hình API Key</span>
         </button>
         <button onclick="resetAllData()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-2 rounded-lg border border-slate-600 flex items-center gap-1.5 transition">
           <i class="ph-bold ph-arrow-counter-clockwise"></i> <span>Làm Mới</span>
@@ -124,7 +124,6 @@
       </div>
 
       <div class="p-6 space-y-5">
-        <!-- HÀNG 1: THÔNG TIN HÀNH CHÍNH & VỊ TRÍ ĐỊA LÝ -->
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4 text-xs font-medium">
           <div>
             <label class="block text-slate-500 mb-1">Thửa đất / Tờ BĐ <span class="text-[10px] text-slate-400 font-normal">(Có thể để trống)</span></label>
@@ -148,7 +147,6 @@
           </div>
         </div>
 
-        <!-- HÀNG 2: DIỆN TÍCH & KÍCH THƯỚC HÌNH THỂ THAM KHẢO -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 text-xs font-medium bg-slate-50 p-4 rounded-xl border border-slate-200">
           <div>
             <label class="block text-slate-700 font-semibold mb-1">Tổng diện tích (m²) *</label>
@@ -200,15 +198,15 @@
             </div>
             <div>
               <label class="block text-slate-600 mb-1">Diện tích sàn XD (m²)</label>
-              <input type="number" id="targetBuildingArea" placeholder="0.0" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white font-semibold" oninput="recalculateTargetValues()">
+              <input type="number" id="targetBuildingArea" placeholder="0.0" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white font-semibold" onchange="recalculateTargetValues()">
             </div>
             <div>
               <label class="block text-slate-600 mb-1">Đơn giá XD mới (tr/m²)</label>
-              <input type="number" id="targetBuildingCost" value="3.5" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white" oninput="recalculateTargetValues()">
+              <input type="number" id="targetBuildingCost" value="3.5" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white" onchange="recalculateTargetValues()">
             </div>
             <div>
               <label class="block text-slate-600 mb-1">Tỷ lệ CLCL (%)</label>
-              <input type="number" id="targetBuildingQuality" value="70" step="5" class="w-full border border-slate-300 rounded-lg p-2 bg-white" oninput="recalculateTargetValues()">
+              <input type="number" id="targetBuildingQuality" value="70" step="5" class="w-full border border-slate-300 rounded-lg p-2 bg-white" onchange="recalculateTargetValues()">
             </div>
             <div>
               <label class="block text-slate-600 mb-1">Ước tính giá trị CTXD</label>
@@ -332,7 +330,7 @@
       </div>
     </div>
 
-    <!-- KHỐI 4: THU THẬP TIN RAO ĐA KÊNH & KHẢO SÁT BẰNG AI -->
+    <!-- KHỐI 4: THU THẬP TIN RAO ĐA KÊNH -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
@@ -457,25 +455,73 @@
     </div>
   </main>
 
-  <!-- MODAL CẤU HÌNH API KEY -->
+  <!-- MODAL CẤU HÌNH API KEY VỚI TÙY CHỌN 2 CHẾ ĐỘ & GOOGLE SEARCH GROUNDING -->
   <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
         <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
-          <i class="ph-bold ph-key text-indigo-600"></i> Cấu hình Google Gemini API Key
+          <i class="ph-bold ph-gear text-indigo-600 text-lg"></i> Cấu hình Google Gemini AI & Chế Độ Hoạt Động
         </h3>
         <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-slate-600"><i class="ph-bold ph-x text-lg"></i></button>
       </div>
-      <p class="text-xs text-slate-500">
-        Nhập Google AI Studio API Key (miễn phí) để app tự động dùng Gemini đọc hiểu trực tiếp ảnh/PDF sổ đỏ thực tế của khách hàng. Khóa được lưu an toàn trong trình duyệt của bạn.
-      </p>
-      <div>
-        <label class="block text-xs font-semibold text-slate-700 mb-1">Gemini API Key:</label>
-        <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy..." class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500">
+      
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Google AI Studio API Key:</label>
+          <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy..." class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 font-mono text-xs">
+          <p class="text-[11px] text-slate-400 mt-1">Khóa API được lưu trữ cục bộ (localStorage) trên máy của bạn, tuyệt đối bảo mật.</p>
+        </div>
+
+        <!-- TÙY CHỌN 2 CHẾ ĐỘ: FREE TIER VS PAY-AS-YOU-GO -->
+        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
+          <label class="block font-bold text-slate-800">Chế Độ Tài Khoản API:</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-start gap-2 p-2.5 rounded-lg border bg-white cursor-pointer hover:border-indigo-400 transition" id="lblModeFree">
+              <input type="radio" name="apiMode" value="free" id="radioModeFree" class="mt-0.5 text-indigo-600 focus:ring-indigo-500" onchange="updateApiModeUI()">
+              <div>
+                <span class="font-bold text-slate-800 block">Miễn Phí (Free Tier)</span>
+                <span class="text-[10px] text-slate-500 leading-tight block mt-0.5">Tiết kiệm, tự động giãn cách lệnh, tối ưu prompt chống vượt hạn mức RPM.</span>
+              </div>
+            </label>
+            <label class="flex items-start gap-2 p-2.5 rounded-lg border bg-white cursor-pointer hover:border-indigo-400 transition" id="lblModePayg">
+              <input type="radio" name="apiMode" value="payg" id="radioModePayg" class="mt-0.5 text-indigo-600 focus:ring-indigo-500" onchange="updateApiModeUI()">
+              <div>
+                <span class="font-bold text-emerald-700 block flex items-center gap-1">Pay-As-You-Go <i class="ph-bold ph-lightning text-amber-500"></i></span>
+                <span class="text-[10px] text-slate-500 leading-tight block mt-0.5">Tốc độ tối đa, không chờ hàng đợi, ưu tiên phản hồi tức thì 1-2 giây.</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- BẬT/TẮT TÍNH NĂNG GOOGLE SEARCH GROUNDING -->
+        <div class="border border-indigo-100 rounded-xl p-3 bg-indigo-50/40 space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i class="ph-bold ph-globe-hemisphere-east text-indigo-600 text-lg"></i>
+              <div>
+                <span class="font-bold text-slate-800 block text-xs">Google Search Grounding (Neo Tìm Kiếm)</span>
+                <span class="text-[10px] text-slate-500 block">AI tự động quét web thời gian thực để lấy tin rao thật và link bài viết gốc.</span>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="chkSearchGrounding" class="sr-only peer" checked>
+              <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+            </label>
+          </div>
+          <p class="text-[10px] text-indigo-800/80 bg-white/70 p-2 rounded border border-indigo-100">
+            * <strong>Khuyên dùng:</strong> Kích hoạt tính năng này giúp các tài sản so sánh có link bài viết thật trên Facebook, Batdongsan.com.vn, Chợ Tốt... với thông số chuẩn xác nhất.
+          </p>
+        </div>
       </div>
-      <div class="flex justify-end gap-2 pt-2">
-        <button onclick="closeApiKeyModal()" class="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Đóng</button>
-        <button onclick="saveApiKey()" class="px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow">Lưu Khóa</button>
+
+      <div class="flex justify-between items-center pt-2 border-t border-slate-200">
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-xs text-indigo-600 hover:underline flex items-center gap-1 font-semibold">
+          <i class="ph-bold ph-arrow-square-out"></i> Lấy khóa API miễn phí
+        </a>
+        <div class="flex gap-2">
+          <button onclick="closeApiKeyModal()" class="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Đóng</button>
+          <button onclick="saveApiKey()" class="px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow">Lưu Cấu Hình</button>
+        </div>
       </div>
     </div>
   </div>
@@ -609,16 +655,12 @@
   </div>
 
   <script>
-    let backupCompsPool = []; // Hàng đợi tài sản so sánh dự phòng để thay thế tức thì khi cán bộ tín dụng bấm xóa
+    let backupCompsPool = [];
 
-    // 1. XÓA VÀ THAY THẾ BẰNG 1 TÀI SẢN SO SÁNH TIẾP THEO
     async function replaceCompWithNext(index) {
       if (index < 0 || index >= currentComps.length) return;
-      
-      const removedComp = currentComps[index];
       showToast(`Đang thay thế TSSS #${index + 1}...`);
 
-      // Kiểm tra nếu trong hàng đợi dự phòng có sẵn TSSS
       if (backupCompsPool.length > 0) {
         const nextComp = backupCompsPool.shift();
         currentComps.splice(index, 1, nextComp);
@@ -628,7 +670,6 @@
         return;
       }
 
-      // Nếu hàng đợi dự phòng đã hết, tự động tổng hợp 1 TSSS mới chuẩn theo trung vị giá của các TSSS còn lại
       const otherComps = currentComps.filter((_, i) => i !== index);
       let avgValidUnitPrice = 20.0;
       if (otherComps.length > 0) {
@@ -677,7 +718,6 @@
       showToast(`Đã thay thế #${index + 1} bằng tài sản tương đồng chuẩn mới!`);
     }
 
-    // 2. XÓA BỎ HẲN 1 DÒNG TSSS (KHÔNG BÙ)
     function deleteSingleComp(index) {
       if (index < 0 || index >= currentComps.length) return;
       if (currentComps.length <= 1) {
@@ -703,14 +743,48 @@
 
     function checkSavedApiKey() {
       const key = localStorage.getItem('gemini_api_key');
+      const mode = localStorage.getItem('gemini_api_mode') || 'free';
+      const btnText = document.getElementById('apiKeyBtnText');
       if (key) {
-        document.getElementById('apiKeyBtnText').innerText = "Gemini: Đã kết nối";
+        if (mode === 'payg') {
+          btnText.innerHTML = `⚡ PAYG: Đã kết nối`;
+        } else {
+          btnText.innerHTML = `Gemini: Free Tier`;
+        }
+      } else {
+        btnText.innerText = "Cấu hình API Key";
       }
     }
 
     function openApiKeyModal() {
       document.getElementById('apiKeyModal').classList.remove('hidden');
       document.getElementById('geminiApiKeyInput').value = localStorage.getItem('gemini_api_key') || '';
+      
+      const mode = localStorage.getItem('gemini_api_mode') || 'free';
+      if (mode === 'payg') {
+        document.getElementById('radioModePayg').checked = true;
+      } else {
+        document.getElementById('radioModeFree').checked = true;
+      }
+
+      const grounding = localStorage.getItem('gemini_search_grounding') !== 'false';
+      document.getElementById('chkSearchGrounding').checked = grounding;
+      
+      updateApiModeUI();
+    }
+
+    function updateApiModeUI() {
+      const isPayg = document.getElementById('radioModePayg').checked;
+      const lblFree = document.getElementById('lblModeFree');
+      const lblPayg = document.getElementById('lblModePayg');
+
+      if (isPayg) {
+        lblPayg.className = "flex items-start gap-2 p-2.5 rounded-lg border-2 border-emerald-500 bg-emerald-50/40 cursor-pointer shadow-xs";
+        lblFree.className = "flex items-start gap-2 p-2.5 rounded-lg border border-slate-200 bg-white cursor-pointer hover:border-slate-300 opacity-70";
+      } else {
+        lblFree.className = "flex items-start gap-2 p-2.5 rounded-lg border-2 border-indigo-500 bg-indigo-50/40 cursor-pointer shadow-xs";
+        lblPayg.className = "flex items-start gap-2 p-2.5 rounded-lg border border-slate-200 bg-white cursor-pointer hover:border-slate-300 opacity-70";
+      }
     }
 
     function closeApiKeyModal() {
@@ -719,13 +793,20 @@
 
     function saveApiKey() {
       const key = document.getElementById('geminiApiKeyInput').value.trim();
+      const mode = document.getElementById('radioModePayg').checked ? 'payg' : 'free';
+      const grounding = document.getElementById('chkSearchGrounding').checked;
+
       if (key) {
         localStorage.setItem('gemini_api_key', key);
-        document.getElementById('apiKeyBtnText').innerText = "Gemini: Đã kết nối";
-        showToast("Đã lưu API Key Gemini thành công!");
+        localStorage.setItem('gemini_api_mode', mode);
+        localStorage.setItem('gemini_search_grounding', grounding ? 'true' : 'false');
+        localStorage.removeItem('gemini_cached_model');
+        checkSavedApiKey();
+        showToast("Đã lưu cấu hình API Key & Chế độ hoạt động thành công!");
       } else {
         localStorage.removeItem('gemini_api_key');
-        document.getElementById('apiKeyBtnText').innerText = "Gemini API Key";
+        localStorage.removeItem('gemini_cached_model');
+        checkSavedApiKey();
         showToast("Đã xóa API Key");
       }
       closeApiKeyModal();
@@ -885,7 +966,6 @@
       document.getElementById('ocrStatusNotice').classList.add('hidden');
     }
 
-    // THUẬT TOÁN TỰ ĐỘNG THỬ TỪNG MODEL KHẢ DỤNG (ƯU TIÊN GEMINI-3.8-FLASH & AUTO-FALLBACK)
     async function executeOCRWithRealAI() {
       if (uploadedFilesList.length === 0) return;
 
@@ -899,7 +979,7 @@
           <i class="ph-fill ph-warning-circle text-amber-600 text-xl flex-shrink-0"></i>
           <div>
             <div class="font-bold text-sm">Chưa phát hiện Gemini API Key!</div>
-            <p class="mt-0.5">Vui lòng bấm nút <strong>"Gemini API Key"</strong> ở góc trên bên phải để dán mã khóa AI Studio của bạn. Nếu chưa có, bạn có thể tự nhập tay vào Khối 1 bên dưới.</p>
+            <p class="mt-0.5">Vui lòng bấm nút <strong>"Cấu hình API Key"</strong> ở góc trên bên phải để dán mã khóa AI Studio của bạn.</p>
           </div>
         `;
         return;
@@ -1063,7 +1143,74 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
       });
     }
 
-    // THƯ VIỆN KHO DỮ LIỆU ĐỊA PHƯƠNG FALLBACK (NẾU API BỊ NGHẼN HOẶC HẾT QUOTA)
+    function normalizePriceToTy(inputVal, contextStr = "") {
+      if (inputVal === null || inputVal === undefined) return 1.5;
+
+      let s = (typeof inputVal === 'string' ? inputVal : String(inputVal)).trim().toLowerCase();
+      if (contextStr) {
+        s += " " + contextStr.toLowerCase();
+      }
+
+      s = s.replace(/(\d+),(\d+)/g, '$1.$2');
+
+      if (s.includes('tỷ') || s.includes('ty') || /\bt\b/.test(s)) {
+        const mTyXx = s.match(/(\d+)[\s\.\,\-]*(?:tỷ|ty|\bt\b)[\s\.\,\-]*(\d)[x\*]+/i);
+        if (mTyXx) {
+          return parseFloat(mTyXx[1] + "." + mTyXx[2] + "5");
+        }
+
+        const mTyOnlyXx = s.match(/(\d+)[\s\.\,\-]*(?:tỷ|ty|\bt\b)[\s\.\,\-]*[x\*]+/i);
+        if (mTyOnlyXx) {
+          return parseFloat(mTyOnlyXx[1]) + 0.35;
+        }
+        const mDotXTy = s.match(/(\d+)\.[x\*]+\s*(?:tỷ|ty|\bt\b)/i);
+        if (mDotXTy) {
+          return parseFloat(mDotXTy[1]) + 0.35;
+        }
+
+        const mTyTr = s.match(/(\d+(?:\.\d+)?)\s*(?:tỷ|ty|\bt\b)\s*(\d+)?/i);
+        if (mTyTr) {
+          let mainTy = parseFloat(mTyTr[1]);
+          if (mTyTr[2]) {
+            let sub = mTyTr[2];
+            if (sub.length === 1) mainTy += parseFloat("0." + sub);
+            else if (sub.length === 2) mainTy += parseFloat("0." + sub);
+            else if (sub.length === 3) mainTy += parseFloat("0." + sub);
+            else if (parseFloat(sub) >= 1000) mainTy += parseFloat(sub) / 1000000000;
+          }
+          return Math.round(mainTy * 1000) / 1000;
+        }
+      }
+
+      const mTrXx = s.match(/(\d)[x\*]{2}\s*(?:tr|triệu|trieu)?/i);
+      if (mTrXx) {
+        return parseFloat(mTrXx[1] + "50") / 1000.0;
+      }
+
+      const mTrOnly = s.match(/(\d+(?:\.\d+)?)\s*(?:tr|triệu|trieu)(?!\w)/i);
+      if (mTrOnly) {
+        return Math.round((parseFloat(mTrOnly[1]) / 1000.0) * 1000) / 1000;
+      }
+
+      const numMatches = s.match(/\d+(?:\.\d+)?/);
+      if (!numMatches) return 1.5;
+      let num = parseFloat(numMatches[0]);
+      if (isNaN(num) || num <= 0) return 1.5;
+
+      if (num >= 10000000) {
+        return Math.round((num / 1000000000) * 1000) / 1000;
+      }
+
+      if (num >= 50 && num < 10000) {
+        if (s.includes('tỷ') || s.includes('ty')) {
+          return num;
+        }
+        return Math.round((num / 1000.0) * 1000) / 1000;
+      }
+
+      return Math.round(num * 1000) / 1000;
+    }
+
     function getFallbackCompsForArea(ward, district, area, roadType) {
       const isQuyNhon = (ward + district).toLowerCase().includes("trần quang diệu") || (ward + district).toLowerCase().includes("quy nhơn");
 
@@ -1111,7 +1258,6 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
         };
       }
 
-      // Mặc định hoặc Phù Cát / các địa phương khác
       return {
         aiSummary: `Thông tin khảo sát tại <strong>${ward || 'Khu vực khảo sát'}, ${district || 'Bình Định'}</strong>: Thị trường đất ở trong khu dân cư ghi nhận mức giá rao bán dao động từ <strong>3.5 - 5.5 triệu VNĐ/m²</strong> đối với đường bê tông liên thôn/hẻm ô tô, và cao hơn đối với các trục giao thông chính.`,
         recommendations: [
@@ -1155,13 +1301,15 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
       };
     }
 
-    // TỰ ĐỘNG TỔNG HỢP 5 TÀI SẢN SO SÁNH & BÁO CÁO AI OVERVIEW BẰNG GEMINI
     async function generateSmartCompsForArea(target) {
       updateMultiChannelSearchLinks(target.ward, target.districtProvince);
 
       const apiKey = localStorage.getItem('gemini_api_key');
+      const apiMode = localStorage.getItem('gemini_api_mode') || 'free';
+      const enableGrounding = localStorage.getItem('gemini_search_grounding') !== 'false';
+
       const aiStatusBadge = document.getElementById('compsCountBadge');
-      if (aiStatusBadge) aiStatusBadge.innerText = "Đang quét tìm tài sản so sánh đa kênh...";
+      if (aiStatusBadge) aiStatusBadge.innerText = enableGrounding ? "Đang quét thị trường với Google Search Grounding..." : "Đang phân tích thị trường bằng AI...";
 
       if (!apiKey) {
         const fbData = getFallbackCompsForArea(target.ward, target.districtProvince, target.area, target.roadType);
@@ -1169,44 +1317,49 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
         return;
       }
 
-      showToast("Gemini AI đang khảo sát thị trường đa kênh...");
+      showToast(enableGrounding ? "Google AI đang tìm kiếm tin rao thời gian thực trên web..." : "Gemini AI đang khảo sát thị trường...");
 
       try {
-        const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-        if (!listResponse.ok) throw new Error("API Key không hợp lệ");
-        const listData = await listResponse.json();
-        let validModels = (listData.models || []).filter(m => 
-          m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")
-        );
-        validModels.sort((a, b) => {
-          const getScore = name => {
-            if (name.includes("3.8-flash")) return 100;
-            if (name.includes("2.0-flash")) return 90;
-            if (name.includes("1.5-flash")) return 80;
-            if (name.includes("flash") && !name.includes("2.5")) return 70;
-            return 50;
-          };
-          return getScore(b.name) - getScore(a.name);
-        });
+        let validModels = [];
+        const cachedModel = localStorage.getItem('gemini_cached_model');
+        if (cachedModel && apiMode === 'payg') {
+          validModels = [{ name: cachedModel }];
+        } else {
+          const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+          if (!listResponse.ok) throw new Error("API Key không hợp lệ hoặc bị chặn");
+          const listData = await listResponse.json();
+          validModels = (listData.models || []).filter(m => 
+            m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")
+          );
+          validModels.sort((a, b) => {
+            const getScore = name => {
+              if (name.includes("3.8-flash")) return 100;
+              if (name.includes("2.0-flash")) return 90;
+              if (name.includes("1.5-flash")) return 80;
+              if (name.includes("flash") && !name.includes("2.5")) return 70;
+              return 50;
+            };
+            return getScore(b.name) - getScore(a.name);
+          });
+        }
 
         const promptText = `Bạn là chuyên gia thẩm định giá tài sản bảo đảm của ngân hàng tại Việt Nam.
-Tài sản mục tiêu cần khảo sát giá có thông tin:
-- Địa bàn: ${target.ward || ''}, ${target.districtProvince || ''} (Lưu ý: hỗ trợ cả tên hành chính mới và cũ trước/sau sáp nhập)
+Hãy thực hiện tìm kiếm và khảo sát giá bất động sản thực tế cho khu vực sau:
+- Địa bàn: ${target.ward || ''}, ${target.districtProvince || ''} (Hỗ trợ cả tên hành chính mới và cũ trước/sau sáp nhập)
 - Tuyến đường / vị trí: ${target.street || ''}, ${target.hamlet || ''}
-- Tổng diện tích: ${target.area || 0} m2 (Đất ở: ${target.resArea || 0} m2)
-- Mặt tiền: ${target.frontage || 0}m, Chiều sâu: ${target.depth || 0}m, Hình thể: ${target.shape || ''}
-- Vị trí tiếp giáp: ${target.roadType || 'hem_oto'}, lộ giới: ${target.roadWidth || 4}m
+- Tổng diện tích thửa đất: ${target.area || 0} m2 (Đất ở: ${target.resArea || 0} m2)
+- Mặt tiền: ${target.frontage || 0}m, Chiều sâu: ${target.depth || 0}m
+- Vị trí tiếp giáp: ${target.roadType || 'hem_oto'}, lộ giới đường: ${target.roadWidth || 4}m
 
-Yêu cầu thực hiện:
-1. Tổng hợp giá cả thị trường thực tế tại ${target.ward || ''}, ${target.districtProvince || ''}.
-2. Trả về danh sách 7 đến 8 tài sản so sánh (TSSS) gần đây tại cùng tuyến đường hoặc khu vực lân cận, tương đồng nhất với tài sản mục tiêu, phân bố qua các kênh: Facebook Group BĐS địa phương, Batdongsan.com.vn, Chotot Nhà, Alonhadat, Thư Viện Nhà Đất.
-3. QUY TẮC BẮT BUỘC VỀ GIÁ ("rawPrice"):
-   - Đơn vị tính BẮT BUỘC LÀ SỐ THỰC TỶ ĐỒNG (Ví dụ: 980 triệu ghi 0.98, 1 tỷ 250 ghi 1.25, 850 triệu ghi 0.85).
-   - Tuyệt đối KHÔNG trả về số tiền đầy đủ hàng trăm triệu hay hàng tỷ dạng 980000000 hay 980.
-   - Nếu tin rao không nêu giá cụ thể (như '1tỷxxx', '9xx triệu', '1.x tỷ', 'giá thoả thuận'), hãy dùng chuyên môn thẩm định giá để PHỎNG ĐOÁN một con số hợp lý nhất theo mặt bằng khu vực và trả về số thực theo TỶ ĐỒNG (Ví dụ: 1tỷxxx -> 1.35, 9xx tr -> 0.95).
-4. Viết 1 đoạn tóm tắt thị trường (aiSummary) và 3 khuyến nghị thẩm định cho tờ trình tín dụng.
+YÊU CẦU BẮT BUỘC:
+1. Tra cứu các tin rao bán đất/nhà THẬT mới nhất đang giao dịch tại khu vực ${target.ward || ''}, ${target.districtProvince || ''} qua các nguồn (Facebook Groups BĐS, Batdongsan.com.vn, Chợ Tốt Nhà, Alonhadat, Thư Viện Nhà Đất).
+2. Lập danh sách 6 đến 8 tài sản so sánh (TSSS) sát nhất với tài sản mục tiêu. Với mỗi TSSS:
+   - "rawPrice": Đơn vị tính BẮT BUỘC LÀ SỐ THỰC TỶ ĐỒNG (Ví dụ: 980 triệu ghi 0.98, 1 tỷ 250 ghi 1.25, 850 triệu ghi 0.85). Tuyệt đối KHÔNG ghi 980000000 hay 980.
+   - Nếu tin rao không nêu giá cụ thể (như '1tỷxxx', '9xx tr', '1.x tỷ'), hãy ước tính con số hợp lý nhất theo mặt bằng khu vực và trả về số thực theo TỶ ĐỒNG (Ví dụ: 1.35, 0.95).
+   - "link": Đường link bài đăng thực tế nếu tìm thấy từ tìm kiếm, hoặc link tìm kiếm sàn tương ứng.
+3. Viết 1 đoạn tóm tắt thị trường (aiSummary) ghi rõ khoảng giá mặt tiền vs giá hẻm tại ${target.ward || ''}, và 3 khuyến nghị thẩm định cho tờ trình tín dụng.
 
-Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
+Chỉ trả về DUY NHẤT một chuỗi JSON hợp lệ theo cấu trúc sau (không kèm markdown \`\`\`):
 {
   "aiSummary": "Thông tin khảo sát bất động sản tại...",
   "recommendations": [
@@ -1225,39 +1378,81 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
       "depth": 0.0,
       "rawPrice": 0.0,
       "link": "https://...",
-      "sourceType": "facebook",
-      "sourceName": "Facebook BĐS Địa Phương",
+      "sourceType": "facebook | batdongsan | chotot | alonhadat | thuviennhadat",
+      "sourceName": "Tên nguồn tin...",
       "distanceMeters": 350
     }
   ]
 }`;
 
         let successMarket = null;
+
         for (const model of validModels) {
           try {
             const endpoint = `https://generativelanguage.googleapis.com/v1beta/${model.name}:generateContent?key=${apiKey}`;
-            const res = await fetch(endpoint, {
+            const payload = {
+              contents: [{ parts: [{ text: promptText }] }]
+            };
+
+            if (enableGrounding) {
+              payload.tools = [{ "googleSearch": {} }];
+            }
+
+            let res = await fetch(endpoint, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+              body: JSON.stringify(payload)
             });
+
+            if (!res.ok && enableGrounding) {
+              delete payload.tools;
+              res = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+              });
+            }
+
             if (res.ok) {
               const resData = await res.json();
-              const textOutput = resData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+              const candidate = resData.candidates?.[0];
+              const textOutput = candidate?.content?.parts?.[0]?.text || "";
+              const groundingMetadata = candidate?.groundingMetadata;
+              const webChunks = groundingMetadata?.groundingChunks || [];
+
               let clean = textOutput.trim();
               const b1 = clean.indexOf('{'), b2 = clean.lastIndexOf('}');
-              if (b1 !== -1 && b2 !== -1) clean = clean.substring(b1, b2 + 1);
-              successMarket = JSON.parse(clean);
-              break;
+              if (b1 !== -1 && b2 !== -1) {
+                clean = clean.substring(b1, b2 + 1);
+                successMarket = JSON.parse(clean);
+
+                if (webChunks.length > 0 && successMarket.comps) {
+                  let chunkIndex = 0;
+                  successMarket.comps.forEach(comp => {
+                    if ((!comp.link || comp.link.includes('google.com/search')) && webChunks[chunkIndex]) {
+                      const uri = webChunks[chunkIndex].web?.uri;
+                      if (uri) {
+                        comp.link = uri;
+                        chunkIndex++;
+                      }
+                    }
+                  });
+                }
+
+                localStorage.setItem('gemini_cached_model', model.name);
+                break;
+              }
             }
           } catch(e) {
-            console.warn("Lỗi model market:", e);
+            console.warn(`Lỗi khi khảo sát với ${model.name}:`, e);
           }
         }
 
         if (successMarket && successMarket.comps && successMarket.comps.length > 0) {
           applyMarketCompsData(successMarket);
-          showToast(`Gemini AI đã tổng hợp thành công ${successMarket.comps.length} BĐS so sánh!`);
+          const modeBadge = apiMode === 'payg' ? '⚡ PAYG' : 'Free Tier';
+          const searchBadge = enableGrounding ? ' + Google Search' : '';
+          showToast(`Đã tổng hợp ${successMarket.comps.length} BĐS so sánh (${modeBadge}${searchBadge})!`);
         } else {
           const fbData = getFallbackCompsForArea(target.ward, target.districtProvince, target.area, target.roadType);
           applyMarketCompsData(fbData);
@@ -1303,16 +1498,14 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
           lng: targetCoords.lng + (Math.random() - 0.5) * 0.007
         };
       });
-      // 5 tài sản đầu tiên đưa vào bảng chính
+
       currentComps = allMappedComps.slice(0, 5);
-      // Các tài sản còn lại lưu vào hàng đợi dự phòng sẵn sàng thay thế khi bấm đổi
       backupCompsPool = allMappedComps.slice(5);
 
       renderMapElements();
       recalculateTargetValues();
     }
 
-    // CẬP NHẬT ĐƯỜNG LINK TRUY CẬP ĐA KÊNH TRỰC TIẾP
     function updateMultiChannelSearchLinks(ward, dist) {
       const w = ward || "";
       const d = dist || "";
@@ -1336,7 +1529,6 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
       if (linkAlonhadat) linkAlonhadat.href = `https://www.google.com/search?q=${encodeURIComponent('site:alonhadat.com.vn "' + w + '" "bán đất"')}`;
     }
 
-    // HÀM KÍCH HOẠT KHẢO SÁT KHI NGƯỜI DÙNG NHẬP LIỆU BẰNG TAY (KHÔNG CÓ ẢNH)
     function triggerManualSurvey() {
       const ward = document.getElementById('targetWard').value.trim();
       const dist = document.getElementById('targetDistrictProvince').value.trim();
@@ -1368,7 +1560,6 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
       btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang khảo sát giá...`;
       btn.disabled = true;
 
-      // Cập nhật huy hiệu
       document.getElementById('targetBadgeLot').innerText = target.lot;
       document.getElementById('targetBadgeLot').className = "text-xs font-semibold px-2.5 py-1 rounded bg-slate-200 text-slate-700";
       document.getElementById('targetBadgeType').innerText = `Đất ${target.area}m² (${target.ward || 'Khu vực'})`;
@@ -1525,7 +1716,6 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
 
       document.getElementById('compsCountBadge').innerText = `Đã chọn lọc ${currentComps.length} tài sản so sánh lân cận`;
       currentComps.forEach((comp, idx) => {
-        // Chuẩn hóa tuyệt đối về TỶ ĐỒNG (xử lý triệt để lỗi số tiền VNĐ hàng trăm triệu bị nhân nhầm)
         comp.rawPrice = normalizePriceToTy(comp.rawPrice, comp.address + " " + (comp.roadDesc || ""));
         const rawUnitPrice = (comp.rawPrice * 1000) / comp.area;
         const discountedUnitPrice = rawUnitPrice * (1 - discountPercent / 100);
@@ -1636,7 +1826,6 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
       const mArea = text.match(/(\d+[\.,]?\d*)\s*(m2|m²)/i);
       if (mArea) area = parseFloat(mArea[1].replace(',', '.'));
 
-      // Tự động phân tích và phỏng đoán giá ẩn/mập mờ (1tỷxxx, 9xx tr, 1 tỷ 2xx...) về TỶ ĐỒNG
       let price = normalizePriceToTy(text, text);
 
       const mFront = text.match(/(ngang|mặt tiền|mt)\s*(\d+[\.,]?\d*)/i);
