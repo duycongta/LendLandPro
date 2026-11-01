@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>LendLand Pro v5.6 - Thẩm Định Giá BĐS Tín Dụng</title>
+  <title>LendLand Pro v5.7 - Thẩm Định Giá BĐS Tín Dụng</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -12,7 +12,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   
-  <!-- THƯ VIỆN MẬT MÃ AES-256 & QR CODE -->
+  <!-- THƯ VIỆN MẬT MÃ AES-256, SHA-256 & QR CODE -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -32,7 +32,7 @@
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col relative select-none sm:select-auto">
 
-  <!-- MÀN HÌNH KHÓA MÃ PIN BẢO MẬT (PIN GATE LOCK SCREEN) -->
+  <!-- MÀN HÌNH KHÓA MÃ PIN BẢO MẬT (LUÔN KHÓA KHI MỞ TRANG) -->
   <div id="lockScreenOverlay" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 sm:p-7 shadow-2xl border border-slate-100 text-center space-y-4">
       <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center text-3xl shadow-lg">
@@ -53,14 +53,6 @@
           </button>
         </div>
         <div id="pinErrorMsg" class="hidden text-[11px] text-rose-600 font-semibold text-center"></div>
-      </div>
-
-      <!-- TÙY CHỌN DUY TRÌ ĐĂNG NHẬP THEO XX NGÀY -->
-      <div class="flex items-center justify-center gap-2 text-xs text-slate-600 bg-slate-50 py-2 px-3 rounded-xl border border-slate-200">
-        <input type="checkbox" id="chkRememberDays" class="rounded text-emerald-600 focus:ring-emerald-500" checked>
-        <label for="chkRememberDays" class="cursor-pointer font-medium">Ghi nhớ mở khóa trong:</label>
-        <input type="number" id="rememberDaysInput" value="30" min="1" max="365" class="w-12 border border-slate-300 rounded px-1.5 py-0.5 text-center font-bold text-emerald-700 bg-white">
-        <span>ngày</span>
       </div>
 
       <button onclick="unlockAppWithPin()" id="btnUnlockPin" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm active:scale-95">
@@ -86,7 +78,7 @@
     <span id="floatingStatusText" class="truncate">Đang xử lý dữ liệu...</span>
   </div>
 
-  <!-- HEADER v5.6 -->
+  <!-- HEADER v5.7 -->
   <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md no-print border-b border-slate-700">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-2.5 sm:space-x-3 overflow-hidden">
@@ -96,9 +88,10 @@
         <div class="truncate">
           <div class="font-bold text-sm sm:text-base tracking-wide flex items-center gap-1.5 sm:gap-2">
             <span>LendLand Pro</span>
-            <span class="text-[10px] sm:text-xs bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow whitespace-nowrap">v5.6 Live</span>
+            <span class="text-[10px] sm:text-xs bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow whitespace-nowrap">v5.7 Live</span>
             <span class="text-[10px] text-slate-400 hidden sm:inline font-normal">by duycongta@gmail.com</span>
           </div>
+          <!-- TIÊU ĐỀ PHỤ HIỂN THỊ CẢ TRÊN MOBILE & DESKTOP -->
           <div class="text-[11px] sm:text-xs text-slate-300 truncate">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm</div>
         </div>
       </div>
@@ -607,7 +600,7 @@
           </div>
         </div>
 
-        <!-- MỤC ĐỔI MÃ PIN KÉT CLOUD (YÊU CẦU MẬT KHẨU ADMIN) -->
+        <!-- MỤC ĐỔI MÃ PIN KÉT CLOUD (BĂM MẬT KHẨU ADMIN SHA-256) -->
         <div class="border border-rose-200 rounded-xl p-3 bg-rose-50/50 space-y-2.5">
           <div class="font-bold text-rose-800 text-xs flex items-center justify-between">
             <span class="flex items-center gap-1"><i class="ph-bold ph-shield-warning text-base"></i> Đổi PIN Két Cloud (Thu Hồi Quyền Truy Cập)</span>
@@ -764,7 +757,7 @@
     let uploadedFilesList = [];
     let map = null, targetMarker = null, compMarkers = [], radiusCircle = null, satLayer = null, osmLayer = null;
 
-    // KHỞI ĐỘNG ỨNG DỤNG & KIỂM TRA MÃ PIN KHÓA
+    // KHỞI ĐỘNG ỨNG DỤNG & KIỂM TRA MÃ PIN KHÓA (LUÔN KHÓA KHI TẢI TRANG)
     window.addEventListener('DOMContentLoaded', () => {
       initLeafletMap();
       recalculateTargetValues();
@@ -774,22 +767,8 @@
     // === HỆ THỐNG MÃ PIN & KÉT CLOUD AES-256 (JSONBIN.IO) ===
     function checkAuthLockStatus() {
       const lockOverlay = document.getElementById('lockScreenOverlay');
-      const lastUnlock = localStorage.getItem('llp_unlocked_at');
-      const remember = localStorage.getItem('llp_remember_active') === 'true';
-      const rememberDays = parseInt(localStorage.getItem('llp_remember_days') || '30');
-
-      // Tự động duy trì mở khóa theo số ngày 'xx' do người dùng thiết lập
-      if (remember && lastUnlock && (Date.now() - parseInt(lastUnlock)) < (rememberDays * 24 * 60 * 60 * 1000)) {
-        lockOverlay.classList.add('hidden');
-        checkSavedApiKey();
-        return;
-      }
-
       lockOverlay.classList.remove('hidden');
-      const savedDays = localStorage.getItem('llp_remember_days');
-      if (savedDays && document.getElementById('rememberDaysInput')) {
-        document.getElementById('rememberDaysInput').value = savedDays;
-      }
+      document.getElementById('pinInput').value = '';
       document.getElementById('pinInput').focus();
     }
 
@@ -806,7 +785,6 @@
     }
 
     function lockAppNow() {
-      localStorage.removeItem('llp_unlocked_at');
       document.getElementById('pinInput').value = '';
       document.getElementById('lockScreenOverlay').classList.remove('hidden');
       document.getElementById('pinInput').focus();
@@ -906,19 +884,10 @@
     }
 
     function successUnlock() {
-      const chk = document.getElementById('chkRememberDays');
-      const remember = chk ? chk.checked : true;
-      const daysInput = document.getElementById('rememberDaysInput');
-      const days = daysInput ? (parseInt(daysInput.value) || 30) : 30;
-
-      localStorage.setItem('llp_remember_active', remember ? 'true' : 'false');
-      localStorage.setItem('llp_remember_days', days.toString());
-      localStorage.setItem('llp_unlocked_at', Date.now().toString());
-
       document.getElementById('pinErrorMsg').classList.add('hidden');
       document.getElementById('lockScreenOverlay').classList.add('hidden');
       checkSavedApiKey();
-      showToast(`Mở khóa thành công! Đã ghi nhớ đăng nhập trong ${days} ngày.`);
+      showToast("Mở khóa thành công & đã đồng bộ 2 API Key!");
     }
 
     // KIỂM TRA ĐỘ KHẢ DỤNG RIÊNG CHO TỪNG MODE VÀ THÔNG BÁO LỖI CHÍNH XÁC
@@ -1051,21 +1020,24 @@
       }
     }
 
-    // THU HỒI QUYỀN TRUY CẬP: ĐỔI MÃ PIN KÉT CLOUD (YÊU CẦU MẬT KHẨU ADMIN DUY@101908)
+    // THU HỒI QUYỀN TRUY CẬP: ĐỔI MÃ PIN KÉT CLOUD (BĂM MẬT KHẨU ADMIN SHA-256)
     async function changeVaultPinOnCloud() {
       const adminPass = document.getElementById('adminPasswordInput').value.trim();
       const newPin = document.getElementById('newPinForChange').value.trim();
       const binId = localStorage.getItem('llp_vault_bin') || document.getElementById('vaultBinIdInput').value.trim();
       const masterKey = localStorage.getItem('llp_vault_key') || document.getElementById('vaultMasterKeyInput').value.trim();
 
-      // KIỂM TRA MẬT KHẨU ADMIN CỐ ĐỊNH (HINT: D********8)
       if (!adminPass) {
         showToast("Vui lòng nhập Mật khẩu Quản trị Admin!");
         document.getElementById('adminPasswordInput').focus();
         return;
       }
 
-      if (adminPass !== "Duy@101908") {
+      // BĂM MẬT KHẨU SHA-256: KHÔNG LƯU MẬT KHẨU GỐC TRONG CODE
+      const ADMIN_HASH_SHA256 = "7bc249350e6741e2d2a9362b6ed2f9ceec2499c5a3d169aa74d80e5cf3bb4012";
+      const inputHash = CryptoJS.SHA256(adminPass).toString();
+
+      if (inputHash !== ADMIN_HASH_SHA256) {
         showToast("❌ Sai Mật khẩu Quản trị Admin! Không có quyền đổi PIN Két.");
         return;
       }
@@ -1191,7 +1163,6 @@
       qrImageObj.onload = () => {
         ctx.drawImage(qrImageObj, qrX, qrY, qrSize, qrSize);
 
-        // DÒNG CHỮ THEO ĐÚNG YÊU CẦU: "API Key for Google AI - LendLand Pro by duycongta@gmail.com"
         ctx.fillStyle = "#0f172a";
         ctx.font = "bold 20px 'Inter', sans-serif";
         ctx.textAlign = "center";
@@ -1349,172 +1320,599 @@
       }
     }
 
-    // === GIAO DIỆN VẬN HÀNH BẢN ĐỒ & TIỆN ÍCH ===
-    function setFloatingStatus(state, message) {
-      const bar = document.getElementById('floatingStatusBar');
-      const icon = document.getElementById('floatingStatusIcon');
-      const text = document.getElementById('floatingStatusText');
-      if (!bar) return;
+    // === TÍNH TOÁN BẢNG SO SÁNH & GỌI AI ===
+    async function replaceCompWithNext(index) {
+      if (index < 0 || index >= currentComps.length) return;
+      showToast(`Đang thay thế TSSS #${index + 1}...`);
 
-      if (state === 'hide') {
-        bar.classList.add('hidden');
+      if (backupCompsPool.length > 0) {
+        const nextComp = backupCompsPool.shift();
+        currentComps.splice(index, 1, nextComp);
+        renderMapElements();
+        recalculateTargetValues();
+        showToast(`Đã thay thế #${index + 1} & cập nhật lại đơn giá!`);
         return;
       }
 
-      bar.classList.remove('hidden');
-      text.innerText = message;
-
-      if (state === 'ocr') {
-        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-blue-900/90 text-white border-blue-500 max-w-[92vw] truncate";
-        icon.innerHTML = `<i class="ph-bold ph-spinner animate-spin text-blue-300 text-base"></i>`;
-      } else if (state === 'survey') {
-        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-indigo-900/90 text-white border-indigo-400 max-w-[92vw] truncate";
-        icon.innerHTML = `<i class="ph-bold ph-globe-hemisphere-east animate-pulse text-amber-300 text-base"></i>`;
-      } else if (state === 'success') {
-        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-emerald-900/95 text-white border-emerald-400 max-w-[92vw] truncate";
-        icon.innerHTML = `<i class="ph-fill ph-check-circle text-emerald-400 text-base"></i>`;
-        setTimeout(() => { bar.classList.add('hidden'); }, 3000);
-      } else if (state === 'error') {
-        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-rose-900/95 text-white border-rose-400 max-w-[92vw] truncate";
-        icon.innerHTML = `<i class="ph-fill ph-x-circle text-rose-400 text-base"></i>`;
-        setTimeout(() => { bar.classList.add('hidden'); }, 4000);
+      const otherComps = currentComps.filter((_, i) => i !== index);
+      let avgValidUnitPrice = 20.0;
+      if (otherComps.length > 0) {
+        const sumPrice = otherComps.reduce((acc, c) => acc + ((c.rawPrice * 1000) / c.area), 0);
+        avgValidUnitPrice = sumPrice / otherComps.length;
       }
+
+      const targetArea = parseFloat(document.getElementById('targetArea').value) || 80;
+      const targetWard = document.getElementById('targetWard').value.trim() || "Khu vực";
+      const targetStreet = document.getElementById('targetStreet').value.trim() || "Tuyến đường chính";
+
+      const repArea = Math.round((targetArea * (0.85 + Math.random() * 0.3)) * 10) / 10;
+      const repFrontage = Math.round((4.0 + Math.random() * 1.5) * 10) / 10;
+      const repDepth = Math.round((repArea / repFrontage) * 10) / 10;
+      const repPrice = Math.round(((repArea * avgValidUnitPrice * (0.95 + Math.random() * 0.1)) / 1000) * 100) / 100;
+
+      const channels = [
+        { type: "batdongsan", name: "Batdongsan.com.vn", link: "https://batdongsan.com.vn" },
+        { type: "chotot", name: "Chợ Tốt Nhà", link: "https://chotot.com" },
+        { type: "facebook", name: "Facebook BĐS Địa Phương", link: "https://facebook.com/groups" },
+        { type: "alonhadat", name: "Alonhadat.com.vn", link: "https://alonhadat.com.vn" },
+        { type: "thuviennhadat", name: "Thư Viện Nhà Đất", link: "https://thuviennhadat.vn" }
+      ];
+      const ch = channels[Math.floor(Math.random() * channels.length)];
+
+      const nextComp = {
+        id: currentComps.length + 1,
+        address: `Đoạn gần ${targetStreet}, ${targetWard} (Tin thay thế)`,
+        roadType: document.getElementById('targetPosType').value || "hem_oto",
+        roadDesc: "Đường bê tông / nhựa ô tô lưu thông tốt",
+        area: repArea,
+        frontage: repFrontage,
+        depth: repDepth,
+        rawPrice: repPrice,
+        link: ch.link,
+        sourceType: ch.type,
+        sourceName: ch.name,
+        distanceMeters: Math.floor(Math.random() * 300 + 100),
+        lat: targetCoords.lat + (Math.random() - 0.5) * 0.005,
+        lng: targetCoords.lng + (Math.random() - 0.5) * 0.005
+      };
+
+      currentComps.splice(index, 1, nextComp);
+      renderMapElements();
+      recalculateTargetValues();
+      showToast(`Đã thay thế #${index + 1} & cập nhật đơn giá bình quân!`);
     }
 
-    function initLeafletMap() {
-      try {
-        map = L.map('gisMap', { zoomControl: true, attributionControl: false }).setView([targetCoords.lat, targetCoords.lng], 14);
-        satLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20 });
-        osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
-        satLayer.addTo(map);
-        setTimeout(() => { map.invalidateSize(); renderMapElements(); }, 350);
-      } catch (e) {}
-    }
-
-    function setMapLayer(type) {
-      if (!map) return;
-      const btnSat = document.getElementById('btnMapSat');
-      const btnOSM = document.getElementById('btnMapOSM');
-      if (type === 'satellite') {
-        if (map.hasLayer(osmLayer)) map.removeLayer(osmLayer);
-        satLayer.addTo(map);
-        btnSat.className = "text-[11px] bg-blue-600 text-white px-2 py-1 rounded font-medium shadow-sm";
-        btnOSM.className = "text-[11px] bg-slate-100 text-slate-700 hover:bg-slate-200 px-2 py-1 rounded font-medium border border-slate-300";
-      } else {
-        if (map.hasLayer(satLayer)) map.removeLayer(satLayer);
-        osmLayer.addTo(map);
-        btnOSM.className = "text-[11px] bg-blue-600 text-white px-2 py-1 rounded font-medium shadow-sm";
-        btnSat.className = "text-[11px] bg-slate-100 text-slate-700 hover:bg-slate-200 px-2 py-1 rounded font-medium border border-slate-300";
+    function deleteSingleComp(index) {
+      if (index < 0 || index >= currentComps.length) return;
+      if (currentComps.length <= 1) {
+        showToast("Cần giữ lại tối thiểu 1 tài sản so sánh!");
+        return;
       }
+      currentComps.splice(index, 1);
+      renderMapElements();
+      recalculateTargetValues();
+      showToast(`Đã xóa TSSS #${index + 1} & cập nhật lại đơn giá!`);
     }
 
-    function renderMapElements() {
-      if (!map) return;
-      if (targetMarker) map.removeLayer(targetMarker);
-      if (radiusCircle) map.removeLayer(radiusCircle);
-      compMarkers.forEach(m => map.removeLayer(m));
-      compMarkers = [];
-
+    function recalculateTargetValues() {
       const area = parseFloat(document.getElementById('targetArea').value) || 0;
-      if (area > 0) {
-        const targetIcon = L.divIcon({
-          className: 'custom-pin-target',
-          html: `<div style="background-color:#e11d48; width:30px; height:30px; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; box-shadow:0 3px 8px rgba(0,0,0,0.4);"><i class="ph-bold ph-house"></i></div>`,
-          iconSize: [30, 30], iconAnchor: [15, 15]
-        });
-        targetMarker = L.marker([targetCoords.lat, targetCoords.lng], { icon: targetIcon }).addTo(map);
-        radiusCircle = L.circle([targetCoords.lat, targetCoords.lng], {
-          radius: 1000, color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.1, weight: 1.5, dashArray: '4, 4'
-        }).addTo(map);
+      const bldArea = parseFloat(document.getElementById('targetBuildingArea').value) || 0;
+      const bldCost = parseFloat(document.getElementById('targetBuildingCost').value) || 0;
+      const bldQuality = parseFloat(document.getElementById('targetBuildingQuality').value) || 0;
+      const discountPercent = parseFloat(document.getElementById('discountRate').value) || 10;
+      const ltvRate = parseFloat(document.getElementById('ltvSelect').value) || 0.7;
+
+      const bldTotalValue = (bldArea * (bldCost * 1000000) * (bldQuality / 100)) / 1000000000;
+      document.getElementById('targetBuildingValueDisplay').innerText = `${bldTotalValue.toFixed(2)} Tỷ VNĐ`;
+
+      let totalWeightedPrice = 0, totalWeight = 0;
+      const tbody = document.getElementById('comparisonTableBody');
+      const printTbody = document.getElementById('printCompareTbody');
+      tbody.innerHTML = '';
+      printTbody.innerHTML = '';
+
+      if (currentComps.length === 0) {
+        document.getElementById('compsCountBadge').innerText = "Chưa có tài sản so sánh";
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-slate-400"><i class="ph-bold ph-magnifying-glass text-2xl mb-1 block"></i>Chưa có tài sản so sánh. Nhập xã/phường hoặc nạp ảnh GCN để bắt đầu.</td></tr>`;
+        document.getElementById('statAvgSurveyPrice').innerHTML = `-- <span class="text-xs font-normal text-slate-500">tr/m²</span>`;
+        document.getElementById('statProposedPrice').innerHTML = `-- <span class="text-xs font-normal text-emerald-700">tr/m²</span>`;
+        document.getElementById('statTotalAssetValue').innerHTML = `-- <span class="text-xs font-normal text-slate-500">Tỷ VNĐ</span>`;
+        document.getElementById('statAssetBreakdown').innerText = `Chưa có dữ liệu định giá`;
+        document.getElementById('statMaxLoanLimit').innerHTML = `-- <span class="text-xs font-normal text-slate-300">Tỷ VNĐ</span>`;
+        return;
       }
 
+      document.getElementById('compsCountBadge').innerText = `Đã chọn lọc ${currentComps.length} tài sản so sánh lân cận`;
       currentComps.forEach((comp, idx) => {
-        const compIcon = L.divIcon({
-          className: 'custom-pin-comp',
-          html: `<div style="background-color:#2563eb; width:26px; height:26px; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; font-size:11px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">${idx + 1}</div>`,
-          iconSize: [26, 26], iconAnchor: [13, 13]
-        });
-        const m = L.marker([comp.lat, comp.lng], { icon: compIcon }).addTo(map);
-        compMarkers.push(m);
+        comp.rawPrice = normalizePriceToTy(comp.rawPrice, comp.address + " " + (comp.roadDesc || ""));
+        const rawUnitPrice = (comp.rawPrice * 1000) / comp.area;
+        const discountedUnitPrice = rawUnitPrice * (1 - discountPercent / 100);
+        let score = 85;
+        if (comp.roadType === document.getElementById('targetPosType').value) score += 10;
+        if (area > 0 && Math.abs(comp.area - area) < 40) score += 5;
+        score = Math.min(score, 98);
+
+        const weight = score / 100;
+        totalWeightedPrice += discountedUnitPrice * weight;
+        totalWeight += weight;
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition " + (rawUnitPrice < 10 && rawUnitPrice > 0 && currentComps.length > 2 ? "bg-rose-50/40" : "");
+        tr.innerHTML = `
+          <td class="py-3 px-2 text-center font-bold text-slate-700">#${idx + 1}</td>
+          <td class="py-3 px-3" style="min-width: 270px; max-width: 320px;">
+            <div class="font-medium text-slate-800 leading-snug whitespace-normal">${comp.address}</div>
+            <div class="text-[11px] text-slate-500 mt-0.5 whitespace-normal">${comp.roadDesc}</div>
+          </td>
+          <td class="py-3 px-2 text-center font-semibold">${comp.area}</td>
+          <td class="py-3 px-2 text-center text-slate-600">${comp.frontage}m × ${comp.depth}m</td>
+          <td class="py-3 px-3 text-right font-bold text-slate-800 whitespace-nowrap">
+            ${comp.rawPrice.toFixed(2)} Tỷ 
+            <span class="text-[10px] text-slate-500 font-normal block">(${rawUnitPrice.toFixed(1)} tr/m²)</span>
+          </td>
+          <td class="py-3 px-3 text-right font-bold text-emerald-700 whitespace-nowrap text-sm">${discountedUnitPrice.toFixed(2)}</td>
+          <td class="py-3 px-2 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-[11px] font-bold ${score >= 90 ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${score}%</span></td>
+          <td class="py-3 px-2 text-center text-slate-500 whitespace-nowrap">~${comp.distanceMeters}m</td>
+          <td class="py-3 px-2 text-center">
+            <div class="flex flex-col items-center gap-1">
+              ${getSourceBadge(comp.sourceType, comp.sourceName)}
+              <a href="${comp.link}" target="_blank" class="inline-flex items-center gap-1 text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded border border-slate-300 font-medium"><i class="ph-bold ph-arrow-square-out"></i> Xem tin</a>
+            </div>
+          </td>
+          <td class="py-3 px-2 text-center">
+            <div class="flex flex-col items-center gap-1">
+              <button onclick="replaceCompWithNext(${idx})" class="w-full text-indigo-700 hover:text-white hover:bg-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-1 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 shadow-xs" title="Xóa & đổi TSSS khác">
+                <i class="ph-bold ph-arrows-clockwise"></i> Đổi TSSS
+              </button>
+              <button onclick="deleteSingleComp(${idx})" class="w-full text-rose-600 hover:text-white hover:bg-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded text-[10px] font-medium transition flex items-center justify-center gap-1" title="Xóa hẳn">
+                <i class="ph-bold ph-trash"></i> Xóa bỏ
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+
+        const ptr = document.createElement('tr');
+        ptr.innerHTML = `
+          <td class="border border-slate-300 p-1.5 text-center font-bold">#${idx + 1}</td>
+          <td class="border border-slate-300 p-1.5"><b>${comp.address}</b><br><span class="text-[10px] text-slate-500">${comp.roadDesc}</span></td>
+          <td class="border border-slate-300 p-1.5 text-center">${comp.area}</td>
+          <td class="border border-slate-300 p-1.5 text-center">${comp.frontage}m × ${comp.depth}m</td>
+          <td class="border border-slate-300 p-1.5 text-right font-semibold">${comp.rawPrice.toFixed(2)} Tỷ</td>
+          <td class="border border-slate-300 p-1.5 text-right font-bold text-emerald-700">${discountedUnitPrice.toFixed(2)} tr/m²</td>
+          <td class="border border-slate-300 p-1.5 text-center font-bold">${score}%</td>
+          <td class="border border-slate-300 p-1.5 text-center font-medium">${comp.sourceName}</td>
+        `;
+        printTbody.appendChild(ptr);
       });
+
+      const avgDiscountedPrice = totalWeight > 0 ? (totalWeightedPrice / totalWeight) : 18.5;
+      const rawAvgPrice = avgDiscountedPrice / (1 - discountPercent / 100);
+      const totalLandValue = area > 0 ? (area * (avgDiscountedPrice * 1000000)) / 1000000000 : 0;
+      const grandTotalAsset = totalLandValue + bldTotalValue;
+      const maxLoan = grandTotalAsset * ltvRate;
+
+      document.getElementById('statAvgSurveyPrice').innerHTML = `${rawAvgPrice.toFixed(1)} <span class="text-xs font-normal text-slate-500">tr/m²</span>`;
+      document.getElementById('statProposedPrice').innerHTML = `${avgDiscountedPrice.toFixed(2)} <span class="text-xs font-normal text-emerald-700">tr/m²</span>`;
+      document.getElementById('statTotalAssetValue').innerHTML = `${grandTotalAsset.toFixed(2)} <span class="text-xs font-normal text-slate-500">Tỷ</span>`;
+      document.getElementById('statAssetBreakdown').innerText = `Đất: ${totalLandValue.toFixed(2)}T | Nhà: ${bldTotalValue.toFixed(2)}T`;
+      document.getElementById('statMaxLoanLimit').innerHTML = `${maxLoan.toFixed(2)} <span class="text-xs font-normal text-slate-300">Tỷ</span>`;
+
+      document.getElementById('pLotNumber').innerText = document.getElementById('targetLot').value || "Chưa có thông tin số thửa";
+      document.getElementById('pAddress').innerText = `${document.getElementById('targetStreet').value || ''}, ${document.getElementById('targetHamlet').value || ''}, ${document.getElementById('targetWard').value || ''}, ${document.getElementById('targetDistrictProvince').value || ''}`.replace(/^[\s,]+|[\s,]+$/g, '');
+      document.getElementById('pAreaStructure').innerText = area > 0 ? `${area} m² (Đất ở lâu dài)` : "--";
+      document.getElementById('pShape').innerText = `Mặt tiền ${document.getElementById('targetFrontage').value || '--'}m, Sâu ${document.getElementById('targetDepth').value || '--'}m`;
+      document.getElementById('pRoadWidth').innerText = `${document.getElementById('targetStreet').value || 'Đường tiếp giáp'} (Rộng ~${document.getElementById('targetRoadWidth').value || '--'}m)`;
+      document.getElementById('pBuilding').innerText = bldArea > 0 ? `${document.getElementById('targetBuildingType').value} (DT: ${bldArea} m², CLCL: ${bldQuality}%)` : "Không có / Đất trống";
+      
+      document.getElementById('pLandArea').innerText = `${area} m²`;
+      document.getElementById('pLandUnitPrice').innerText = `${avgDiscountedPrice.toFixed(2)} tr/m²`;
+      document.getElementById('pLandTotalVal').innerText = `${totalLandValue.toFixed(2)} Tỷ`;
+      document.getElementById('pBldArea').innerText = `${bldArea} m²`;
+      document.getElementById('pBldTotalVal').innerText = `${bldTotalValue.toFixed(2)} Tỷ`;
+      document.getElementById('pGrandTotalVal').innerText = `${grandTotalAsset.toFixed(2)} Tỷ VNĐ`;
+      document.getElementById('pMaxLoanVal').innerText = `${maxLoan.toFixed(2)} Tỷ VNĐ`;
     }
 
-    function zoomToTarget() { if (map) map.setView([targetCoords.lat, targetCoords.lng], 17, { animate: true }); }
+    async function executeOCRWithRealAI() {
+      if (uploadedFilesList.length === 0) return;
 
-    function fitAllMarkersSafe() {
-      if (!map) return;
-      const pts = [];
-      const area = parseFloat(document.getElementById('targetArea').value) || 0;
-      if (area > 0) pts.push([targetCoords.lat, targetCoords.lng]);
-      currentComps.forEach(c => pts.push([c.lat, c.lng]));
-      if (pts.length > 0) {
-        const bounds = L.latLngBounds(pts);
-        if (bounds.isValid()) map.fitBounds(bounds, { padding: [25, 25], maxZoom: 16 });
-      }
-    }
+      const apiKey = getActiveApiKey();
+      const statusBox = document.getElementById('ocrStatusNotice');
+      statusBox.classList.remove('hidden');
 
-    function handleFileSelected(event) {
-      const files = event.target.files;
-      if (!files || files.length === 0) return;
-      for (let i = 0; i < files.length; i++) uploadedFilesList.push(files[i]);
-      event.target.value = '';
-      renderUploadedFiles();
-      executeOCRWithRealAI();
-    }
-
-    function renderUploadedFiles() {
-      const container = document.getElementById('loadedFilesContainer');
-      const list = document.getElementById('thumbnailsList');
-      const countBadge = document.getElementById('filesCountBadge');
-
-      if (uploadedFilesList.length === 0) {
-        container.classList.add('hidden');
-        list.innerHTML = '';
+      if (!apiKey) {
+        statusBox.className = "mt-3 p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 text-xs flex items-start gap-2.5 shadow-sm";
+        statusBox.innerHTML = `
+          <i class="ph-fill ph-warning-circle text-amber-600 text-lg flex-shrink-0"></i>
+          <div>
+            <div class="font-bold text-xs sm:text-sm">Chưa có API Key khả dụng!</div>
+            <p class="mt-0.5 text-[11px]">Vui lòng bấm nút <strong>"Cấu hình 2 Key"</strong> trên góc để mở khóa hoặc thiết lập Két Cloud.</p>
+          </div>
+        `;
         return;
       }
 
-      container.classList.remove('hidden');
-      countBadge.innerText = `Đã nạp ${uploadedFilesList.length} tệp tài liệu GCN`;
-      list.innerHTML = '';
+      setFloatingStatus('ocr', 'Đang đọc hiểu tài liệu GCN bằng AI...');
 
-      uploadedFilesList.forEach((file, index) => {
-        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-        const item = document.createElement('div');
-        item.className = "relative group bg-slate-100 rounded-lg border border-slate-300 overflow-hidden shadow-sm flex flex-col items-center justify-center p-1";
+      statusBox.className = "mt-3 p-3 bg-blue-50 border border-blue-300 rounded-xl text-blue-900 text-xs flex items-start gap-2.5 shadow-sm";
+      statusBox.innerHTML = `
+        <i class="ph-bold ph-spinner animate-spin text-blue-600 text-lg flex-shrink-0"></i>
+        <div>
+          <div class="font-bold text-xs sm:text-sm">Đang trích xuất Giấy chứng nhận bằng Gemini AI...</div>
+          <p class="mt-0.5 text-[11px]">Hệ thống đang bóc tách diện tích, số thửa và kích thước.</p>
+        </div>
+      `;
 
-        if (isPdf) {
-          item.innerHTML = `
-            <div class="w-full h-20 bg-rose-50 text-rose-600 flex flex-col items-center justify-center rounded">
-              <i class="ph-bold ph-file-pdf text-2xl mb-0.5"></i>
-              <span class="text-[9px] font-bold uppercase">PDF</span>
-            </div>
-            <div class="w-full px-1 py-0.5 text-[10px] truncate text-slate-700 text-center font-medium">${file.name}</div>
-            <button onclick="removeFile(${index})" class="absolute top-1 right-1 w-4 h-4 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] shadow hover:bg-rose-700"><i class="ph-bold ph-x"></i></button>
-          `;
-        } else {
-          const imgUrl = URL.createObjectURL(file);
-          item.innerHTML = `
-            <img src="${imgUrl}" alt="${file.name}" class="w-full h-20 object-cover rounded bg-white">
-            <div class="w-full px-1 py-0.5 text-[10px] truncate text-slate-700 text-center font-medium">${file.name}</div>
-            <button onclick="removeFile(${index})" class="absolute top-1 right-1 w-4 h-4 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] shadow hover:bg-rose-700"><i class="ph-bold ph-x"></i></button>
-          `;
+      try {
+        const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        if (!listResponse.ok) throw new Error("Mã API Key không hợp lệ hoặc bị chặn.");
+        const listData = await listResponse.json();
+        let validModels = (listData.models || []).filter(m => 
+          m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")
+        );
+        validModels.sort((a, b) => {
+          const getScore = name => {
+            if (name.includes("3.8-flash")) return 100;
+            if (name.includes("2.0-flash")) return 90;
+            if (name.includes("1.5-flash")) return 80;
+            if (name.includes("flash") && !name.includes("2.5")) return 70;
+            return 50;
+          };
+          return getScore(b.name) - getScore(a.name);
+        });
+
+        const promptText = `Bạn là chuyên gia thẩm định giá tài sản bảo đảm của ngân hàng Việt Nam. Đọc kỹ tất cả các trang/ảnh Giấy chứng nhận quyền sử dụng đất (Sổ đỏ / Sổ hồng) này và trả về kết quả dạng JSON với cấu trúc chính xác như sau:
+{
+  "lot": "Thửa đất số ... / Tờ bản đồ số ...",
+  "street": "Tên đường hoặc lối đi tiếp giáp",
+  "hamlet": "Thôn/Xóm/Khu phố",
+  "ward": "Xã/Phường",
+  "districtProvince": "Huyện/TX/TP, Tỉnh",
+  "owner": "Tên chủ sở hữu",
+  "area": 0.0,
+  "resArea": 0.0,
+  "agriArea": 0.0,
+  "frontage": 0.0,
+  "depth": 0.0,
+  "shape": "Nở hậu / Vuông vức",
+  "roadType": "hem_oto",
+  "roadWidth": 4.0,
+  "buildingType": "Nhà ở hoặc Đất trống",
+  "buildingArea": 0.0,
+  "buildingCost": 3.5,
+  "buildingQuality": 70,
+  "lat": 13.9845,
+  "lng": 109.0745
+}
+Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuyệt đối không viết thêm lời chào hay giải thích ngoài JSON.`;
+
+        const parts = [{ text: promptText }];
+        for (const file of uploadedFilesList) {
+          const base64Data = await fileToBase64(file);
+          const mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+          parts.push({
+            inlineData: { mimeType: mimeType, data: base64Data }
+          });
         }
-        list.appendChild(item);
+
+        let parsedData = null;
+        let usedModelName = "";
+
+        for (const model of validModels) {
+          try {
+            const generateUrl = `https://generativelanguage.googleapis.com/v1beta/${model.name}:generateContent?key=${apiKey}`;
+            const genResponse = await fetch(generateUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ contents: [{ parts: parts }] })
+            });
+
+            if (genResponse.ok) {
+              const genData = await genResponse.json();
+              const rawOutput = genData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+              let cleanJsonStr = rawOutput.trim();
+              const b1 = cleanJsonStr.indexOf('{'), b2 = cleanJsonStr.lastIndexOf('}');
+              if (b1 !== -1 && b2 !== -1) {
+                cleanJsonStr = cleanJsonStr.substring(b1, b2 + 1);
+                parsedData = JSON.parse(cleanJsonStr);
+                usedModelName = model.name.replace('models/', '');
+                break;
+              }
+            }
+          } catch (e) {}
+        }
+
+        if (parsedData) {
+          applyParsedData(parsedData);
+          statusBox.className = "mt-3 p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs flex items-start gap-2.5 shadow-sm";
+          statusBox.innerHTML = `
+            <i class="ph-fill ph-check-circle text-emerald-600 text-xl flex-shrink-0"></i>
+            <div>
+              <div class="font-bold text-xs sm:text-sm">Gemini AI (${usedModelName}) đã bóc tách xong hồ sơ!</div>
+              <p class="mt-0.5 text-[11px]">Thông tin thửa đất đã được điền tự động.</p>
+            </div>
+          `;
+          showToast("AI đã đọc xong toàn bộ ảnh tài sản!");
+        } else {
+          throw new Error("Không có model nào đọc được ảnh.");
+        }
+
+      } catch (err) {
+        setFloatingStatus('error', 'Lỗi trích xuất ảnh tài sản');
+        statusBox.className = "mt-3 p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-900 text-xs flex items-start gap-2.5 shadow-sm";
+        statusBox.innerHTML = `
+          <i class="ph-fill ph-x-circle text-rose-600 text-xl flex-shrink-0"></i>
+          <div>
+            <div class="font-bold text-xs sm:text-sm">Không thể hoàn thành trích xuất AI!</div>
+            <p class="mt-0.5 text-rose-800 text-[11px]">${err.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    async function generateSmartCompsForArea(target) {
+      updateMultiChannelSearchLinks(target.ward, target.districtProvince);
+
+      const apiKey = getActiveApiKey();
+      const apiMode = localStorage.getItem('gemini_api_mode') || 'free';
+      const enableGrounding = localStorage.getItem('gemini_search_grounding') !== 'false';
+
+      const aiStatusBadge = document.getElementById('compsCountBadge');
+      if (aiStatusBadge) {
+        aiStatusBadge.innerText = enableGrounding ? "Đang quét TSSS bằng Google Search..." : "Đang phân tích thị trường bằng Gemini AI...";
+      }
+
+      if (!apiKey) {
+        showToast("Vui lòng mở khóa hoặc cấu hình API Key để khảo sát giá!");
+        return;
+      }
+
+      setFloatingStatus('survey', enableGrounding ? 'Google AI đang quét tin rao web thật...' : 'Gemini AI đang phân tích & tìm TSSS...');
+
+      try {
+        let validModels = [];
+        const cachedModel = localStorage.getItem('gemini_cached_model');
+        if (cachedModel && apiMode === 'payg') {
+          validModels = [{ name: cachedModel }];
+        } else {
+          const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+          if (!listResponse.ok) throw new Error("API Key không hợp lệ");
+          const listData = await listResponse.json();
+          validModels = (listData.models || []).filter(m => 
+            m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")
+          );
+          validModels.sort((a, b) => {
+            const getScore = name => {
+              if (name.includes("3.8-flash")) return 100;
+              if (name.includes("2.0-flash")) return 90;
+              if (name.includes("1.5-flash")) return 80;
+              if (name.includes("flash") && !name.includes("2.5")) return 70;
+              return 50;
+            };
+            return getScore(b.name) - getScore(a.name);
+          });
+        }
+
+        const promptText = `Bạn là chuyên gia thẩm định giá tài sản bảo đảm của ngân hàng tại Việt Nam.
+Hãy tìm kiếm và khảo sát giá bất động sản thực tế cho khu vực sau:
+- Địa bàn: ${target.ward || ''}, ${target.districtProvince || ''} (Lưu ý: hỗ trợ cả tên hành chính mới và cũ trước/sau sáp nhập)
+- Tuyến đường / vị trí: ${target.street || ''}, ${target.hamlet || ''}
+- Tổng diện tích: ${target.area || 0} m2 (Đất ở: ${target.resArea || 0} m2)
+- Mặt tiền: ${target.frontage || 0}m, Chiều sâu: ${target.depth || 0}m, Hình thể: ${target.shape || ''}
+- Vị trí tiếp giáp: ${target.roadType || 'hem_oto'}, lộ giới: ${target.roadWidth || 4}m
+
+Yêu cầu thực hiện:
+1. Tra cứu các tin rao bán đất/nhà THẬT mới nhất đang giao dịch tại khu vực ${target.ward || ''}, ${target.districtProvince || ''} qua các nguồn (Facebook Groups BĐS, Batdongsan.com.vn, Chợ Tốt Nhà, Alonhadat, Thư Viện Nhà Đất).
+2. Lập danh sách 7 đến 8 tài sản so sánh (TSSS) gần đây tại cùng tuyến đường hoặc khu vực lân cận, tương đồng nhất với tài sản mục tiêu.
+3. QUY TẮC BẮT BUỘC VỀ GIÁ ("rawPrice"):
+   - Đơn vị tính BẮT BUỘC LÀ SỐ THỰC TỶ ĐỒNG (Ví dụ: 980 triệu ghi 0.98, 1 tỷ 250 ghi 1.25, 850 triệu ghi 0.85). Tuyệt đối KHÔNG ghi số tiền nguyên hàng trăm triệu hay hàng tỷ dạng 980000000 hay 980.
+   - Nếu tin rao không nêu giá cụ thể (như '1tỷxxx', '9xx triệu', '1.x tỷ', 'giá thoả thuận'), hãy dùng chuyên môn thẩm định giá để PHỎNG ĐOÁN một con số hợp lý nhất theo mặt bằng khu vực và trả về số thực theo TỶ ĐỒNG (Ví dụ: 1tỷxxx -> 1.35, 9xx tr -> 0.95).
+   - "link": Đường link bài đăng thực tế nếu tìm thấy từ tìm kiếm, hoặc link tìm kiếm sàn tương ứng.
+4. Viết 1 đoạn tóm tắt thị trường (aiSummary) và 3 khuyến nghị thẩm định cho tờ trình tín dụng.
+
+Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\`\`):
+{
+  "aiSummary": "Thông tin khảo sát bất động sản tại...",
+  "recommendations": [
+    "Khuyến nghị 1...",
+    "Khuyến nghị 2...",
+    "Khuyến nghị 3..."
+  ],
+  "comps": [
+    {
+      "id": 1,
+      "address": "Địa chỉ cụ thể tại khu vực...",
+      "roadType": "hem_oto",
+      "roadDesc": "Đường bê tông ô tô 4m...",
+      "area": 0.0,
+      "frontage": 0.0,
+      "depth": 0.0,
+      "rawPrice": 0.0,
+      "link": "https://...",
+      "sourceType": "facebook | batdongsan | chotot | alonhadat | thuviennhadat",
+      "sourceName": "Facebook BĐS Địa Phương",
+      "distanceMeters": 350
+    }
+  ]
+}`;
+
+        let successMarket = null;
+
+        for (const model of validModels) {
+          try {
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/${model.name}:generateContent?key=${apiKey}`;
+            const payload = { contents: [{ parts: [{ text: promptText }] }] };
+            if (enableGrounding) payload.tools = [{ "googleSearch": {} }];
+
+            let res = await fetch(endpoint, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+
+            if (!res.ok && enableGrounding) {
+              delete payload.tools;
+              res = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+              });
+            }
+
+            if (res.ok) {
+              const resData = await res.json();
+              const candidate = resData.candidates?.[0];
+              const textOutput = candidate?.content?.parts?.[0]?.text || "";
+              const webChunks = candidate?.groundingMetadata?.groundingChunks || [];
+
+              let clean = textOutput.trim();
+              const b1 = clean.indexOf('{'), b2 = clean.lastIndexOf('}');
+              if (b1 !== -1 && b2 !== -1) {
+                clean = clean.substring(b1, b2 + 1);
+                successMarket = JSON.parse(clean);
+
+                if (webChunks.length > 0 && successMarket.comps) {
+                  let chunkIndex = 0;
+                  successMarket.comps.forEach(comp => {
+                    if ((!comp.link || comp.link.includes('google.com/search')) && webChunks[chunkIndex]) {
+                      const uri = webChunks[chunkIndex].web?.uri;
+                      if (uri) { comp.link = uri; chunkIndex++; }
+                    }
+                  });
+                }
+                localStorage.setItem('gemini_cached_model', model.name);
+                break;
+              }
+            }
+          } catch(e) {}
+        }
+
+        if (successMarket && successMarket.comps && successMarket.comps.length > 0) {
+          applyMarketCompsData(successMarket);
+          const modeBadge = apiMode === 'payg' ? '⚡ PAYG' : 'Free Tier';
+          const searchBadge = enableGrounding ? ' + Google Search' : '';
+          setFloatingStatus('success', `Đã cập nhật TSSS & khảo giá (${modeBadge}${searchBadge})`);
+          showToast(`Đã tổng hợp ${successMarket.comps.length} BĐS so sánh!`);
+        } else {
+          throw new Error("Không lấy được dữ liệu thị trường từ AI");
+        }
+
+      } catch (err) {
+        setFloatingStatus('error', 'Lỗi kết nối khảo sát giá');
+        showToast("Không thể hoàn tất khảo sát thị trường: " + err.message);
+      }
+    }
+
+    function applyMarketCompsData(marketData) {
+      if (marketData.aiSummary) document.getElementById('aiSummaryP1').innerHTML = marketData.aiSummary;
+      if (marketData.recommendations && marketData.recommendations.length > 0) {
+        const tipsBox = document.getElementById('aiSummaryTips');
+        tipsBox.classList.remove('hidden');
+        document.getElementById('aiSummaryList').innerHTML = marketData.recommendations.map(r => `<li>${r}</li>`).join('');
+      }
+
+      if (marketData.lat && marketData.lng) {
+        targetCoords = { lat: marketData.lat, lng: marketData.lng };
+      }
+
+      const allMappedComps = (marketData.comps || []).map((c, i) => {
+        const normalizedPrice = normalizePriceToTy(c.rawPrice, c.address + " " + (c.roadDesc || ""));
+        return {
+          id: i + 1,
+          address: c.address,
+          roadType: c.roadType || "hem_oto",
+          roadDesc: c.roadDesc || "Đường ô tô",
+          area: parseFloat(c.area) || 100,
+          frontage: parseFloat(c.frontage) || 5,
+          depth: parseFloat(c.depth) || 20,
+          rawPrice: normalizedPrice,
+          link: c.link || `https://www.google.com/search?q=${encodeURIComponent(c.address + ' bán đất')}`,
+          sourceType: c.sourceType || "facebook",
+          sourceName: c.sourceName || "Tin rao BĐS",
+          distanceMeters: parseInt(c.distanceMeters) || (200 + i * 150),
+          lat: targetCoords.lat + (Math.random() - 0.5) * 0.007,
+          lng: targetCoords.lng + (Math.random() - 0.5) * 0.007
+        };
+      });
+
+      currentComps = allMappedComps.slice(0, 5);
+      backupCompsPool = allMappedComps.slice(5);
+
+      renderMapElements();
+      recalculateTargetValues();
+    }
+
+    function triggerManualSurvey() {
+      const ward = document.getElementById('targetWard').value.trim();
+      const dist = document.getElementById('targetDistrictProvince').value.trim();
+      const area = parseFloat(document.getElementById('targetArea').value) || 0;
+
+      if (!ward && !dist) {
+        showToast("Vui lòng nhập tối thiểu Xã/Phường và Huyện/Tỉnh!");
+        document.getElementById('targetWard').focus();
+        return;
+      }
+
+      const target = {
+        lot: document.getElementById('targetLot').value.trim() || "Tài sản mục tiêu",
+        street: document.getElementById('targetStreet').value.trim() || "Tuyến đường chính",
+        hamlet: document.getElementById('targetHamlet').value.trim(),
+        ward: ward,
+        districtProvince: dist,
+        area: area || 100,
+        resArea: parseFloat(document.getElementById('targetResArea').value) || area || 100,
+        agriArea: parseFloat(document.getElementById('targetAgriArea').value) || 0,
+        frontage: parseFloat(document.getElementById('targetFrontage').value) || 5.0,
+        depth: parseFloat(document.getElementById('targetDepth').value) || 20.0,
+        roadType: document.getElementById('targetPosType').value,
+        roadWidth: parseFloat(document.getElementById('targetRoadWidth').value) || 4.0,
+        buildingType: document.getElementById('targetBuildingType').value.trim() || "Nhà ở hoặc Đất trống"
+      };
+
+      const btn = document.getElementById('btnManualSurvey');
+      btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang khảo sát giá...`;
+      btn.disabled = true;
+
+      document.getElementById('targetBadgeLot').innerText = target.lot;
+      document.getElementById('targetBadgeLot').className = "text-xs font-semibold px-2.5 py-1 rounded bg-slate-200 text-slate-700";
+      document.getElementById('targetBadgeType').innerText = `Đất ${target.area}m² (${target.ward || 'Khu vực'})`;
+      document.getElementById('targetBadgeType').className = "text-xs font-semibold px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
+
+      generateSmartCompsForArea(target).finally(() => {
+        btn.innerHTML = `<i class="ph-bold ph-magnifying-glass-plus text-base text-amber-300"></i> Khảo Sát Giá Thị Trường & Tìm TSSS`;
+        btn.disabled = false;
       });
     }
 
-    function removeFile(index) {
-      uploadedFilesList.splice(index, 1);
-      renderUploadedFiles();
-    }
+    function applyParsedData(data) {
+      if (data.lot !== undefined) document.getElementById('targetLot').value = data.lot;
+      if (data.street) document.getElementById('targetStreet').value = data.street;
+      if (data.hamlet) document.getElementById('targetHamlet').value = data.hamlet;
+      if (data.ward) document.getElementById('targetWard').value = data.ward;
+      if (data.districtProvince) document.getElementById('targetDistrictProvince').value = data.districtProvince;
+      if (data.area) document.getElementById('targetArea').value = data.area;
+      if (data.resArea) document.getElementById('targetResArea').value = data.resArea;
+      if (data.agriArea !== undefined) document.getElementById('targetAgriArea').value = data.agriArea;
+      if (data.frontage) document.getElementById('targetFrontage').value = data.frontage;
+      if (data.depth) document.getElementById('targetDepth').value = data.depth;
+      if (data.roadType) document.getElementById('targetPosType').value = data.roadType;
+      if (data.roadWidth) document.getElementById('targetRoadWidth').value = data.roadWidth;
+      if (data.buildingType) document.getElementById('targetBuildingType').value = data.buildingType;
+      if (data.buildingArea) document.getElementById('targetBuildingArea').value = data.buildingArea;
+      if (data.buildingCost) document.getElementById('targetBuildingCost').value = data.buildingCost;
+      if (data.buildingQuality) document.getElementById('targetBuildingQuality').value = data.buildingQuality;
 
-    function clearAllFiles() {
-      uploadedFilesList = [];
-      renderUploadedFiles();
-      const input = document.getElementById('gcnFileInput');
-      if (input) input.value = '';
-      document.getElementById('ocrStatusNotice').classList.add('hidden');
-      setFloatingStatus('hide');
+      if (data.lat && data.lng) targetCoords = { lat: data.lat, lng: data.lng };
+
+      document.getElementById('targetBadgeLot').innerText = data.lot || "Tài sản mục tiêu";
+      document.getElementById('targetBadgeLot').className = "text-xs font-semibold px-2.5 py-1 rounded bg-slate-200 text-slate-700";
+      document.getElementById('targetBadgeType').innerText = `Đất ${data.area || 0}m² + ${data.buildingType || 'CTXD'}`;
+      document.getElementById('targetBadgeType').className = "text-xs font-semibold px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
+
+      renderMapElements();
+      recalculateTargetValues();
+      generateSmartCompsForArea(data);
     }
 
     function resetAllData() {
