@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LendLand Pro v4.9 - Thẩm Định Giá BĐS Tín Dụng</title>
+  <title>LendLand Pro v5.0 - Thẩm Định Giá BĐS Tín Dụng</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -27,7 +27,7 @@
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col">
 
-  <!-- HEADER v4.9 -->
+  <!-- HEADER v5.0 -->
   <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md no-print border-b border-slate-700">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
@@ -37,7 +37,7 @@
         <div>
           <div class="font-bold text-base tracking-wide flex items-center gap-2">
             LendLand Pro
-            <span class="text-xs bg-emerald-500 text-slate-900 font-extrabold px-2 py-0.5 rounded shadow">v4.9 Live</span>
+            <span class="text-xs bg-emerald-500 text-slate-900 font-extrabold px-2 py-0.5 rounded shadow">v5.0 Live</span>
           </div>
           <div class="text-xs text-slate-400">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm ngân hàng</div>
         </div>
@@ -60,19 +60,16 @@
   <!-- NỘI DUNG CHÍNH -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-grow space-y-6 no-print">
 
-    <!-- KHỐI QUÉT & NHẬN DIỆN GCN -->
+    <!-- KHỐI QUÉT & NHẬN DIỆN GCN (TÙY CHỌN KHI CÓ FILE SCAN/ẢNH) -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
           <div class="p-2 bg-indigo-100 text-indigo-700 rounded-lg"><i class="ph-bold ph-scan text-xl"></i></div>
           <div>
-            <h2 class="font-bold text-slate-800 text-base">Cách 1: Quét & Nhận Diện Giấy Chứng Nhận (PDF / Ảnh Sổ Đỏ)</h2>
-            <p class="text-xs text-slate-500">Tự động đọc thông tin nếu có ảnh/file scan. <em>(Nếu không có ảnh, hãy nhập trực tiếp vào Khối 1 bên dưới)</em></p>
+            <h2 class="font-bold text-slate-800 text-base">Quét & Nhận Diện Giấy Chứng Nhận QSD Đất (PDF / Ảnh Sổ Đỏ)</h2>
+            <p class="text-xs text-slate-500">Tự động bóc tách thông tin nếu có ảnh. <em>(Nếu không có ảnh, hãy nhập trực tiếp vào Khối bên dưới)</em></p>
           </div>
         </div>
-        <button onclick="loadSampleTranThanhBa()" class="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 flex items-center gap-1.5 font-medium transition">
-          <i class="ph-bold ph-flask"></i> Nạp Dữ Liệu Mẫu (Trần Thanh Ba - Phù Cát)
-        </button>
       </div>
 
       <div class="p-6">
@@ -107,7 +104,7 @@
       </div>
     </div>
 
-    <!-- KHỐI 1: THÔNG TIN TÀI SẢN MỤC TIÊU -->
+    <!-- KHỐI 1: THÔNG TIN TÀI SẢN MỤC TIÊU (HỖ TRỢ NHẬP LIỆU THỦ CÔNG LINH HOẠT) -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
@@ -124,6 +121,7 @@
       </div>
 
       <div class="p-6 space-y-5">
+        <!-- HÀNG 1: THÔNG TIN HÀNH CHÍNH & VỊ TRÍ ĐỊA LÝ -->
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4 text-xs font-medium">
           <div>
             <label class="block text-slate-500 mb-1">Thửa đất / Tờ BĐ <span class="text-[10px] text-slate-400 font-normal">(Có thể để trống)</span></label>
@@ -147,6 +145,7 @@
           </div>
         </div>
 
+        <!-- HÀNG 2: DIỆN TÍCH & KÍCH THƯỚC HÌNH THỂ THAM KHẢO -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 text-xs font-medium bg-slate-50 p-4 rounded-xl border border-slate-200">
           <div>
             <label class="block text-slate-700 font-semibold mb-1">Tổng diện tích (m²) *</label>
@@ -181,6 +180,7 @@
           </div>
         </div>
 
+        <!-- KHỐI ĐỊNH GIÁ CTXD -->
         <div class="border border-amber-200 bg-amber-50/40 rounded-xl p-4">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-2">
@@ -197,15 +197,15 @@
             </div>
             <div>
               <label class="block text-slate-600 mb-1">Diện tích sàn XD (m²)</label>
-              <input type="number" id="targetBuildingArea" placeholder="0.0" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white font-semibold" onchange="recalculateTargetValues()">
+              <input type="number" id="targetBuildingArea" placeholder="0.0" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white font-semibold" oninput="recalculateTargetValues()">
             </div>
             <div>
               <label class="block text-slate-600 mb-1">Đơn giá XD mới (tr/m²)</label>
-              <input type="number" id="targetBuildingCost" value="3.5" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white" onchange="recalculateTargetValues()">
+              <input type="number" id="targetBuildingCost" value="3.5" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white" oninput="recalculateTargetValues()">
             </div>
             <div>
               <label class="block text-slate-600 mb-1">Tỷ lệ CLCL (%)</label>
-              <input type="number" id="targetBuildingQuality" value="70" step="5" class="w-full border border-slate-300 rounded-lg p-2 bg-white" onchange="recalculateTargetValues()">
+              <input type="number" id="targetBuildingQuality" value="70" step="5" class="w-full border border-slate-300 rounded-lg p-2 bg-white" oninput="recalculateTargetValues()">
             </div>
             <div>
               <label class="block text-slate-600 mb-1">Ước tính giá trị CTXD</label>
@@ -216,6 +216,7 @@
           </div>
         </div>
 
+        <!-- HÀNG NÚT BẤM KHẢO SÁT & TÍNH TOÁN -->
         <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
           <div class="flex flex-wrap items-center gap-4 text-xs font-semibold">
             <div class="flex items-center gap-2">
@@ -335,11 +336,11 @@
           <div class="p-2 bg-indigo-100 text-indigo-700 rounded-lg"><i class="ph-bold ph-magnifying-glass text-xl"></i></div>
           <div>
             <h3 class="font-bold text-slate-800 text-sm">Thu Thập & Khảo Sát BĐS So Sánh Đa Kênh</h3>
-            <span class="text-xs text-slate-500">Tự động tổng hợp 5 TSSS bằng Gemini AI hoặc mở trực tiếp 5 sàn BĐS lớn</span>
+            <span class="text-xs text-slate-500">Tự động tổng hợp danh mục TSSS chất lượng cao từ các kênh BĐS chính thống</span>
           </div>
         </div>
         <button onclick="runAutoCrawler()" id="btnAutoCrawl" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow flex items-center gap-2 transition active:scale-95">
-          <i class="ph-bold ph-sparkle text-amber-300 text-base"></i> Quét & Bổ Sung 5 TSSS Bằng Gemini AI
+          <i class="ph-bold ph-sparkle text-amber-300 text-base"></i> Quét & Bổ Sung TSSS Bằng Gemini AI
         </button>
       </div>
 
@@ -453,7 +454,7 @@
     </div>
   </main>
 
-  <!-- MODAL CẤU HÌNH API KEY VỚI TÙY CHỌN 2 CHẾ ĐỘ & GOOGLE SEARCH GROUNDING -->
+  <!-- MODAL CẤU HÌNH API KEY VỚI 2 Ô LƯU RIÊNG CHO FREE TIER & PAY-AS-YOU-GO -->
   <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
@@ -491,7 +492,7 @@
             <span id="badgeStatusPayg" class="text-[10px] px-2 py-0.5 rounded font-semibold bg-slate-200 text-slate-600">Chưa lưu</span>
           </div>
           <input type="password" id="geminiApiKeyPaygInput" placeholder="AIzaSy... (Khóa từ Project đã liên kết thẻ thanh toán)" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 font-mono text-xs bg-white" oninput="updateKeyBadgeUI()">
-          <p class="text-[10px] text-slate-400 mt-1">Dành cho dự án đã bật Billing. Tốc độ cực nhanh 1–2s, không chờ hàng đợi, băng thông lớn.</p>
+          <p class="text-[10px] text-slate-400 mt-1">Dành cho dự án đã bật Billing. Tốc độ cao, không chờ hàng đợi, băng thông lớn.</p>
         </div>
 
         <!-- BẬT/TẮT TÍNH NĂNG GOOGLE SEARCH GROUNDING -->
@@ -527,31 +528,28 @@
     </div>
   </div>
 
-  <!-- BIỂU MẪU IN / LƯU PDF A4 CHUẨN VĂN BẢN -->
+  <!-- BIỂU MẪU IN / LƯU PDF A4 CHUẨN BÁO CÁO THAM KHẢO SƠ BỘ (TINH GỌN) -->
   <div id="printArea" class="max-w-4xl mx-auto p-8 bg-white text-slate-900">
-    <div class="border-b-2 border-slate-800 pb-4 mb-6">
-      <div class="flex justify-between items-start text-xs">
-        <div>
-          <div class="font-bold uppercase tracking-wide text-sm">NGÂN HÀNG THƯƠNG MẠI CỔ PHẦN</div>
-          <div class="font-semibold text-slate-700">LENDLAND PRO - PHÒNG THẨM ĐỊNH TÍN DỤNG</div>
-          <div class="text-[11px] text-slate-500">Số trích sao: TT-LLP/<span id="printDocId">2026/001</span></div>
+    <!-- HEADER TINH GỌN (BỎ TIÊU NGỮ HÀNH CHÍNH & NGÂN HÀNG TMCP) -->
+    <div class="border-b-2 border-slate-800 pb-3 mb-5">
+      <div class="flex justify-between items-center text-xs text-slate-500 mb-2">
+        <div class="font-bold text-slate-800 text-sm tracking-wide flex items-center gap-2">
+          <span>LENDLAND PRO</span>
+          <span class="text-slate-400 font-normal">|</span>
+          <span class="font-semibold text-slate-600">BÁO CÁO KHẢO SÁT THỊ TRƯỜNG BẤT ĐỘNG SẢN</span>
         </div>
-        <div class="text-right">
-          <div class="font-bold">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-          <div class="italic text-[11px]">Độc lập - Tự do - Hạnh phúc</div>
-          <div class="text-[11px] text-slate-500 mt-1" id="printCurrentDate">Ngày ... tháng ... năm 2026</div>
-        </div>
+        <div id="printCurrentDate" class="font-medium text-slate-600">Ngày ... tháng ... năm ...</div>
       </div>
       
-      <div class="text-center mt-6">
-        <h1 class="text-base font-extrabold uppercase tracking-wider text-slate-900">BÁO CÁO TÓM TẮT TỔNG QUAN TÀI SẢN MỤC TIÊU VÀ CƠ SỞ ĐỊNH GIÁ SƠ BỘ</h1>
-        <div class="text-xs italic text-slate-600 mt-1">(Phục vụ khảo sát thực địa & lập Tờ trình Thẩm định phê duyệt cấp tín dụng)</div>
+      <div class="text-center mt-4">
+        <h1 class="text-base font-extrabold uppercase tracking-wider text-slate-900">BẢNG TỔNG HỢP KHẢO SÁT GIÁ & THẨM ĐỊNH SƠ BỘ TÀI SẢN</h1>
+        <div class="text-[11px] italic text-slate-500 mt-1">(Tài liệu thông tin tham khảo nội bộ phục vụ khảo sát giá trị thị trường)</div>
       </div>
     </div>
 
     <div class="mb-5 text-xs">
       <div class="font-bold uppercase text-slate-800 border-b border-slate-300 pb-1 mb-2">
-        I. THÔNG TIN PHÁP LÝ & HIỆN TRẠNG TÀI SẢN BẢO ĐẢM MỤC TIÊU
+        I. THÔNG TIN HIỆN TRẠNG TÀI SẢN MỤC TIÊU
       </div>
       <table class="w-full border-collapse border border-slate-300 text-xs mb-3">
         <tr>
@@ -602,7 +600,7 @@
 
     <div class="mb-6 text-xs">
       <div class="font-bold uppercase text-slate-800 border-b border-slate-300 pb-1 mb-2">
-        III. KẾT QUẢ ĐỊNH GIÁ SƠ BỘ & HẠN MỨC CẤP TÍN DỤNG ĐỀ XUẤT
+        III. KẾT QUẢ ĐỊNH GIÁ SƠ BỘ & HẠN MỨC CHO VAY THAM KHẢO
       </div>
       <table class="w-full border-collapse border border-slate-300 text-xs">
         <tr class="bg-slate-50 font-semibold">
@@ -624,29 +622,20 @@
           <td class="border border-slate-300 p-2 text-right font-semibold" id="pBldTotalVal">0.00 Tỷ</td>
         </tr>
         <tr class="bg-emerald-50/60 font-bold text-slate-900">
-          <td class="border border-slate-300 p-2 uppercase" colspan="3">TỔNG GIÁ TRỊ TÀI SẢN BẢO ĐẢM ƯỚC TÍNH:</td>
+          <td class="border border-slate-300 p-2 uppercase" colspan="3">TỔNG GIÁ TRỊ TÀI SẢN ƯỚC TÍNH:</td>
           <td class="border border-slate-300 p-2 text-right text-emerald-800 text-sm" id="pGrandTotalVal">0.00 Tỷ VNĐ</td>
         </tr>
         <tr class="bg-blue-50/60 font-bold text-slate-900">
-          <td class="border border-slate-300 p-2 uppercase" colspan="3">HẠN MỨC CHO VAY TỐI ĐA AN TOÀN (LTV 70%):</td>
+          <td class="border border-slate-300 p-2 uppercase" colspan="3">HẠN MỨC CHO VAY TỐI ĐA THAM KHẢO (LTV 70%):</td>
           <td class="border border-slate-300 p-2 text-right text-blue-900 text-sm" id="pMaxLoanVal">0.00 Tỷ VNĐ</td>
         </tr>
       </table>
     </div>
 
-    <div class="mt-8 text-xs">
-      <div class="grid grid-cols-2 gap-8 text-center">
-        <div>
-          <div class="font-bold uppercase text-slate-800">CÁN BỘ LẬP BÁO CÁO KHẢO SÁT</div>
-          <div class="italic text-[11px] text-slate-500 mb-16">(Ký, ghi rõ họ tên và ngày khảo sát)</div>
-          <div class="font-bold text-slate-800">CÁN BỘ TÍN DỤNG</div>
-        </div>
-        <div>
-          <div class="font-bold uppercase text-slate-800">TRƯỞNG PHÒNG THẨM ĐỊNH / LÃNH ĐẠO PHÊ DUYỆT</div>
-          <div class="italic text-[11px] text-slate-500 mb-16">(Ký duyệt, ghi chú ý kiến định giá)</div>
-          <div class="font-bold text-slate-800">LÃNH ĐẠO ĐƠN VỊ</div>
-        </div>
-      </div>
+    <!-- PHẦN GHI CHÚ MIỄN TRỪ (THAY THẾ CHỮ KÝ HÀNH CHÍNH) -->
+    <div class="mt-6 pt-3 border-t border-slate-300 text-[11px] text-slate-500 italic space-y-1">
+      <div>* <strong>Lưu ý nghiệp vụ:</strong> Báo cáo này được lập tự động dựa trên dữ liệu khảo sát thị trường đa kênh tại thời điểm tra cứu và chỉ mang tính chất tham khảo sơ bộ.</div>
+      <div>* Kết quả định giá chính thức cần căn cứ vào biên bản kiểm tra thực địa, hồ sơ pháp lý hoàn chỉnh và được phê duyệt theo đúng thẩm quyền quy định.</div>
     </div>
   </div>
 
@@ -656,21 +645,25 @@
   </div>
 
   <script>
-    let backupCompsPool = [];
+    let backupCompsPool = []; // Hàng đợi tài sản so sánh dự phòng để thay thế tức thì khi cán bộ tín dụng bấm xóa
 
+    // 1. XÓA VÀ THAY THẾ BẰNG 1 TÀI SẢN SO SÁNH TIẾP THEO (TỰ ĐỘNG TÍNH LẠI ĐƠN GIÁ BÌNH QUÂN)
     async function replaceCompWithNext(index) {
       if (index < 0 || index >= currentComps.length) return;
+      
       showToast(`Đang thay thế TSSS #${index + 1}...`);
 
+      // Kiểm tra nếu trong hàng đợi dự phòng có sẵn TSSS
       if (backupCompsPool.length > 0) {
         const nextComp = backupCompsPool.shift();
         currentComps.splice(index, 1, nextComp);
         renderMapElements();
         recalculateTargetValues();
-        showToast(`Đã thay thế #${index + 1} bằng TSSS tiếp theo từ danh sách dự phòng!`);
+        showToast(`Đã thay thế #${index + 1} bằng TSSS tiếp theo & tính toán lại toàn bộ đơn giá!`);
         return;
       }
 
+      // Nếu hàng đợi dự phòng đã hết, tự động tổng hợp 1 TSSS mới chuẩn theo trung vị giá của các TSSS còn lại
       const otherComps = currentComps.filter((_, i) => i !== index);
       let avgValidUnitPrice = 20.0;
       if (otherComps.length > 0) {
@@ -715,10 +708,11 @@
 
       currentComps.splice(index, 1, nextComp);
       renderMapElements();
-      recalculateTargetValues();
-      showToast(`Đã thay thế #${index + 1} bằng tài sản tương đồng chuẩn mới!`);
+      recalculateTargetValues(); // Tự động tính lại toàn bộ đơn giá bình quân từ TSSS mới
+      showToast(`Đã thay thế #${index + 1} bằng tài sản chuẩn mới & cập nhật đơn giá bình quân!`);
     }
 
+    // 2. XÓA BỎ HẲN 1 DÒNG TSSS (KHÔNG BÙ - TỰ ĐỘNG TÍNH LẠI ĐƠN GIÁ BÌNH QUÂN)
     function deleteSingleComp(index) {
       if (index < 0 || index >= currentComps.length) return;
       if (currentComps.length <= 1) {
@@ -727,8 +721,8 @@
       }
       currentComps.splice(index, 1);
       renderMapElements();
-      recalculateTargetValues();
-      showToast(`Đã xóa tài sản so sánh #${index + 1}. Bảng tính đã cập nhật lại!`);
+      recalculateTargetValues(); // Tự động cập nhật lại các chỉ số sau khi loại bỏ dòng
+      showToast(`Đã xóa TSSS #${index + 1}. Bảng tính & đơn giá bình quân đã được cập nhật lại!`);
     }
 
     let currentComps = [];
@@ -742,6 +736,7 @@
       checkSavedApiKey();
     });
 
+    // TRUY XUẤT API KEY THEO CHẾ ĐỘ ĐANG CHỌN (FREE HOẶC PAYG)
     function getActiveApiKey() {
       const mode = localStorage.getItem('gemini_api_mode') || 'free';
       if (mode === 'payg') {
@@ -1171,9 +1166,6 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
               <button onclick="executeOCRWithRealAI()" class="bg-rose-700 hover:bg-rose-800 text-white font-bold px-3 py-1.5 rounded shadow text-xs">
                 Thử Lại
               </button>
-              <button onclick="loadSampleTranThanhBa()" class="bg-slate-700 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded shadow text-xs">
-                Nạp Dữ Liệu Mẫu
-              </button>
             </div>
           </div>
         `;
@@ -1351,6 +1343,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
       };
     }
 
+    // TỰ ĐỘNG TỔNG HỢP 5 TÀI SẢN SO SÁNH & BÁO CÁO AI OVERVIEW BẰNG GEMINI
     async function generateSmartCompsForArea(target) {
       updateMultiChannelSearchLinks(target.ward, target.districtProvince);
 
@@ -1625,29 +1618,6 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         btn.innerHTML = `<i class="ph-bold ph-magnifying-glass-plus text-base text-amber-300"></i> Khảo Sát Giá BĐS Theo Thông Số Nhập Tay`;
         btn.disabled = false;
       });
-    }
-
-    function loadSampleTranThanhBa() {
-      applyParsedData({
-        lot: "Thửa 75 / Tờ bản đồ số 53", street: "Đường liên thôn (Đường bê tông)",
-        hamlet: "Thôn Hòa Dõng", ward: "Xã Cát Tân", districtProvince: "Huyện Phù Cát, Tỉnh Bình Định",
-        owner: "Ông Trần Thanh Ba (CCCD: 052072004184)", area: 307.7, resArea: 307.7, agriArea: 0.0,
-        frontage: 9.07, depth: 35.51, shape: "Nở hậu (Mặt tiền: 9.07m, Hậu: 10.93m)",
-        roadType: "hem_oto", roadWidth: 4.0, buildingType: "Nhà ở độc lập Cấp 4 (Trệt)",
-        buildingArea: 98.5, buildingCost: 3.5, buildingQuality: 75, lat: 13.9845, lng: 109.0745
-      });
-      
-      const statusBox = document.getElementById('ocrStatusNotice');
-      statusBox.classList.remove('hidden');
-      statusBox.className = "mt-4 p-4 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs flex items-start gap-3 shadow-sm";
-      statusBox.innerHTML = `
-        <i class="ph-fill ph-check-circle text-emerald-600 text-2xl flex-shrink-0"></i>
-        <div>
-          <div class="font-bold text-sm">Đã nạp thành công hồ sơ GCN Ông Trần Thanh Ba (Phù Cát)!</div>
-          <p class="mt-0.5">Dữ liệu diện tích, kích thước thửa đất và 5 BĐS so sánh lân cận đã được cập nhật.</p>
-        </div>
-      `;
-      showToast("Đã nạp dữ liệu hồ sơ mẫu thành công!");
     }
 
     function applyParsedData(data) {
