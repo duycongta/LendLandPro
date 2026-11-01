@@ -2,8 +2,8 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LendLand Pro v5.1 - Thẩm Định Giá BĐS Tín Dụng</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LendLand Pro v5.3 - Thẩm Định Giá BĐS Tín Dụng</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -11,6 +11,10 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+  
+  <!-- THƯ VIỆN TẠO VÀ ĐỌC MÃ QR CODE SIÊU NHẸ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -25,70 +29,68 @@
     #printArea { display: none; }
   </style>
 </head>
-<body class="min-h-screen text-slate-800 flex flex-col relative">
+<body class="min-h-screen text-slate-800 flex flex-col relative select-none sm:select-auto">
 
-  <!-- THANH TRẠNG THÁI NỔI CỐ ĐỊNH (FLOATING STATUS BAR) -->
-  <div id="floatingStatusBar" class="hidden fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-5 py-2.5 rounded-full shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md">
+  <!-- THANH TRẠNG THÁI NỔI TRÔI CỐ ĐỊNH (RESPONSIVE FLOATING TOP BAR) -->
+  <div id="floatingStatusBar" class="hidden fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-50 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md max-w-[92vw] truncate">
     <div id="floatingStatusIcon"></div>
-    <span id="floatingStatusText">Đang xử lý dữ liệu...</span>
+    <span id="floatingStatusText" class="truncate">Đang xử lý dữ liệu...</span>
   </div>
 
-  <!-- HEADER v5.1 -->
+  <!-- HEADER v5.3 (RESPONSIVE MOBILE & PC) -->
   <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md no-print border-b border-slate-700">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-xl shadow-inner">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-2 sm:space-x-3 overflow-hidden">
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-lg sm:text-xl shadow-inner flex-shrink-0">
           <i class="ph-bold ph-shield-check"></i>
         </div>
-        <div>
-          <div class="font-bold text-base tracking-wide flex items-center gap-2">
-            LendLand Pro
-            <span class="text-xs bg-emerald-500 text-slate-900 font-extrabold px-2 py-0.5 rounded shadow">v5.1 Live</span>
+        <div class="truncate">
+          <div class="font-bold text-sm sm:text-base tracking-wide flex items-center gap-1.5 sm:gap-2">
+            <span>LendLand Pro</span>
+            <span class="text-[10px] sm:text-xs bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow">v5.3 Live</span>
           </div>
-          <div class="text-xs text-slate-400">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm ngân hàng</div>
+          <div class="text-[10px] sm:text-xs text-slate-400 truncate hidden xs:block">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm</div>
         </div>
       </div>
       
-      <div class="flex items-center gap-2">
-        <button onclick="openApiKeyModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-2 rounded-lg border border-slate-600 flex items-center gap-1.5 transition shadow-sm">
-          <i class="ph-bold ph-key"></i> <span id="apiKeyBtnText">Cấu hình 2 API Key</span>
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <button onclick="openApiKeyModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-slate-600 flex items-center gap-1 transition shadow-sm">
+          <i class="ph-bold ph-key"></i> <span id="apiKeyBtnText" class="truncate max-w-[90px] sm:max-w-none">Cấu hình 2 Key</span>
         </button>
-        <button onclick="resetAllData()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-2 rounded-lg border border-slate-600 flex items-center gap-1.5 transition">
-          <i class="ph-bold ph-arrow-counter-clockwise"></i> <span>Làm Mới</span>
+        <button onclick="resetAllData()" title="Làm mới dữ liệu" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs p-1.5 sm:px-3 sm:py-2 rounded-lg border border-slate-600 flex items-center gap-1 transition">
+          <i class="ph-bold ph-arrow-counter-clockwise"></i> <span class="hidden md:inline">Làm Mới</span>
         </button>
-        <button onclick="handleExportPDF()" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-4 py-2 rounded-lg shadow text-xs flex items-center gap-1.5 transition">
-          <i class="ph-bold ph-file-pdf text-base"></i> <span>Xuất PDF</span>
+        <button onclick="handleExportPDF()" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow text-[11px] sm:text-xs flex items-center gap-1 transition">
+          <i class="ph-bold ph-file-pdf text-sm sm:text-base"></i> <span class="hidden sm:inline">Xuất PDF</span><span class="sm:hidden">PDF</span>
         </button>
       </div>
     </div>
   </header>
 
   <!-- NỘI DUNG CHÍNH -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-grow space-y-6 no-print">
+  <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 w-full flex-grow space-y-4 sm:space-y-6 no-print">
 
     <!-- KHỐI QUÉT & NHẬN DIỆN GCN -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2">
-          <div class="p-2 bg-indigo-100 text-indigo-700 rounded-lg"><i class="ph-bold ph-scan text-xl"></i></div>
-          <div>
-            <h2 class="font-bold text-slate-800 text-base">Quét & Nhận Diện Giấy Chứng Nhận QSD Đất (PDF / Ảnh Sổ Đỏ)</h2>
-            <p class="text-xs text-slate-500">Tự động đọc thông tin và tự động khảo sát giá thị trường ngay khi nạp ảnh xong</p>
-          </div>
+      <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
+        <div class="p-1.5 sm:p-2 bg-indigo-100 text-indigo-700 rounded-lg flex-shrink-0"><i class="ph-bold ph-scan text-lg sm:text-xl"></i></div>
+        <div>
+          <h2 class="font-bold text-slate-800 text-xs sm:text-base">Quét Giấy Chứng Nhận QSD Đất (PDF / Ảnh Sổ Đỏ)</h2>
+          <p class="text-[11px] sm:text-xs text-slate-500">Tự động đọc thông tin & tìm TSSS ngay sau khi nạp ảnh. <em>(Có thể bỏ qua nếu nhập tay)</em></p>
         </div>
       </div>
 
-      <div class="p-6">
+      <div class="p-4 sm:p-6">
         <input type="file" id="gcnFileInput" accept="image/*,application/pdf" multiple class="hidden" onchange="handleFileSelected(event)">
         
-        <label for="gcnFileInput" class="block border-2 border-dashed border-indigo-300 hover:border-indigo-600 rounded-xl p-6 text-center transition bg-indigo-50/20 hover:bg-indigo-50/50 cursor-pointer">
-          <div class="w-12 h-12 mx-auto rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl mb-2 shadow-inner">
+        <label for="gcnFileInput" class="block border-2 border-dashed border-indigo-300 hover:border-indigo-600 rounded-xl p-4 sm:p-6 text-center transition bg-indigo-50/20 hover:bg-indigo-50/50 cursor-pointer">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 mx-auto rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl sm:text-2xl mb-2 shadow-inner">
             <i class="ph-bold ph-cloud-arrow-up"></i>
           </div>
-          <div class="font-bold text-slate-800 text-sm mb-1">Bấm vào đây để chọn ảnh hoặc file PDF Sổ đỏ / Sổ hồng (Nếu có)</div>
-          <div class="text-xs text-slate-500 mb-2">Hỗ trợ tệp PDF hoặc chọn nhiều file ảnh (.JPG, .PNG) cùng lúc</div>
+          <div class="font-bold text-slate-800 text-xs sm:text-sm mb-1">Bấm vào đây để chọn ảnh hoặc file PDF Sổ đỏ / Sổ hồng</div>
+          <div class="text-[11px] sm:text-xs text-slate-500 mb-2">Hỗ trợ PDF hoặc nhiều ảnh chụp (.JPG, .PNG) cùng lúc</div>
           <div class="inline-flex items-center gap-1.5 text-xs text-indigo-700 font-bold bg-white px-3 py-1.5 rounded-lg border border-indigo-200 shadow-sm hover:bg-indigo-50">
-            <i class="ph-bold ph-folder-open"></i> Chọn tệp từ máy tính / điện thoại
+            <i class="ph-bold ph-folder-open"></i> Chọn tệp từ máy / điện thoại
           </div>
         </label>
 
@@ -97,38 +99,38 @@
           <div class="flex items-center justify-between text-xs font-semibold text-slate-600">
             <span id="filesCountBadge" class="text-indigo-700 font-bold">Đã nạp 0 tệp</span>
             <div class="flex items-center gap-3">
-              <button onclick="executeOCRWithRealAI()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs font-bold shadow flex items-center gap-1">
-                <i class="ph-bold ph-sparkle"></i> Trích Xuất Lại Bằng AI
+              <button onclick="executeOCRWithRealAI()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded text-xs font-bold shadow flex items-center gap-1">
+                <i class="ph-bold ph-sparkle"></i> Đọc lại AI
               </button>
-              <button onclick="clearAllFiles()" class="text-rose-600 hover:underline">Xóa danh sách</button>
+              <button onclick="clearAllFiles()" class="text-rose-600 hover:underline">Xóa hết</button>
             </div>
           </div>
-          <div id="thumbnailsList" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3"></div>
+          <div id="thumbnailsList" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5 sm:gap-3"></div>
         </div>
 
-        <div id="ocrStatusNotice" class="hidden mt-4 p-4 rounded-xl text-sm shadow-sm flex items-start gap-3"></div>
+        <div id="ocrStatusNotice" class="hidden mt-4 p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm shadow-sm flex items-start gap-2.5"></div>
       </div>
     </div>
 
     <!-- KHỐI 1: THÔNG TIN TÀI SẢN MỤC TIÊU -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+      <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
         <div class="flex items-center gap-2">
-          <div class="p-2 bg-emerald-100 text-emerald-700 rounded-lg"><i class="ph-bold ph-map-pin text-xl"></i></div>
+          <div class="p-1.5 sm:p-2 bg-emerald-100 text-emerald-700 rounded-lg flex-shrink-0"><i class="ph-bold ph-map-pin text-lg sm:text-xl"></i></div>
           <div>
-            <h2 class="font-bold text-slate-800 text-base">Thông Tin Tài Sản Mục Tiêu (Nhập Tay Thủ Công Hoặc Trích Xuất Sổ)</h2>
-            <p class="text-xs text-slate-500">Chỉ cần tối thiểu Xã/Phường và Huyện/Tỉnh là có thể khảo sát giá & tìm BĐS so sánh ngay</p>
+            <h2 class="font-bold text-slate-800 text-xs sm:text-base">Thông Tin Tài Sản Mục Tiêu (Nhập Tay Hoặc Đọc Từ Sổ)</h2>
+            <p class="text-[11px] sm:text-xs text-slate-500">Tối thiểu chỉ cần Xã/Phường và Huyện/Tỉnh là khảo sát giá được ngay</p>
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <span id="targetBadgeLot" class="text-xs font-semibold px-2.5 py-1 rounded bg-slate-200 text-slate-600">Chưa nạp tài sản</span>
-          <span id="targetBadgeType" class="text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 text-slate-500 border border-slate-300">Đang chờ thông số</span>
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <span id="targetBadgeLot" class="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-600">Chưa nạp tài sản</span>
+          <span id="targetBadgeType" class="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-300">Chờ thông số</span>
         </div>
       </div>
 
-      <div class="p-6 space-y-5">
-        <!-- HÀNG 1: THÔNG TIN HÀNH CHÍNH & VỊ TRÍ ĐỊA LÝ -->
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 text-xs font-medium">
+      <div class="p-4 sm:p-6 space-y-4 sm:space-y-5">
+        <!-- HÀNG 1: THÔNG TIN HÀNH CHÍNH -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 text-xs font-medium">
           <div>
             <label class="block text-slate-500 mb-1">Thửa đất / Tờ BĐ <span class="text-[10px] text-slate-400 font-normal">(Có thể để trống)</span></label>
             <input type="text" id="targetLot" placeholder="Để trống nếu chưa có sổ" class="w-full font-semibold border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
@@ -145,77 +147,77 @@
             <label class="block text-emerald-800 font-bold mb-1">Xã / Phường * <span class="text-[10px] text-emerald-600 font-normal">(Cũ/mới đều được)</span></label>
             <input type="text" id="targetWard" placeholder="Ví dụ: Phường Trần Quang Diệu" class="w-full font-semibold border-2 border-emerald-400 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30" oninput="updateTargetOverview()">
           </div>
-          <div>
+          <div class="sm:col-span-2 lg:col-span-1">
             <label class="block text-emerald-800 font-bold mb-1">Huyện/TP & Tỉnh * <span class="text-[10px] text-emerald-600 font-normal">(Cũ/mới đều được)</span></label>
             <input type="text" id="targetDistrictProvince" placeholder="Ví dụ: TP Quy Nhơn, Bình Định" class="w-full font-semibold border-2 border-emerald-400 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30" oninput="updateTargetOverview()">
           </div>
         </div>
 
-        <!-- HÀNG 2: DIỆN TÍCH & KÍCH THƯỚC HÌNH THỂ THAM KHẢO -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 text-xs font-medium bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <!-- HÀNG 2: DIỆN TÍCH & KÍCH THƯỚC -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 text-xs font-medium bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200">
           <div>
             <label class="block text-slate-700 font-semibold mb-1">Tổng diện tích (m²) *</label>
-            <input type="number" id="targetArea" placeholder="Ví dụ: 60" step="0.1" class="w-full font-bold text-slate-900 border border-slate-300 rounded-lg p-2.5 text-sm" oninput="recalculateTargetValues()">
+            <input type="number" id="targetArea" placeholder="Ví dụ: 60" step="0.1" class="w-full font-bold text-slate-900 border border-slate-300 rounded-lg p-2.5 text-sm bg-white" oninput="recalculateTargetValues()">
           </div>
           <div>
             <label class="block text-slate-500 mb-1">Diện tích đất ở (ODT/ONT) (m²)</label>
-            <input type="number" id="targetResArea" placeholder="Ví dụ: 60" step="0.1" class="w-full text-emerald-700 font-semibold border border-slate-300 rounded-lg p-2.5 text-sm" oninput="recalculateTargetValues()">
+            <input type="number" id="targetResArea" placeholder="Ví dụ: 60" step="0.1" class="w-full text-emerald-700 font-semibold border border-slate-300 rounded-lg p-2.5 text-sm bg-white" oninput="recalculateTargetValues()">
           </div>
           <div>
             <label class="block text-slate-500 mb-1">Diện tích đất Vườn/CLN (m²)</label>
-            <input type="number" id="targetAgriArea" placeholder="0.0" step="0.1" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" oninput="recalculateTargetValues()">
+            <input type="number" id="targetAgriArea" placeholder="0.0" step="0.1" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white" oninput="recalculateTargetValues()">
           </div>
           <div>
             <label class="block text-slate-500 mb-1">Mặt tiền (m) × Sâu (m) tham khảo</label>
             <div class="grid grid-cols-2 gap-2">
-              <input type="number" id="targetFrontage" placeholder="MT (m)" step="0.01" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium" oninput="recalculateTargetValues()">
-              <input type="number" id="targetDepth" placeholder="Sâu (m)" step="0.01" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium" oninput="recalculateTargetValues()">
+              <input type="number" id="targetFrontage" placeholder="MT (m)" step="0.01" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium bg-white" oninput="recalculateTargetValues()">
+              <input type="number" id="targetDepth" placeholder="Sâu (m)" step="0.01" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium bg-white" oninput="recalculateTargetValues()">
             </div>
           </div>
-          <div>
+          <div class="sm:col-span-2 lg:col-span-1">
             <label class="block text-slate-500 mb-1">Vị trí & Lộ giới đường (m)</label>
             <div class="grid grid-cols-2 gap-2">
               <select id="targetPosType" class="border border-slate-300 rounded-lg p-2.5 text-xs bg-white" onchange="recalculateTargetValues()">
                 <option value="mat_tien">Mặt tiền</option>
-                <option value="hem_oto" selected>Hẻm/Đường ô tô (≥3.5m)</option>
-                <option value="hem_bagac">Hẻm ba gác (2.5 - 3m)</option>
+                <option value="hem_oto" selected>Hẻm ô tô (≥3.5m)</option>
+                <option value="hem_bagac">Hẻm ba gác (2.5-3m)</option>
                 <option value="hem_nho">Hẻm nhỏ (&lt;2.5m)</option>
               </select>
-              <input type="number" id="targetRoadWidth" placeholder="Lộ giới" step="0.1" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium" oninput="recalculateTargetValues()">
+              <input type="number" id="targetRoadWidth" placeholder="Lộ giới" step="0.1" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium bg-white" oninput="recalculateTargetValues()">
             </div>
           </div>
         </div>
 
         <!-- KHỐI ĐỊNH GIÁ CTXD -->
-        <div class="border border-amber-200 bg-amber-50/40 rounded-xl p-4">
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-2">
-              <i class="ph-bold ph-house-line text-amber-700 text-lg"></i>
-              <span class="font-bold text-slate-800 text-xs uppercase tracking-wide">Công Trình Xây Dựng (CTXD) Trên Đất (Tùy Chọn)</span>
+        <div class="border border-amber-200 bg-amber-50/40 rounded-xl p-3.5 sm:p-4">
+          <div class="flex items-center justify-between mb-2.5">
+            <div class="flex items-center gap-1.5 sm:gap-2">
+              <i class="ph-bold ph-house-line text-amber-700 text-base sm:text-lg"></i>
+              <span class="font-bold text-slate-800 text-[11px] sm:text-xs uppercase tracking-wide">Công Trình Xây Dựng (CTXD) Trên Đất (Tùy Chọn)</span>
             </div>
-            <span class="text-xs text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 font-medium">Bóc tách theo suất vốn đầu tư</span>
+            <span class="text-[10px] sm:text-xs text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 font-medium hidden sm:inline">Suất vốn đầu tư</span>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3 text-xs">
             <div>
               <label class="block text-slate-600 mb-1">Loại công trình</label>
               <input type="text" id="targetBuildingType" placeholder="Nhà cấp 4 / 2 tầng / Đất trống" class="w-full border border-slate-300 rounded-lg p-2 bg-white" oninput="recalculateTargetValues()">
             </div>
             <div>
               <label class="block text-slate-600 mb-1">Diện tích sàn XD (m²)</label>
-              <input type="number" id="targetBuildingArea" placeholder="0.0" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white font-semibold" onchange="recalculateTargetValues()">
+              <input type="number" id="targetBuildingArea" placeholder="0.0" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white font-semibold" oninput="recalculateTargetValues()">
             </div>
             <div>
               <label class="block text-slate-600 mb-1">Đơn giá XD mới (tr/m²)</label>
-              <input type="number" id="targetBuildingCost" value="3.5" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white" onchange="recalculateTargetValues()">
+              <input type="number" id="targetBuildingCost" value="3.5" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white" oninput="recalculateTargetValues()">
             </div>
             <div>
               <label class="block text-slate-600 mb-1">Tỷ lệ CLCL (%)</label>
-              <input type="number" id="targetBuildingQuality" value="70" step="5" class="w-full border border-slate-300 rounded-lg p-2 bg-white" onchange="recalculateTargetValues()">
+              <input type="number" id="targetBuildingQuality" value="70" step="5" class="w-full border border-slate-300 rounded-lg p-2 bg-white" oninput="recalculateTargetValues()">
             </div>
-            <div>
+            <div class="sm:col-span-2 lg:col-span-1">
               <label class="block text-slate-600 mb-1">Ước tính giá trị CTXD</label>
-              <div id="targetBuildingValueDisplay" class="p-2 bg-amber-100/80 border border-amber-300 rounded-lg font-bold text-amber-900 text-sm">
+              <div id="targetBuildingValueDisplay" class="p-2 bg-amber-100/80 border border-amber-300 rounded-lg font-bold text-amber-900 text-xs sm:text-sm">
                 0.00 Tỷ VNĐ
               </div>
             </div>
@@ -223,27 +225,27 @@
         </div>
 
         <!-- HÀNG NÚT BẤM KHẢO SÁT DUY NHẤT -->
-        <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
-          <div class="flex flex-wrap items-center gap-4 text-xs font-semibold">
-            <div class="flex items-center gap-2">
-              <span class="text-slate-600">Chiết khấu thương lượng:</span>
-              <input type="number" id="discountRate" value="10" min="0" max="30" class="w-16 border border-slate-300 rounded p-1 text-center font-bold" onchange="recalculateTargetValues()"> %
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+          <div class="flex flex-wrap items-center gap-3 text-xs font-semibold">
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-600">Chiết khấu:</span>
+              <input type="number" id="discountRate" value="10" min="0" max="30" class="w-14 border border-slate-300 rounded p-1 text-center font-bold bg-white" onchange="recalculateTargetValues()"> %
             </div>
-            <div class="flex items-center gap-2">
-              <span class="text-slate-600">Tỷ lệ cho vay tối đa (LTV):</span>
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-600">LTV tối đa:</span>
               <select id="ltvSelect" class="border border-slate-300 rounded p-1 text-xs bg-white font-bold text-blue-700" onchange="recalculateTargetValues()">
-                <option value="0.70" selected>70% (Chuẩn an toàn Tín dụng)</option>
-                <option value="0.75">75% (Khách hàng ưu tiên)</option>
-                <option value="0.80">80% (Khung tối đa quy định)</option>
+                <option value="0.70" selected>70% (An toàn)</option>
+                <option value="0.75">75% (Ưu tiên)</option>
+                <option value="0.80">80% (Tối đa)</option>
               </select>
             </div>
           </div>
           
           <div class="flex items-center gap-2">
-            <button onclick="recalculateTargetValues()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition flex items-center gap-1.5 shadow">
-              <i class="ph-bold ph-arrows-clockwise"></i> Cập Nhật Bảng Tính
+            <button onclick="recalculateTargetValues()" class="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-3.5 py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow">
+              <i class="ph-bold ph-arrows-clockwise"></i> Cập Nhật
             </button>
-            <button onclick="triggerManualSurvey()" id="btnManualSurvey" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-5 py-2.5 rounded-lg transition flex items-center gap-2 shadow-md active:scale-95">
+            <button onclick="triggerManualSurvey()" id="btnManualSurvey" class="flex-2 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-md active:scale-95">
               <i class="ph-bold ph-magnifying-glass-plus text-base text-amber-300"></i> Khảo Sát Giá Thị Trường & Tìm TSSS
             </button>
           </div>
@@ -251,85 +253,80 @@
       </div>
     </div>
 
-    <!-- KHỐI 2: TỔNG QUAN GIÁ TRỊ & HẠN MỨC CHO VAY -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+    <!-- KHỐI 2: TỔNG QUAN CHỈ SỐ -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+      <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
         <div>
-          <div class="text-xs text-slate-500 font-medium">Đơn giá đất khảo sát bình quân</div>
-          <div id="statAvgSurveyPrice" class="text-2xl font-bold text-slate-900 mt-1">-- <span class="text-xs font-normal text-slate-500">tr/m²</span></div>
-          <div class="text-[11px] text-slate-400 mt-0.5">Trọng số độ tương đồng BĐS</div>
+          <div class="text-[11px] sm:text-xs text-slate-500 font-medium">Đơn giá đất khảo sát</div>
+          <div id="statAvgSurveyPrice" class="text-lg sm:text-2xl font-bold text-slate-900 mt-0.5 sm:mt-1">-- <span class="text-[10px] sm:text-xs font-normal text-slate-500">tr/m²</span></div>
+          <div class="text-[10px] text-slate-400 mt-0.5 hidden sm:block">Trọng số độ tương đồng</div>
         </div>
-        <div class="w-11 h-11 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xl"><i class="ph-bold ph-scales"></i></div>
+        <div class="w-8 h-8 sm:w-11 sm:h-11 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-base sm:text-xl flex-shrink-0"><i class="ph-bold ph-scales"></i></div>
       </div>
 
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+      <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
         <div>
-          <div class="text-xs text-slate-500 font-medium">Đơn giá đất định giá đề xuất</div>
-          <div id="statProposedPrice" class="text-2xl font-bold text-emerald-600 mt-1">-- <span class="text-xs font-normal text-emerald-700">tr/m²</span></div>
-          <div class="text-[11px] text-amber-600 font-medium mt-0.5">-10% chiết khấu thanh khoản</div>
+          <div class="text-[11px] sm:text-xs text-slate-500 font-medium">Đơn giá đất đề xuất</div>
+          <div id="statProposedPrice" class="text-lg sm:text-2xl font-bold text-emerald-600 mt-0.5 sm:mt-1">-- <span class="text-[10px] sm:text-xs font-normal text-emerald-700">tr/m²</span></div>
+          <div class="text-[10px] text-amber-600 font-medium mt-0.5 hidden sm:block">-10% chiết khấu thanh khoản</div>
         </div>
-        <div class="w-11 h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl"><i class="ph-bold ph-tag"></i></div>
+        <div class="w-8 h-8 sm:w-11 sm:h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-base sm:text-xl flex-shrink-0"><i class="ph-bold ph-tag"></i></div>
       </div>
 
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+      <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
         <div>
-          <div class="text-xs text-slate-500 font-medium">Tổng Giá Trị TSBD (Đất + Nhà)</div>
-          <div id="statTotalAssetValue" class="text-2xl font-bold text-slate-900 mt-1">-- <span class="text-xs font-normal text-slate-500">Tỷ VNĐ</span></div>
-          <div id="statAssetBreakdown" class="text-[11px] text-slate-500 mt-0.5">Chưa có dữ liệu định giá</div>
+          <div class="text-[11px] sm:text-xs text-slate-500 font-medium">Tổng Giá Trị TSBD</div>
+          <div id="statTotalAssetValue" class="text-lg sm:text-2xl font-bold text-slate-900 mt-0.5 sm:mt-1">-- <span class="text-[10px] sm:text-xs font-normal text-slate-500">Tỷ</span></div>
+          <div id="statAssetBreakdown" class="text-[10px] text-slate-500 mt-0.5 truncate max-w-[130px] sm:max-w-none">Chưa có dữ liệu</div>
         </div>
-        <div class="w-11 h-11 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl"><i class="ph-bold ph-bank"></i></div>
+        <div class="w-8 h-8 sm:w-11 sm:h-11 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-base sm:text-xl flex-shrink-0"><i class="ph-bold ph-bank"></i></div>
       </div>
 
-      <div class="bg-slate-900 text-white p-4 rounded-xl border border-slate-800 shadow-sm flex items-center justify-between">
+      <div class="bg-slate-900 text-white p-3 sm:p-4 rounded-xl border border-slate-800 shadow-sm flex items-center justify-between">
         <div>
-          <div class="text-xs text-slate-300 font-medium">Hạn mức cho vay (LTV 70%)</div>
-          <div id="statMaxLoanLimit" class="text-2xl font-bold text-emerald-400 mt-1">-- <span class="text-xs font-normal text-slate-300">Tỷ VNĐ</span></div>
-          <div class="text-[11px] text-emerald-200/80 mt-0.5">Dư nợ giải ngân tối đa an toàn</div>
+          <div class="text-[11px] sm:text-xs text-slate-300 font-medium">Hạn mức vay (LTV 70%)</div>
+          <div id="statMaxLoanLimit" class="text-lg sm:text-2xl font-bold text-emerald-400 mt-0.5 sm:mt-1">-- <span class="text-[10px] sm:text-xs font-normal text-slate-300">Tỷ</span></div>
+          <div class="text-[10px] text-emerald-200/80 mt-0.5 hidden sm:block">Dư nợ giải ngân an toàn</div>
         </div>
-        <div class="w-11 h-11 rounded-lg bg-slate-800 text-emerald-400 flex items-center justify-center text-xl border border-slate-700"><i class="ph-bold ph-money"></i></div>
+        <div class="w-8 h-8 sm:w-11 sm:h-11 rounded-lg bg-slate-800 text-emerald-400 flex items-center justify-center text-base sm:text-xl border border-slate-700 flex-shrink-0"><i class="ph-bold ph-money"></i></div>
       </div>
     </div>
 
     <!-- KHỐI 3: BẢN ĐỒ GIS -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2">
-          <i class="ph-bold ph-map-trifold text-blue-600 text-xl"></i>
+      <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <i class="ph-bold ph-map-trifold text-blue-600 text-base sm:text-xl"></i>
           <div>
-            <h3 class="font-bold text-slate-800 text-sm">Bản Đồ Định Vị GIS & Bán Kính Khảo Sát BĐS So Sánh</h3>
-            <span class="text-xs text-slate-500">Tọa độ tương đối theo địa danh, lớp vệ tinh Google Maps và cự ly</span>
+            <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Bản Đồ GIS & Bán Kính Khảo Sát BĐS So Sánh</h3>
+            <span class="text-[10px] sm:text-xs text-slate-500 hidden sm:inline">Lớp vệ tinh Google Maps & cự ly tương đối</span>
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
-          <button onclick="zoomToTarget()" class="text-xs bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded font-medium flex items-center gap-1 shadow-sm">
-            <i class="ph-bold ph-crosshair"></i> Zoom Thửa Đất (17x)
+        <div class="flex items-center gap-1.5">
+          <button onclick="zoomToTarget()" class="text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 sm:px-2.5 py-1 rounded font-medium flex items-center gap-1 shadow-sm">
+            <i class="ph-bold ph-crosshair"></i> Zoom Thửa
           </button>
-          <button onclick="fitAllMarkersSafe()" class="text-xs bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded font-medium flex items-center gap-1 shadow-sm">
+          <button onclick="fitAllMarkersSafe()" class="text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 sm:px-2.5 py-1 rounded font-medium flex items-center gap-1 shadow-sm">
             <i class="ph-bold ph-arrows-out"></i> Bao Quát
           </button>
-          <div class="h-4 w-px bg-slate-300 mx-1"></div>
-          <button id="btnMapSat" onclick="setMapLayer('satellite')" class="text-xs bg-blue-600 text-white px-2.5 py-1.5 rounded font-medium shadow-sm">🛰️ Vệ Tinh Google</button>
-          <button id="btnMapOSM" onclick="setMapLayer('osm')" class="text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 px-2.5 py-1.5 rounded font-medium border border-slate-300">🗺️ Bản Đồ Đường</button>
+          <div class="h-3 w-px bg-slate-300 mx-0.5"></div>
+          <button id="btnMapSat" onclick="setMapLayer('satellite')" class="text-[11px] bg-blue-600 text-white px-2 py-1 rounded font-medium shadow-sm">🛰️ Vệ Tinh</button>
+          <button id="btnMapOSM" onclick="setMapLayer('osm')" class="text-[11px] bg-slate-100 text-slate-700 hover:bg-slate-200 px-2 py-1 rounded font-medium border border-slate-300">🗺️ Đường</button>
         </div>
-      </div>
-
-      <div class="bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-xs text-amber-900 flex items-center gap-2">
-        <i class="ph-fill ph-warning-circle text-amber-600 text-base flex-shrink-0"></i>
-        <span><strong>Lưu ý nghiệp vụ:</strong> Tọa độ trên bản đồ mang tính chất <strong>tham khảo tương đối</strong> theo địa danh. Cán bộ tín dụng <strong>bắt buộc khảo sát thực địa trực tiếp</strong>, xác định mốc giới và quy hoạch tại địa phương.</span>
       </div>
 
       <div class="relative">
-        <div id="gisMap" class="w-full h-80 bg-slate-100 z-10"></div>
-        <div class="absolute bottom-3 right-3 z-20 bg-white/95 backdrop-blur px-3 py-2 rounded-lg shadow-md border border-slate-200 text-xs flex items-center gap-4">
-          <div class="flex items-center gap-1.5 font-medium text-slate-700">
-            <span class="w-3 h-3 rounded-full bg-rose-600 inline-block border border-white shadow"></span> Thửa đất mục tiêu
+        <div id="gisMap" class="w-full h-64 sm:h-80 bg-slate-100 z-10"></div>
+        <div class="absolute bottom-2 right-2 z-20 bg-white/95 backdrop-blur px-2.5 py-1.5 rounded-lg shadow border border-slate-200 text-[10px] sm:text-xs flex items-center gap-2.5 sm:gap-4">
+          <div class="flex items-center gap-1 font-medium text-slate-700">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block border border-white"></span> Thửa đất
           </div>
-          <div class="flex items-center gap-1.5 font-medium text-slate-700">
-            <span class="w-3 h-3 rounded-full bg-blue-600 inline-block border border-white shadow"></span> BĐS so sánh lân cận
+          <div class="flex items-center gap-1 font-medium text-slate-700">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block border border-white"></span> BĐS so sánh
           </div>
-          <div class="flex items-center gap-1.5 font-medium text-slate-700">
-            <span class="w-3 h-3 rounded-full bg-blue-300/40 inline-block border border-blue-500"></span> Bán kính 1.000m
+          <div class="flex items-center gap-1 font-medium text-slate-700 hidden sm:flex">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-300/40 inline-block border border-blue-500"></span> Bán kính 1.000m
           </div>
         </div>
       </div>
@@ -337,63 +334,59 @@
 
     <!-- KHỐI 4: THU THẬP TIN RAO ĐA KÊNH -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+      <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200">
         <div class="flex items-center gap-2">
-          <div class="p-2 bg-indigo-100 text-indigo-700 rounded-lg"><i class="ph-bold ph-magnifying-glass text-xl"></i></div>
+          <div class="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg flex-shrink-0"><i class="ph-bold ph-magnifying-glass text-base sm:text-xl"></i></div>
           <div>
-            <h3 class="font-bold text-slate-800 text-sm">Cổng Mở Trực Tiếp 5 Sàn BĐS Lớn & Dán Tin Rao Môi Giới</h3>
-            <span class="text-xs text-slate-500">Tra cứu thêm hoặc dán tin nhắn Zalo để AI trích xuất vào bảng so sánh</span>
+            <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Cổng Mở Trực Tiếp 5 Sàn BĐS Lớn & Dán Tin Môi Giới</h3>
+            <span class="text-[11px] text-slate-500">Tra cứu nhanh hoặc dán tin Zalo để tự trích xuất vào bảng so sánh</span>
           </div>
         </div>
       </div>
 
-      <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="p-3.5 sm:p-4 grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
         <!-- Dán tin thủ công / Zalo -->
         <div class="space-y-2">
           <div class="flex items-center justify-between text-xs font-semibold text-slate-700">
-            <span>Dán nội dung tin rao từ Zalo / Facebook môi giới:</span>
+            <span>Dán tin rao từ Zalo / Facebook môi giới:</span>
             <button onclick="pasteFromClipboard()" class="text-blue-600 hover:underline flex items-center gap-1">
-              <i class="ph-bold ph-clipboard"></i> Dán từ Clipboard
+              <i class="ph-bold ph-clipboard"></i> Dán Clipboard
             </button>
           </div>
           <textarea id="manualRawText" rows="3" placeholder="Ví dụ: Cần bán đất hẻm 3m đường Hùng Vương P. Trần Quang Diệu, DT 55m2 thổ cư ODT, ngang 4.5m, giá 1 tỷ 150 triệu bớt lộc. LH 0905..." class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500"></textarea>
-          <div class="flex justify-between items-center">
-            <span class="text-[11px] text-slate-400 italic">Hỗ trợ dán tin rao tự do, AI tự động tách diện tích & giá</span>
+          <div class="flex justify-end">
             <button onclick="parseManualText()" class="bg-slate-800 hover:bg-slate-900 text-white font-medium text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 shadow">
-              <i class="ph-bold ph-plus-circle"></i> Trích Xuất & Thêm Vào Bảng
+              <i class="ph-bold ph-plus-circle"></i> Trích Xuất Vào Bảng
             </button>
           </div>
         </div>
 
         <!-- 5 Cổng Tra Cứu Trực Tiếp Đa Kênh -->
-        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs space-y-2.5">
-          <div class="flex items-center justify-between">
-            <div class="font-bold text-slate-700 flex items-center gap-1.5">
-              <i class="ph-bold ph-globe text-blue-600"></i> Tra Cứu Trực Tiếp 5 Kênh Rao Bán Lớn
-            </div>
-            <span class="text-[10px] text-slate-500 bg-slate-200/60 px-2 py-0.5 rounded">Tự động lọc theo địa bàn</span>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs space-y-2">
+          <div class="font-bold text-slate-700 flex items-center gap-1.5">
+            <i class="ph-bold ph-globe text-blue-600"></i> Tra Cứu Trực Tiếp 5 Kênh Lớn
           </div>
 
-          <div class="grid grid-cols-2 gap-2">
-            <a id="linkQuickFb" href="https://www.google.com/search?q=site:facebook.com/groups+b%C3%A1n+%C4%91%E1%BA%A5t" target="_blank" class="p-2 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg flex items-center gap-2 text-[11px] font-semibold text-blue-700 shadow-sm transition">
-              <i class="ph-bold ph-facebook-logo text-base"></i> Group FB BĐS Địa Phương
+          <div class="grid grid-cols-2 gap-1.5 sm:gap-2">
+            <a id="linkQuickFb" href="https://www.google.com/search?q=site:facebook.com/groups+b%C3%A1n+%C4%91%E1%BA%A5t" target="_blank" class="p-2 bg-white hover:bg-blue-50 border border-slate-200 rounded-lg flex items-center gap-1.5 text-[11px] font-semibold text-blue-700 shadow-sm truncate">
+              <i class="ph-bold ph-facebook-logo text-sm flex-shrink-0"></i> <span class="truncate">Group FB BĐS</span>
             </a>
-            <a id="linkQuickBds" href="https://batdongsan.com.vn" target="_blank" class="p-2 bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-300 rounded-lg flex items-center gap-2 text-[11px] font-semibold text-rose-700 shadow-sm transition">
-              <i class="ph-bold ph-buildings text-base"></i> Batdongsan.com.vn
+            <a id="linkQuickBds" href="https://batdongsan.com.vn" target="_blank" class="p-2 bg-white hover:bg-rose-50 border border-slate-200 rounded-lg flex items-center gap-1.5 text-[11px] font-semibold text-rose-700 shadow-sm truncate">
+              <i class="ph-bold ph-buildings text-sm flex-shrink-0"></i> <span class="truncate">Batdongsan.com</span>
             </a>
-            <a id="linkQuickChotot" href="https://chotot.com" target="_blank" class="p-2 bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 rounded-lg flex items-center gap-2 text-[11px] font-semibold text-amber-800 shadow-sm transition">
-              <i class="ph-bold ph-storefront text-base"></i> Chợ Tốt Nhà Đất
+            <a id="linkQuickChotot" href="https://chotot.com" target="_blank" class="p-2 bg-white hover:bg-amber-50 border border-slate-200 rounded-lg flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 shadow-sm truncate">
+              <i class="ph-bold ph-storefront text-sm flex-shrink-0"></i> <span class="truncate">Chợ Tốt Nhà</span>
             </a>
-            <a id="linkQuickAlonhadat" href="https://alonhadat.com.vn" target="_blank" class="p-2 bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-lg flex items-center gap-2 text-[11px] font-semibold text-emerald-800 shadow-sm transition">
-              <i class="ph-bold ph-house text-base"></i> Alonhadat.com.vn
+            <a id="linkQuickAlonhadat" href="https://alonhadat.com.vn" target="_blank" class="p-2 bg-white hover:bg-emerald-50 border border-slate-200 rounded-lg flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800 shadow-sm truncate">
+              <i class="ph-bold ph-house text-sm flex-shrink-0"></i> <span class="truncate">Alonhadat.com</span>
             </a>
           </div>
 
-          <div class="pt-1 border-t border-slate-200 flex items-center gap-2">
+          <div class="pt-1 border-t border-slate-200 flex items-center gap-1.5">
             <div id="dorkingSyntaxBox" class="bg-white flex-grow p-1.5 rounded border border-slate-200 font-mono text-[10px] text-slate-600 truncate select-all">
               site:facebook.com/groups ("bán đất" OR "bán nhà")
             </div>
-            <a id="btnSearchGoogle" href="https://www.google.com" target="_blank" class="text-[11px] bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 px-2 py-1.5 rounded flex items-center gap-1 font-semibold flex-shrink-0">
+            <a id="btnSearchGoogle" href="https://www.google.com" target="_blank" class="text-[10px] bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 px-2 py-1.5 rounded flex items-center gap-1 font-semibold flex-shrink-0">
               <i class="ph-bold ph-google-logo"></i> Dorking
             </a>
           </div>
@@ -403,52 +396,52 @@
 
     <!-- KHỐI 5: GOOGLE AI OVERVIEW -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="p-4 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border-b border-blue-100 flex items-center gap-2">
-        <i class="ph-bold ph-sparkle text-indigo-600 text-lg"></i>
-        <h3 class="font-bold text-slate-800 text-sm">Google AI Overview - Nhận Định Thị Trường Khu Vực Khảo Sát</h3>
+      <div class="p-3.5 sm:p-4 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border-b border-blue-100 flex items-center gap-2">
+        <i class="ph-bold ph-sparkle text-indigo-600 text-base sm:text-lg"></i>
+        <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Google AI Overview - Nhận Định Thị Trường Khu Vực Khảo Sát</h3>
       </div>
-      <div class="p-5 text-xs text-slate-700 leading-relaxed space-y-3">
+      <div class="p-4 sm:p-5 text-xs text-slate-700 leading-relaxed space-y-2.5">
         <p id="aiSummaryP1">
-          Hệ thống đang sẵn sàng. Vui lòng nhập địa chỉ xã/phường hoặc nạp Giấy chứng nhận quyền sử dụng đất để nhận định giá trị thị trường và gợi ý định giá tín dụng an toàn.
+          Hệ thống đang sẵn sàng. Vui lòng nhập địa chỉ xã/phường hoặc nạp Giấy chứng nhận quyền sử dụng đất để nhận định giá trị thị trường và gợi ý định giá an toàn.
         </p>
-        <div id="aiSummaryTips" class="hidden bg-blue-50/50 border-l-4 border-blue-500 p-3 rounded-r-lg space-y-1">
-          <div class="font-semibold text-slate-800">Khuyến nghị trọng tâm cho Tờ trình Tín dụng:</div>
+        <div id="aiSummaryTips" class="hidden bg-blue-50/50 border-l-4 border-blue-500 p-2.5 sm:p-3 rounded-r-lg space-y-1">
+          <div class="font-semibold text-slate-800">Khuyến nghị thẩm định tín dụng:</div>
           <ul id="aiSummaryList" class="list-disc list-inside text-slate-600 space-y-0.5 text-[11px]"></ul>
         </div>
       </div>
     </div>
 
-    <!-- KHỐI 6: BẢNG SO SÁNH -->
+    <!-- KHỐI 6: BẢNG SO SÁNH (RESPONSIVE SCROLL) -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2">
-          <i class="ph-bold ph-table text-slate-700 text-lg"></i>
-          <h3 class="font-bold text-slate-800 text-sm">Danh Mục Tài Sản So Sánh & Chấm Điểm Tương Đồng Chuẩn Tín Dụng</h3>
+      <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <i class="ph-bold ph-table text-slate-700 text-base sm:text-lg"></i>
+          <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Danh Mục Tài Sản So Sánh & Chấm Điểm Tương Đồng</h3>
         </div>
-        <span id="compsCountBadge" class="text-xs text-slate-500">Chưa có tài sản so sánh</span>
+        <span id="compsCountBadge" class="text-[11px] sm:text-xs text-slate-500">Chưa có tài sản so sánh</span>
       </div>
 
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs">
-          <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 uppercase tracking-wider text-[11px]">
+        <table class="w-full text-left text-xs min-w-[700px] sm:min-w-full">
+          <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 uppercase tracking-wider text-[10px] sm:text-[11px]">
             <tr>
-              <th class="py-3 px-2 text-center">STT</th>
-              <th class="py-3 px-3">Địa Chỉ & Vị Trí Tiếp Giáp</th>
-              <th class="py-3 px-3">Diện Tích (m²)</th>
-              <th class="py-3 px-3">Kích Thước</th>
-              <th class="py-3 px-3">Giá Rao Bán</th>
-              <th class="py-3 px-3">Sau CK 10% (tr/m²)</th>
-              <th class="py-3 px-2 text-center">Độ Tương Đồng</th>
-              <th class="py-3 px-2 text-center">Cự Ly</th>
-              <th class="py-3 px-2 text-center">Nguồn Tin</th>
-              <th class="py-3 px-2 text-center text-rose-700">Thao Tác</th>
+              <th class="py-2.5 sm:py-3 px-2 text-center w-10">STT</th>
+              <th class="py-2.5 sm:py-3 px-3">Địa Chỉ & Vị Trí Tiếp Giáp</th>
+              <th class="py-2.5 sm:py-3 px-2 text-center">DT (m²)</th>
+              <th class="py-2.5 sm:py-3 px-2 text-center">Kích Thước</th>
+              <th class="py-2.5 sm:py-3 px-2.5 text-right">Giá Rao Bán</th>
+              <th class="py-2.5 sm:py-3 px-2.5 text-right">Sau CK 10%</th>
+              <th class="py-2.5 sm:py-3 px-2 text-center">Tương Đồng</th>
+              <th class="py-2.5 sm:py-3 px-2 text-center">Cự Ly</th>
+              <th class="py-2.5 sm:py-3 px-2 text-center">Nguồn Tin</th>
+              <th class="py-2.5 sm:py-3 px-2 text-center text-rose-700 w-24">Thao Tác</th>
             </tr>
           </thead>
           <tbody id="comparisonTableBody" class="divide-y divide-slate-200">
             <tr>
               <td colspan="10" class="text-center py-8 text-slate-400">
                 <i class="ph-bold ph-magnifying-glass text-2xl mb-1 block"></i>
-                Chưa có tài sản so sánh. Nhập xã/phường hoặc nạp ảnh GCN để bắt đầu khảo sát.
+                Chưa có tài sản so sánh. Nhập xã/phường hoặc nạp ảnh GCN để bắt đầu.
               </td>
             </tr>
           </tbody>
@@ -457,75 +450,118 @@
     </div>
   </main>
 
-  <!-- MODAL CẤU HÌNH API KEY VỚI 2 Ô LƯU RIÊNG CHO FREE TIER & PAY-AS-YOU-GO -->
-  <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-      <div class="flex items-center justify-between border-b pb-3">
-        <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
-          <i class="ph-bold ph-gear text-indigo-600 text-lg"></i> Cấu hình Google Gemini AI & Quản Lý 2 Khóa API
+  <!-- MODAL CẤU HÌNH API KEY VỚI TÍNH NĂNG XUẤT/NHẬP MÃ QR CỐ ĐỊNH -->
+  <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-3.5 my-auto max-h-[95vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b pb-2.5">
+        <h3 class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
+          <i class="ph-bold ph-gear text-indigo-600 text-base sm:text-lg"></i> Cấu hình Google Gemini AI & Quản Lý 2 Key
         </h3>
         <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-slate-600"><i class="ph-bold ph-x text-lg"></i></button>
       </div>
       
-      <p class="text-xs text-slate-500">
-        Bạn có thể lưu sẵn cả 2 mã API Key độc lập (Gói Miễn Phí và Gói Trả Phí). Chọn chế độ nào, ứng dụng sẽ tự động kích hoạt mã khóa tương ứng mà không cần dán lại.
+      <p class="text-[11px] sm:text-xs text-slate-500 leading-relaxed">
+        Lưu sẵn 2 mã API Key độc lập. Chọn chế độ nào, ứng dụng tự kích hoạt mã khóa tương ứng.
       </p>
 
-      <div class="space-y-3.5 text-xs">
+      <div class="space-y-3 text-xs">
         <!-- Ô 1: KHÓA CHO GÓI FREE TIER -->
-        <div id="boxModeFree" class="border rounded-xl p-3 bg-slate-50 transition border-slate-200">
-          <div class="flex items-center justify-between mb-1.5">
+        <div id="boxModeFree" class="border rounded-xl p-2.5 sm:p-3 bg-slate-50 transition border-slate-200">
+          <div class="flex items-center justify-between mb-1">
             <label class="flex items-center gap-2 font-bold text-slate-800 cursor-pointer">
               <input type="radio" name="apiMode" value="free" id="radioModeFree" class="text-indigo-600 focus:ring-indigo-500" onchange="updateApiModeUI()">
-              <span>1. API Key - Gói Miễn Phí (Free Tier)</span>
+              <span class="text-xs">1. API Key - Gói Miễn Phí (Free Tier)</span>
             </label>
-            <span id="badgeStatusFree" class="text-[10px] px-2 py-0.5 rounded font-semibold bg-slate-200 text-slate-600">Chưa lưu</span>
+            <span id="badgeStatusFree" class="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-slate-200 text-slate-600">Chưa lưu</span>
           </div>
-          <input type="password" id="geminiApiKeyFreeInput" placeholder="AIzaSy... (Khóa miễn phí từ AI Studio)" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 font-mono text-xs bg-white" oninput="updateKeyBadgeUI()">
-          <p class="text-[10px] text-slate-400 mt-1">Dành cho dự án chưa gắn thẻ thanh toán. Tự động điều tiết prompt chống vượt ngưỡng RPM.</p>
+          <input type="password" id="geminiApiKeyFreeInput" placeholder="AIzaSy... (Khóa miễn phí từ AI Studio)" class="w-full border border-slate-300 rounded-lg p-2 sm:p-2.5 focus:ring-2 focus:ring-indigo-500 font-mono text-xs bg-white" oninput="updateKeyBadgeUI()">
+          <p class="text-[10px] text-slate-400 mt-0.5">Dành cho dự án chưa gắn thẻ. Tự động giãn cách tránh nghẽn RPM.</p>
         </div>
 
         <!-- Ô 2: KHÓA CHO GÓI PAY-AS-YOU-GO -->
-        <div id="boxModePayg" class="border rounded-xl p-3 bg-slate-50 transition border-slate-200">
-          <div class="flex items-center justify-between mb-1.5">
+        <div id="boxModePayg" class="border rounded-xl p-2.5 sm:p-3 bg-slate-50 transition border-slate-200">
+          <div class="flex items-center justify-between mb-1">
             <label class="flex items-center gap-2 font-bold text-emerald-800 cursor-pointer">
               <input type="radio" name="apiMode" value="payg" id="radioModePayg" class="text-emerald-600 focus:ring-emerald-500" onchange="updateApiModeUI()">
-              <span class="flex items-center gap-1">2. API Key - Gói Trả Phí (Pay-As-You-Go <i class="ph-bold ph-lightning text-amber-500"></i>)</span>
+              <span class="text-xs flex items-center gap-1">2. API Key - Gói Trả Phí (Pay-As-You-Go <i class="ph-bold ph-lightning text-amber-500"></i>)</span>
             </label>
-            <span id="badgeStatusPayg" class="text-[10px] px-2 py-0.5 rounded font-semibold bg-slate-200 text-slate-600">Chưa lưu</span>
+            <span id="badgeStatusPayg" class="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-slate-200 text-slate-600">Chưa lưu</span>
           </div>
-          <input type="password" id="geminiApiKeyPaygInput" placeholder="AIzaSy... (Khóa từ Project đã liên kết thẻ thanh toán)" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 font-mono text-xs bg-white" oninput="updateKeyBadgeUI()">
-          <p class="text-[10px] text-slate-400 mt-1">Dành cho dự án đã bật Billing. Tốc độ cao, không chờ hàng đợi, băng thông lớn.</p>
+          <input type="password" id="geminiApiKeyPaygInput" placeholder="AIzaSy... (Khóa từ Project đã liên kết thẻ)" class="w-full border border-slate-300 rounded-lg p-2 sm:p-2.5 focus:ring-2 focus:ring-emerald-500 font-mono text-xs bg-white" oninput="updateKeyBadgeUI()">
+          <p class="text-[10px] text-slate-400 mt-0.5">Dành cho dự án đã bật Billing. Tốc độ cao 1–2s, không chờ đợi.</p>
         </div>
 
         <!-- BẬT/TẮT TÍNH NĂNG GOOGLE SEARCH GROUNDING -->
-        <div class="border border-indigo-100 rounded-xl p-3 bg-indigo-50/40 space-y-2">
+        <div class="border border-indigo-100 rounded-xl p-2.5 sm:p-3 bg-indigo-50/40 space-y-1.5">
           <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <i class="ph-bold ph-globe-hemisphere-east text-indigo-600 text-lg"></i>
+            <div class="flex items-center gap-1.5 sm:gap-2">
+              <i class="ph-bold ph-globe-hemisphere-east text-indigo-600 text-base sm:text-lg flex-shrink-0"></i>
               <div>
-                <span class="font-bold text-slate-800 block text-xs">Google Search Grounding (Neo Tìm Kiếm Web Thật)</span>
-                <span class="text-[10px] text-slate-500 block">AI tự động tìm kiếm trực tiếp trên internet để lấy link và tin rao BĐS thực tế.</span>
+                <span class="font-bold text-slate-800 block text-xs">Google Search Grounding (Neo Tìm Kiếm)</span>
+                <span class="text-[10px] text-slate-500 block">AI quét web trực tiếp để lấy link và tin rao BĐS thật.</span>
               </div>
             </div>
-            <label class="relative inline-flex items-center cursor-pointer">
+            <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-2">
               <input type="checkbox" id="chkSearchGrounding" class="sr-only peer" checked>
-              <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+              <div class="w-8 h-4 sm:w-9 sm:h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 sm:after:h-4 sm:after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
             </label>
           </div>
-          <p class="text-[10px] text-indigo-800/80 bg-white/70 p-2 rounded border border-indigo-100">
-            * <strong>Khuyên dùng:</strong> Bật tính năng này giúp bảng TSSS có đường link bài viết gốc trên Batdongsan, Chợ Tốt, Facebook... để cán bộ tín dụng dễ dàng đối chiếu.
+        </div>
+
+        <!-- KHỐI QUẢN LÝ MÃ QR ĐỒNG BỘ 2 KEY AN TOÀN OFFLINE -->
+        <div class="border border-slate-200 rounded-xl p-2.5 sm:p-3 bg-slate-50 space-y-2.5">
+          <div class="font-bold text-slate-800 flex items-center justify-between">
+            <span class="flex items-center gap-1.5 text-xs"><i class="ph-bold ph-qr-code text-indigo-600 text-base"></i> Mã QR Đồng Bộ 2 Key An Toàn</span>
+            <span class="text-[10px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded font-medium">Bảo mật tuyệt đối</span>
+          </div>
+          <p class="text-[10px] text-slate-500 leading-tight">
+            Tạo ảnh QR chứa 2 Key lưu vào điện thoại. Khi sang thiết bị khác, chỉ cần tải ảnh QR lên hoặc quét trực tiếp để nhận diện tự động.
           </p>
+
+          <!-- Nút thao tác QR -->
+          <div class="grid grid-cols-3 gap-1.5">
+            <button onclick="generateAndShowQR()" type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-1.5 px-2 rounded-lg text-[10px] sm:text-xs flex items-center justify-center gap-1 shadow-sm">
+              <i class="ph-bold ph-qr-code"></i> Tạo Mã QR
+            </button>
+            <label class="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-semibold py-1.5 px-2 rounded-lg text-[10px] sm:text-xs flex items-center justify-center gap-1 shadow-sm cursor-pointer text-center truncate">
+              <i class="ph-bold ph-file-arrow-up"></i> Nạp Ảnh QR
+              <input type="file" id="qrFileInput" accept="image/*" class="hidden" onchange="handleQRFileSelected(event)">
+            </label>
+            <button onclick="toggleCameraScanner()" id="btnCameraScan" type="button" class="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-semibold py-1.5 px-2 rounded-lg text-[10px] sm:text-xs flex items-center justify-center gap-1 shadow-sm truncate">
+              <i class="ph-bold ph-camera"></i> Quét Camera
+            </button>
+          </div>
+
+          <!-- Khung hiển thị QR được tạo ra -->
+          <div id="qrDisplayBox" class="hidden flex flex-col items-center justify-center p-3 bg-white rounded-xl border border-indigo-200 space-y-2">
+            <div id="qrcodeCanvas" class="p-2 bg-white rounded-lg border shadow-sm"></div>
+            <div class="text-[10px] text-slate-500 text-center font-medium">Mã QR cố định chứa 2 Key của bạn</div>
+            <div class="flex gap-2">
+              <button onclick="downloadQRCodeImage()" type="button" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-3 rounded-lg flex items-center gap-1 shadow-sm">
+                <i class="ph-bold ph-download-simple"></i> Tải Ảnh QR Về Máy
+              </button>
+              <button onclick="document.getElementById('qrDisplayBox').classList.add('hidden')" type="button" class="text-xs text-slate-500 hover:text-slate-700 py-1 px-2">Đóng</button>
+            </div>
+          </div>
+
+          <!-- Khung hiển thị Camera Scanner -->
+          <div id="cameraScannerBox" class="hidden flex flex-col items-center justify-center p-3 bg-white rounded-xl border border-indigo-200 space-y-2">
+            <video id="qrVideo" class="w-full max-w-[280px] h-48 bg-black rounded-lg object-cover"></video>
+            <div class="text-[10px] text-slate-500 text-center font-medium">Đưa mã QR trước camera để quét...</div>
+            <button onclick="stopCameraScanner()" type="button" class="text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold py-1 px-3 rounded-lg shadow-sm">
+              Tắt Camera
+            </button>
+          </div>
         </div>
       </div>
 
       <div class="flex justify-between items-center pt-2 border-t border-slate-200">
-        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-xs text-indigo-600 hover:underline flex items-center gap-1 font-semibold">
-          <i class="ph-bold ph-arrow-square-out"></i> Lấy khóa API trên AI Studio
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[11px] sm:text-xs text-indigo-600 hover:underline flex items-center gap-1 font-semibold">
+          <i class="ph-bold ph-arrow-square-out"></i> Lấy khóa API
         </a>
-        <div class="flex gap-2">
+        <div class="flex gap-1.5 sm:gap-2">
           <button onclick="closeApiKeyModal()" class="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Đóng</button>
-          <button onclick="saveApiKey()" class="px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow">Lưu Cấu Hình</button>
+          <button onclick="saveApiKey()" class="px-3.5 sm:px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow">Lưu Cấu Hình</button>
         </div>
       </div>
     </div>
@@ -646,14 +682,19 @@
     <span id="toastMessage">Thông báo</span>
   </div>
 
+  <canvas id="qrScannerCanvas" class="hidden"></canvas>
+
   <script>
     let backupCompsPool = [];
+    let qrScannerStream = null;
+    let qrAnimationId = null;
 
-    // HÀM HIỂN THỊ THANH TRẠNG THÁI NỔI TRÔI CỐ ĐỊNH (FLOATING STATUS BAR)
+    // HIỂN THỊ THANH TRẠNG THÁI NỔI
     function setFloatingStatus(state, message) {
       const bar = document.getElementById('floatingStatusBar');
       const icon = document.getElementById('floatingStatusIcon');
       const text = document.getElementById('floatingStatusText');
+      if (!bar) return;
 
       if (state === 'hide') {
         bar.classList.add('hidden');
@@ -664,23 +705,23 @@
       text.innerText = message;
 
       if (state === 'ocr') {
-        bar.className = "fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-5 py-2.5 rounded-full shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md bg-blue-900/90 text-white border-blue-500";
+        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-50 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-blue-900/90 text-white border-blue-500 max-w-[92vw] truncate";
         icon.innerHTML = `<i class="ph-bold ph-spinner animate-spin text-blue-300 text-base"></i>`;
       } else if (state === 'survey') {
-        bar.className = "fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-5 py-2.5 rounded-full shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md bg-indigo-900/90 text-white border-indigo-400";
+        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-50 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-indigo-900/90 text-white border-indigo-400 max-w-[92vw] truncate";
         icon.innerHTML = `<i class="ph-bold ph-globe-hemisphere-east animate-pulse text-amber-300 text-base"></i>`;
       } else if (state === 'success') {
-        bar.className = "fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-5 py-2.5 rounded-full shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md bg-emerald-900/95 text-white border-emerald-400";
+        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-50 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-emerald-900/95 text-white border-emerald-400 max-w-[92vw] truncate";
         icon.innerHTML = `<i class="ph-fill ph-check-circle text-emerald-400 text-base"></i>`;
         setTimeout(() => { bar.classList.add('hidden'); }, 3000);
       } else if (state === 'error') {
-        bar.className = "fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-5 py-2.5 rounded-full shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md bg-rose-900/95 text-white border-rose-400";
+        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-50 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-rose-900/95 text-white border-rose-400 max-w-[92vw] truncate";
         icon.innerHTML = `<i class="ph-fill ph-x-circle text-rose-400 text-base"></i>`;
         setTimeout(() => { bar.classList.add('hidden'); }, 4000);
       }
     }
 
-    // 1. XÓA VÀ THAY THẾ BẰNG 1 TÀI SẢN SO SÁNH TIẾP THEO (TỰ ĐỘNG TÍNH LẠI ĐƠN GIÁ BÌNH QUÂN)
+    // 1. XÓA VÀ THAY THẾ TSSS (TỰ ĐỘNG TÍNH LẠI ĐƠN GIÁ BÌNH QUÂN)
     async function replaceCompWithNext(index) {
       if (index < 0 || index >= currentComps.length) return;
       showToast(`Đang thay thế TSSS #${index + 1}...`);
@@ -690,7 +731,7 @@
         currentComps.splice(index, 1, nextComp);
         renderMapElements();
         recalculateTargetValues();
-        showToast(`Đã thay thế #${index + 1} bằng TSSS tiếp theo & cập nhật lại đơn giá!`);
+        showToast(`Đã thay thế #${index + 1} & cập nhật lại đơn giá!`);
         return;
       }
 
@@ -721,7 +762,7 @@
 
       const nextComp = {
         id: currentComps.length + 1,
-        address: `Đoạn gần ${targetStreet}, ${targetWard} (Tin cập nhật thay thế)`,
+        address: `Đoạn gần ${targetStreet}, ${targetWard} (Tin thay thế)`,
         roadType: document.getElementById('targetPosType').value || "hem_oto",
         roadDesc: "Đường bê tông / nhựa ô tô lưu thông tốt",
         area: repArea,
@@ -739,20 +780,20 @@
       currentComps.splice(index, 1, nextComp);
       renderMapElements();
       recalculateTargetValues();
-      showToast(`Đã thay thế #${index + 1} bằng tài sản chuẩn mới & cập nhật đơn giá bình quân!`);
+      showToast(`Đã thay thế #${index + 1} & cập nhật đơn giá bình quân!`);
     }
 
-    // 2. XÓA BỎ HẲN 1 DÒNG TSSS (KHÔNG BÙ - TỰ ĐỘNG TÍNH LẠI ĐƠN GIÁ BÌNH QUÂN)
+    // 2. XÓA BỎ HẲN 1 DÒNG TSSS (TỰ ĐỘNG TÍNH LẠI ĐƠN GIÁ BÌNH QUÂN)
     function deleteSingleComp(index) {
       if (index < 0 || index >= currentComps.length) return;
       if (currentComps.length <= 1) {
-        showToast("Cần giữ lại tối thiểu 1 tài sản so sánh trong bảng!");
+        showToast("Cần giữ lại tối thiểu 1 tài sản so sánh!");
         return;
       }
       currentComps.splice(index, 1);
       renderMapElements();
       recalculateTargetValues();
-      showToast(`Đã xóa TSSS #${index + 1}. Bảng tính & đơn giá bình quân đã được cập nhật lại!`);
+      showToast(`Đã xóa TSSS #${index + 1} & cập nhật lại đơn giá!`);
     }
 
     let currentComps = [];
@@ -766,7 +807,6 @@
       checkSavedApiKey();
     });
 
-    // TRUY XUẤT API KEY THEO CHẾ ĐỘ ĐANG CHỌN (FREE HOẶC PAYG)
     function getActiveApiKey() {
       const mode = localStorage.getItem('gemini_api_mode') || 'free';
       if (mode === 'payg') {
@@ -785,12 +825,12 @@
       const btnText = document.getElementById('apiKeyBtnText');
       if (activeKey) {
         if (mode === 'payg') {
-          btnText.innerHTML = `<span class="text-amber-300 font-bold">⚡ PAYG</span>: Đã kết nối`;
+          btnText.innerHTML = `<span class="text-amber-300 font-bold">⚡ PAYG</span>`;
         } else {
-          btnText.innerHTML = `<span class="text-emerald-300 font-bold">Free Tier</span>: Đã kết nối`;
+          btnText.innerHTML = `<span class="text-emerald-300 font-bold">Free Tier</span>`;
         }
       } else {
-        btnText.innerText = "Cấu hình 2 API Key";
+        btnText.innerText = "Cấu hình 2 Key";
       }
     }
 
@@ -822,11 +862,11 @@
       const boxPayg = document.getElementById('boxModePayg');
 
       if (isPayg) {
-        boxPayg.className = "border-2 border-emerald-500 rounded-xl p-3 bg-emerald-50/40 shadow-sm transition";
-        boxFree.className = "border border-slate-200 rounded-xl p-3 bg-slate-50 opacity-70 transition";
+        boxPayg.className = "border-2 border-emerald-500 rounded-xl p-2.5 sm:p-3 bg-emerald-50/40 shadow-sm transition";
+        boxFree.className = "border border-slate-200 rounded-xl p-2.5 sm:p-3 bg-slate-50 opacity-70 transition";
       } else {
-        boxFree.className = "border-2 border-indigo-500 rounded-xl p-3 bg-indigo-50/40 shadow-sm transition";
-        boxPayg.className = "border border-slate-200 rounded-xl p-3 bg-slate-50 opacity-70 transition";
+        boxFree.className = "border-2 border-indigo-500 rounded-xl p-2.5 sm:p-3 bg-indigo-50/40 shadow-sm transition";
+        boxPayg.className = "border border-slate-200 rounded-xl p-2.5 sm:p-3 bg-slate-50 opacity-70 transition";
       }
     }
 
@@ -837,23 +877,182 @@
       const badgeP = document.getElementById('badgeStatusPayg');
 
       if (kf) {
-        badgeF.innerText = "Đã nhập";
-        badgeF.className = "text-[10px] px-2 py-0.5 rounded font-semibold bg-indigo-100 text-indigo-700 border border-indigo-200";
+        badgeF.innerText = "Đã có Key";
+        badgeF.className = "text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-indigo-100 text-indigo-700 border border-indigo-200";
       } else {
         badgeF.innerText = "Chưa lưu";
-        badgeF.className = "text-[10px] px-2 py-0.5 rounded font-semibold bg-slate-200 text-slate-600";
+        badgeF.className = "text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-slate-200 text-slate-600";
       }
 
       if (kp) {
-        badgeP.innerText = "Đã nhập ⚡";
-        badgeP.className = "text-[10px] px-2 py-0.5 rounded font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300";
+        badgeP.innerText = "Đã có ⚡";
+        badgeP.className = "text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300";
       } else {
         badgeP.innerText = "Chưa lưu";
-        badgeP.className = "text-[10px] px-2 py-0.5 rounded font-semibold bg-slate-200 text-slate-600";
+        badgeP.className = "text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-slate-200 text-slate-600";
       }
     }
 
+    // === TÍNH NĂNG TẠO & NHẬP MÃ QR CỐ ĐỊNH CHỨA 2 KEY ===
+    function generateAndShowQR() {
+      const keyFree = document.getElementById('geminiApiKeyFreeInput').value.trim();
+      const keyPayg = document.getElementById('geminiApiKeyPaygInput').value.trim();
+      const mode = document.getElementById('radioModePayg').checked ? 'payg' : 'free';
+      const grounding = document.getElementById('chkSearchGrounding').checked;
+
+      if (!keyFree && !keyPayg) {
+        showToast("Vui lòng nhập ít nhất 1 API Key trước khi tạo mã QR!");
+        return;
+      }
+
+      const syncObj = { kf: keyFree, kp: keyPayg, m: mode, g: grounding };
+      const syncStr = "LLPQR:" + btoa(encodeURIComponent(JSON.stringify(syncObj)));
+
+      const container = document.getElementById('qrcodeCanvas');
+      container.innerHTML = '';
+      new QRCode(container, {
+        text: syncStr,
+        width: 180,
+        height: 180,
+        colorDark: "#0f172a",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      document.getElementById('qrDisplayBox').classList.remove('hidden');
+      document.getElementById('cameraScannerBox').classList.add('hidden');
+    }
+
+    function downloadQRCodeImage() {
+      const img = document.querySelector('#qrcodeCanvas img');
+      if (!img || !img.src) {
+        showToast("Chưa tạo mã QR để tải!");
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = img.src;
+      a.download = `LendLandPro_Config_QR_${new Date().toISOString().slice(0,10)}.png`;
+      a.click();
+      showToast("Đã tải ảnh mã QR về máy!");
+    }
+
+    function handleQRFileSelected(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        const image = new Image();
+        image.onload = () => {
+          const canvas = document.getElementById('qrScannerCanvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = image.width;
+          canvas.height = image.height;
+          ctx.drawImage(image, 0, 0, image.width, image.height);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+          if (code && code.data) {
+            applyQRDecodedData(code.data);
+          } else {
+            showToast("Không tìm thấy mã QR trong ảnh. Vui lòng chọn ảnh chụp rõ nét hơn!");
+          }
+        };
+        image.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+      event.target.value = '';
+    }
+
+    function applyQRDecodedData(qrRawString) {
+      try {
+        let raw = qrRawString.trim();
+        if (raw.startsWith("LLPQR:")) raw = raw.replace("LLPQR:", "");
+        const decoded = JSON.parse(decodeURIComponent(atob(raw)));
+
+        if (decoded.kf) {
+          localStorage.setItem('gemini_api_key_free', decoded.kf);
+          document.getElementById('geminiApiKeyFreeInput').value = decoded.kf;
+        }
+        if (decoded.kp) {
+          localStorage.setItem('gemini_api_key_payg', decoded.kp);
+          document.getElementById('geminiApiKeyPaygInput').value = decoded.kp;
+        }
+        if (decoded.m) {
+          localStorage.setItem('gemini_api_mode', decoded.m);
+          if (decoded.m === 'payg') document.getElementById('radioModePayg').checked = true;
+          else document.getElementById('radioModeFree').checked = true;
+        }
+        if (decoded.g !== undefined) {
+          localStorage.setItem('gemini_search_grounding', decoded.g ? 'true' : 'false');
+          document.getElementById('chkSearchGrounding').checked = decoded.g;
+        }
+
+        saveApiKey();
+        document.getElementById('qrDisplayBox').classList.add('hidden');
+        stopCameraScanner();
+        showToast("Đã giải mã & nạp 2 API Key thành công từ mã QR!");
+      } catch (err) {
+        showToast("Mã QR không đúng định dạng của LendLand Pro!");
+      }
+    }
+
+    function toggleCameraScanner() {
+      const box = document.getElementById('cameraScannerBox');
+      if (!box.classList.contains('hidden')) {
+        stopCameraScanner();
+        return;
+      }
+
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(stream => {
+          qrScannerStream = stream;
+          const video = document.getElementById('qrVideo');
+          video.srcObject = stream;
+          video.setAttribute("playsinline", true);
+          video.play();
+          box.classList.remove('hidden');
+          document.getElementById('qrDisplayBox').classList.add('hidden');
+          qrAnimationId = requestAnimationFrame(scanCameraFrame);
+        })
+        .catch(err => {
+          showToast("Không thể mở camera. Vui lòng cấp quyền truy cập camera!");
+        });
+    }
+
+    function scanCameraFrame() {
+      const video = document.getElementById('qrVideo');
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        const canvas = document.getElementById('qrScannerCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+        if (code && code.data) {
+          applyQRDecodedData(code.data);
+          return;
+        }
+      }
+      qrAnimationId = requestAnimationFrame(scanCameraFrame);
+    }
+
+    function stopCameraScanner() {
+      if (qrScannerStream) {
+        qrScannerStream.getTracks().forEach(track => track.stop());
+        qrScannerStream = null;
+      }
+      if (qrAnimationId) {
+        cancelAnimationFrame(qrAnimationId);
+        qrAnimationId = null;
+      }
+      document.getElementById('cameraScannerBox').classList.add('hidden');
+    }
+
     function closeApiKeyModal() {
+      stopCameraScanner();
       document.getElementById('apiKeyModal').classList.add('hidden');
     }
 
@@ -876,10 +1075,10 @@
       const activeKey = mode === 'payg' ? keyPayg : keyFree;
       if (activeKey) {
         localStorage.setItem('gemini_api_key', activeKey);
-        showToast(`Đã lưu 2 khóa API & kích hoạt chế độ ${mode === 'payg' ? 'Pay-As-You-Go ⚡' : 'Miễn Phí (Free Tier)'}!`);
+        showToast(`Đã lưu 2 khóa API & kích hoạt ${mode === 'payg' ? 'Pay-As-You-Go ⚡' : 'Free Tier'}!`);
       } else {
         localStorage.removeItem('gemini_api_key');
-        showToast("Đã lưu cài đặt! Lưu ý: Chế độ đang chọn chưa có mã API Key.");
+        showToast("Đã lưu! Chế độ đang chọn chưa có API Key.");
       }
 
       checkSavedApiKey();
@@ -905,13 +1104,13 @@
       if (type === 'satellite') {
         if (map.hasLayer(osmLayer)) map.removeLayer(osmLayer);
         satLayer.addTo(map);
-        btnSat.className = "text-xs bg-blue-600 text-white px-2.5 py-1.5 rounded font-medium shadow-sm";
-        btnOSM.className = "text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 px-2.5 py-1.5 rounded font-medium border border-slate-300";
+        btnSat.className = "text-[11px] bg-blue-600 text-white px-2 py-1 rounded font-medium shadow-sm";
+        btnOSM.className = "text-[11px] bg-slate-100 text-slate-700 hover:bg-slate-200 px-2 py-1 rounded font-medium border border-slate-300";
       } else {
         if (map.hasLayer(satLayer)) map.removeLayer(satLayer);
         osmLayer.addTo(map);
-        btnOSM.className = "text-xs bg-blue-600 text-white px-2.5 py-1.5 rounded font-medium shadow-sm";
-        btnSat.className = "text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 px-2.5 py-1.5 rounded font-medium border border-slate-300";
+        btnOSM.className = "text-[11px] bg-blue-600 text-white px-2 py-1 rounded font-medium shadow-sm";
+        btnSat.className = "text-[11px] bg-slate-100 text-slate-700 hover:bg-slate-200 px-2 py-1 rounded font-medium border border-slate-300";
       }
     }
 
@@ -926,8 +1125,8 @@
       if (area > 0) {
         const targetIcon = L.divIcon({
           className: 'custom-pin-target',
-          html: `<div style="background-color:#e11d48; width:34px; height:34px; border-radius:50%; border:3px solid #fff; display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; box-shadow:0 3px 8px rgba(0,0,0,0.4);"><i class="ph-bold ph-house"></i></div>`,
-          iconSize: [34, 34], iconAnchor: [17, 17]
+          html: `<div style="background-color:#e11d48; width:30px; height:30px; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; box-shadow:0 3px 8px rgba(0,0,0,0.4);"><i class="ph-bold ph-house"></i></div>`,
+          iconSize: [30, 30], iconAnchor: [15, 15]
         });
         const lotName = document.getElementById('targetLot').value || "Tài sản mục tiêu";
         const addrName = document.getElementById('targetStreet').value || document.getElementById('targetWard').value || "";
@@ -943,8 +1142,8 @@
       currentComps.forEach((comp, idx) => {
         const compIcon = L.divIcon({
           className: 'custom-pin-comp',
-          html: `<div style="background-color:#2563eb; width:28px; height:28px; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; font-size:12px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">${idx + 1}</div>`,
-          iconSize: [28, 28], iconAnchor: [14, 14]
+          html: `<div style="background-color:#2563eb; width:26px; height:26px; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; font-size:11px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">${idx + 1}</div>`,
+          iconSize: [26, 26], iconAnchor: [13, 13]
         });
         const m = L.marker([comp.lat, comp.lng], { icon: compIcon })
           .addTo(map)
@@ -964,7 +1163,7 @@
         currentComps.forEach(c => pts.push([c.lat, c.lng]));
         if (pts.length > 0) {
           const bounds = L.latLngBounds(pts);
-          if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
+          if (bounds.isValid()) map.fitBounds(bounds, { padding: [25, 25], maxZoom: 16 });
         }
       } catch (e) { zoomToTarget(); }
     }
@@ -1004,21 +1203,21 @@
 
         if (isPdf) {
           item.innerHTML = `
-            <div class="w-full h-24 bg-rose-50 text-rose-600 flex flex-col items-center justify-center rounded">
-              <i class="ph-bold ph-file-pdf text-3xl mb-1"></i>
-              <span class="text-[10px] font-bold uppercase">Tệp PDF</span>
+            <div class="w-full h-20 bg-rose-50 text-rose-600 flex flex-col items-center justify-center rounded">
+              <i class="ph-bold ph-file-pdf text-2xl mb-0.5"></i>
+              <span class="text-[9px] font-bold uppercase">PDF</span>
             </div>
-            <div class="w-full px-1 py-1 text-[11px] truncate text-slate-700 text-center font-medium" title="${file.name}">${file.name}</div>
-            <button onclick="removeFile(${index})" class="absolute top-1 right-1 w-5 h-5 bg-rose-600 text-white rounded-full flex items-center justify-center text-xs shadow hover:bg-rose-700">
+            <div class="w-full px-1 py-0.5 text-[10px] truncate text-slate-700 text-center font-medium" title="${file.name}">${file.name}</div>
+            <button onclick="removeFile(${index})" class="absolute top-1 right-1 w-4 h-4 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] shadow hover:bg-rose-700">
               <i class="ph-bold ph-x"></i>
             </button>
           `;
         } else {
           const imgUrl = URL.createObjectURL(file);
           item.innerHTML = `
-            <img src="${imgUrl}" alt="${file.name}" class="w-full h-24 object-cover rounded bg-white">
-            <div class="w-full px-1 py-1 text-[11px] truncate text-slate-700 text-center font-medium" title="${file.name}">${file.name}</div>
-            <button onclick="removeFile(${index})" class="absolute top-1 right-1 w-5 h-5 bg-rose-600 text-white rounded-full flex items-center justify-center text-xs shadow hover:bg-rose-700">
+            <img src="${imgUrl}" alt="${file.name}" class="w-full h-20 object-cover rounded bg-white">
+            <div class="w-full px-1 py-0.5 text-[10px] truncate text-slate-700 text-center font-medium" title="${file.name}">${file.name}</div>
+            <button onclick="removeFile(${index})" class="absolute top-1 right-1 w-4 h-4 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] shadow hover:bg-rose-700">
               <i class="ph-bold ph-x"></i>
             </button>
           `;
@@ -1041,7 +1240,6 @@
       setFloatingStatus('hide');
     }
 
-    // THUẬT TOÁN TỰ ĐỘNG THỬ TỪNG MODEL KHẢ DỤNG (ƯU TIÊN GEMINI-3.8-FLASH & AUTO-FALLBACK)
     async function executeOCRWithRealAI() {
       if (uploadedFilesList.length === 0) return;
 
@@ -1051,25 +1249,25 @@
       statusBox.classList.remove('hidden');
 
       if (!apiKey) {
-        statusBox.className = "mt-4 p-4 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 text-xs flex items-start gap-3 shadow-sm";
+        statusBox.className = "mt-3 p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 text-xs flex items-start gap-2.5 shadow-sm";
         statusBox.innerHTML = `
-          <i class="ph-fill ph-warning-circle text-amber-600 text-xl flex-shrink-0"></i>
+          <i class="ph-fill ph-warning-circle text-amber-600 text-lg flex-shrink-0"></i>
           <div>
-            <div class="font-bold text-sm">Chưa có API Key cho chế độ ${activeMode === 'payg' ? 'Pay-As-You-Go ⚡' : 'Miễn Phí (Free Tier)'}!</div>
-            <p class="mt-0.5">Vui lòng bấm nút <strong>"Cấu hình 2 API Key"</strong> ở góc trên bên phải để điền mã khóa tương ứng cho chế độ này.</p>
+            <div class="font-bold text-xs sm:text-sm">Chưa có API Key cho chế độ ${activeMode === 'payg' ? 'Pay-As-You-Go ⚡' : 'Miễn Phí (Free Tier)'}!</div>
+            <p class="mt-0.5 text-[11px]">Vui lòng bấm nút <strong>"Cấu hình 2 Key"</strong> trên góc để nhập hoặc đồng bộ mã khóa.</p>
           </div>
         `;
         return;
       }
 
-      setFloatingStatus('ocr', 'Đang nén & đọc hiểu tài liệu GCN...');
+      setFloatingStatus('ocr', 'Đang đọc hiểu tài liệu GCN bằng AI...');
 
-      statusBox.className = "mt-4 p-4 bg-blue-50 border border-blue-300 rounded-xl text-blue-900 text-xs flex items-start gap-3 shadow-sm";
+      statusBox.className = "mt-3 p-3 bg-blue-50 border border-blue-300 rounded-xl text-blue-900 text-xs flex items-start gap-2.5 shadow-sm";
       statusBox.innerHTML = `
-        <i class="ph-bold ph-spinner animate-spin text-blue-600 text-xl flex-shrink-0"></i>
+        <i class="ph-bold ph-spinner animate-spin text-blue-600 text-lg flex-shrink-0"></i>
         <div>
-          <div class="font-bold text-sm">Đang đọc hiểu Giấy chứng nhận bằng Google Gemini AI...</div>
-          <p class="mt-0.5">Hệ thống đang chuẩn bị dữ liệu và gửi sang Gemini AI để trích xuất thông tin thửa đất.</p>
+          <div class="font-bold text-xs sm:text-sm">Đang trích xuất Giấy chứng nhận bằng Gemini AI...</div>
+          <p class="mt-0.5 text-[11px]">Hệ thống đang bóc tách diện tích, số thửa và kích thước.</p>
         </div>
       `;
 
@@ -1094,7 +1292,6 @@
             if (name.includes("2.0-flash")) return 90;
             if (name.includes("1.5-flash")) return 80;
             if (name.includes("flash") && !name.includes("2.5")) return 70;
-            if (name.includes("2.5-flash")) return -1;
             return 50;
           };
           return getScore(b.name) - getScore(a.name);
@@ -1175,30 +1372,30 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
 
         if (parsedData) {
           applyParsedData(parsedData);
-          statusBox.className = "mt-4 p-4 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs flex items-start gap-3 shadow-sm";
+          statusBox.className = "mt-3 p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs flex items-start gap-2.5 shadow-sm";
           statusBox.innerHTML = `
-            <i class="ph-fill ph-check-circle text-emerald-600 text-2xl flex-shrink-0"></i>
+            <i class="ph-fill ph-check-circle text-emerald-600 text-xl flex-shrink-0"></i>
             <div>
-              <div class="font-bold text-sm">Gemini AI (${usedModelName}) đã trích xuất & khảo sát thị trường thành công!</div>
-              <p class="mt-0.5">Thông tin pháp lý và 5 tài sản so sánh lân cận đã được tự động điền vào biểu mẫu.</p>
+              <div class="font-bold text-xs sm:text-sm">Gemini AI (${usedModelName}) đã bóc tách xong hồ sơ!</div>
+              <p class="mt-0.5 text-[11px]">Thông tin thửa đất đã được điền tự động.</p>
             </div>
           `;
           showToast("AI đã đọc xong toàn bộ ảnh tài sản!");
         } else {
-          throw new Error(lastErrorMsg || "Không có model nào trong tài khoản thực hiện được lệnh đọc ảnh.");
+          throw new Error(lastErrorMsg || "Không có model nào trong tài khoản đọc được ảnh.");
         }
 
       } catch (err) {
         console.error("Lỗi trích xuất AI:", err);
         setFloatingStatus('error', 'Lỗi trích xuất ảnh tài sản');
-        statusBox.className = "mt-4 p-4 bg-rose-50 border border-rose-300 rounded-xl text-rose-900 text-xs flex items-start gap-3 shadow-sm";
+        statusBox.className = "mt-3 p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-900 text-xs flex items-start gap-2.5 shadow-sm";
         statusBox.innerHTML = `
-          <i class="ph-fill ph-x-circle text-rose-600 text-2xl flex-shrink-0"></i>
+          <i class="ph-fill ph-x-circle text-rose-600 text-xl flex-shrink-0"></i>
           <div>
-            <div class="font-bold text-sm">Không thể hoàn thành trích xuất AI!</div>
-            <p class="mt-0.5 text-rose-800">Chi tiết lỗi: ${err.message}</p>
+            <div class="font-bold text-xs sm:text-sm">Không thể hoàn thành trích xuất AI!</div>
+            <p class="mt-0.5 text-rose-800 text-[11px]">${err.message}</p>
             <div class="mt-2 flex gap-2">
-              <button onclick="executeOCRWithRealAI()" class="bg-rose-700 hover:bg-rose-800 text-white font-bold px-3 py-1.5 rounded shadow text-xs">
+              <button onclick="executeOCRWithRealAI()" class="bg-rose-700 hover:bg-rose-800 text-white font-bold px-3 py-1 rounded shadow text-xs">
                 Thử Lại
               </button>
             </div>
@@ -1298,7 +1495,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
 
       const aiStatusBadge = document.getElementById('compsCountBadge');
       if (aiStatusBadge) {
-        aiStatusBadge.innerText = enableGrounding ? "Đang quét tìm TSSS bằng Google Search Grounding..." : "Đang phân tích thị trường bằng Gemini AI...";
+        aiStatusBadge.innerText = enableGrounding ? "Đang quét TSSS bằng Google Search..." : "Đang phân tích thị trường bằng Gemini AI...";
       }
 
       if (!apiKey) {
@@ -1306,7 +1503,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
         return;
       }
 
-      setFloatingStatus('survey', enableGrounding ? 'Đang quét thị trường với Google Search Grounding...' : 'Đang phân tích thị trường & tính toán TSSS...');
+      setFloatingStatus('survey', enableGrounding ? 'Google AI đang quét tin rao web thật...' : 'Gemini AI đang phân tích & tìm TSSS...');
 
       try {
         let validModels = [];
@@ -1649,11 +1846,11 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
 
     function getSourceBadge(sourceType, sourceName) {
       switch(sourceType) {
-        case 'facebook': return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700 border border-blue-200"><i class="ph-bold ph-facebook-logo"></i> ${sourceName}</span>`;
-        case 'batdongsan': return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-700 border border-rose-200"><i class="ph-bold ph-buildings"></i> ${sourceName}</span>`;
-        case 'chotot': return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200"><i class="ph-bold ph-storefront"></i> ${sourceName}</span>`;
-        case 'alonhadat': return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><i class="ph-bold ph-house"></i> ${sourceName}</span>`;
-        default: return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200"><i class="ph-bold ph-globe"></i> ${sourceName}</span>`;
+        case 'facebook': return `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700 border border-blue-200"><i class="ph-bold ph-facebook-logo"></i> ${sourceName}</span>`;
+        case 'batdongsan': return `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-700 border border-rose-200"><i class="ph-bold ph-buildings"></i> ${sourceName}</span>`;
+        case 'chotot': return `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200"><i class="ph-bold ph-storefront"></i> ${sourceName}</span>`;
+        case 'alonhadat': return `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200"><i class="ph-bold ph-house"></i> ${sourceName}</span>`;
+        default: return `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200"><i class="ph-bold ph-globe"></i> ${sourceName}</span>`;
       }
     }
 
@@ -1702,32 +1899,32 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 transition " + (rawUnitPrice < 10 && rawUnitPrice > 0 && currentComps.length > 2 ? "bg-rose-50/40" : "");
         tr.innerHTML = `
-          <td class="py-3 px-2 text-center font-bold text-slate-700">#${idx + 1}</td>
-          <td class="py-3 px-3">
-            <div class="font-medium text-slate-800">${comp.address}</div>
+          <td class="py-2.5 sm:py-3 px-2 text-center font-bold text-slate-700">#${idx + 1}</td>
+          <td class="py-2.5 sm:py-3 px-3">
+            <div class="font-medium text-slate-800 leading-snug">${comp.address}</div>
             <div class="text-[11px] text-slate-500">${comp.roadDesc}</div>
           </td>
-          <td class="py-3 px-3 font-semibold">${comp.area}</td>
-          <td class="py-3 px-3">${comp.frontage}m × ${comp.depth}m</td>
-          <td class="py-3 px-3 font-bold text-slate-800">
+          <td class="py-2.5 sm:py-3 px-2 text-center font-semibold">${comp.area}</td>
+          <td class="py-2.5 sm:py-3 px-2 text-center text-slate-600">${comp.frontage}m × ${comp.depth}m</td>
+          <td class="py-2.5 sm:py-3 px-2.5 text-right font-bold text-slate-800 whitespace-nowrap">
             ${comp.rawPrice.toFixed(2)} Tỷ 
             <span class="text-[10px] text-slate-500 font-normal block">(${rawUnitPrice.toFixed(1)} tr/m²)</span>
           </td>
-          <td class="py-3 px-3 font-bold text-emerald-700 text-sm">${discountedUnitPrice.toFixed(2)}</td>
-          <td class="py-3 px-2 text-center"><span class="inline-block px-2 py-0.5 rounded text-[11px] font-bold ${score >= 90 ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${score}%</span></td>
-          <td class="py-3 px-2 text-center text-slate-500">~${comp.distanceMeters}m</td>
-          <td class="py-3 px-2 text-center">
+          <td class="py-2.5 sm:py-3 px-2.5 text-right font-bold text-emerald-700 whitespace-nowrap text-xs sm:text-sm">${discountedUnitPrice.toFixed(2)}</td>
+          <td class="py-2.5 sm:py-3 px-2 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-bold ${score >= 90 ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${score}%</span></td>
+          <td class="py-2.5 sm:py-3 px-2 text-center text-slate-500 whitespace-nowrap">~${comp.distanceMeters}m</td>
+          <td class="py-2.5 sm:py-3 px-2 text-center whitespace-nowrap">
             <div class="flex flex-col items-center gap-1">
               ${getSourceBadge(comp.sourceType, comp.sourceName)}
               <a href="${comp.link}" target="_blank" class="inline-flex items-center gap-1 text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded border border-slate-300 font-medium"><i class="ph-bold ph-arrow-square-out"></i> Xem tin</a>
             </div>
           </td>
-          <td class="py-3 px-2 text-center">
+          <td class="py-2.5 sm:py-3 px-2 text-center whitespace-nowrap">
             <div class="flex flex-col items-center gap-1">
-              <button onclick="replaceCompWithNext(${idx})" class="w-full text-indigo-700 hover:text-white hover:bg-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-1 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 shadow-xs" title="Xóa tài sản này và tự động thay bằng 1 TSSS tiếp theo">
-                <i class="ph-bold ph-arrows-clockwise"></i> Đổi TSSS mới
+              <button onclick="replaceCompWithNext(${idx})" class="w-full text-indigo-700 hover:text-white hover:bg-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-1 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 shadow-xs" title="Xóa & đổi TSSS khác">
+                <i class="ph-bold ph-arrows-clockwise"></i> Đổi TSSS
               </button>
-              <button onclick="deleteSingleComp(${idx})" class="w-full text-rose-600 hover:text-white hover:bg-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded text-[10px] font-medium transition flex items-center justify-center gap-1" title="Xóa hẳn dòng này khỏi bảng so sánh">
+              <button onclick="deleteSingleComp(${idx})" class="w-full text-rose-600 hover:text-white hover:bg-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded text-[10px] font-medium transition flex items-center justify-center gap-1" title="Xóa hẳn">
                 <i class="ph-bold ph-trash"></i> Xóa bỏ
               </button>
             </div>
@@ -1755,11 +1952,11 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       const grandTotalAsset = totalLandValue + bldTotalValue;
       const maxLoan = grandTotalAsset * ltvRate;
 
-      document.getElementById('statAvgSurveyPrice').innerHTML = `${rawAvgPrice.toFixed(1)} <span class="text-xs font-normal text-slate-500">tr/m²</span>`;
-      document.getElementById('statProposedPrice').innerHTML = `${avgDiscountedPrice.toFixed(2)} <span class="text-xs font-normal text-emerald-700">tr/m²</span>`;
-      document.getElementById('statTotalAssetValue').innerHTML = `${grandTotalAsset.toFixed(2)} <span class="text-xs font-normal text-slate-500">Tỷ VNĐ</span>`;
-      document.getElementById('statAssetBreakdown').innerText = `Đất: ${totalLandValue.toFixed(2)} Tỷ | Nhà: ${bldTotalValue.toFixed(2)} Tỷ`;
-      document.getElementById('statMaxLoanLimit').innerHTML = `${maxLoan.toFixed(2)} <span class="text-xs font-normal text-slate-300">Tỷ VNĐ</span>`;
+      document.getElementById('statAvgSurveyPrice').innerHTML = `${rawAvgPrice.toFixed(1)} <span class="text-[10px] sm:text-xs font-normal text-slate-500">tr/m²</span>`;
+      document.getElementById('statProposedPrice').innerHTML = `${avgDiscountedPrice.toFixed(2)} <span class="text-[10px] sm:text-xs font-normal text-emerald-700">tr/m²</span>`;
+      document.getElementById('statTotalAssetValue').innerHTML = `${grandTotalAsset.toFixed(2)} <span class="text-[10px] sm:text-xs font-normal text-slate-500">Tỷ</span>`;
+      document.getElementById('statAssetBreakdown').innerText = `Đất: ${totalLandValue.toFixed(2)}T | Nhà: ${bldTotalValue.toFixed(2)}T`;
+      document.getElementById('statMaxLoanLimit').innerHTML = `${maxLoan.toFixed(2)} <span class="text-[10px] sm:text-xs font-normal text-slate-300">Tỷ</span>`;
 
       document.getElementById('pLotNumber').innerText = document.getElementById('targetLot').value || "Chưa có thông tin số thửa";
       document.getElementById('pAddress').innerText = `${document.getElementById('targetStreet').value || ''}, ${document.getElementById('targetHamlet').value || ''}, ${document.getElementById('targetWard').value || ''}, ${document.getElementById('targetDistrictProvince').value || ''}`.replace(/^[\s,]+|[\s,]+$/g, '');
@@ -1782,7 +1979,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         const text = await navigator.clipboard.readText();
         document.getElementById('manualRawText').value = text;
         showToast("Đã dán văn bản từ bộ nhớ tạm!");
-      } catch (err) { showToast("Vui lòng cấp quyền truy cập clipboard."); }
+      } catch (err) { showToast("Vui lòng cấp quyền clipboard."); }
     }
 
     function parseManualText() {
@@ -1815,7 +2012,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       document.getElementById('manualRawText').value = '';
       renderMapElements();
       recalculateTargetValues();
-      showToast("Đã trích xuất và thêm tài sản so sánh vào bảng!");
+      showToast("Đã thêm tài sản vào bảng!");
     }
 
     function handleExportPDF() {
@@ -1829,7 +2026,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       const text = document.getElementById('toastMessage');
       text.innerText = msg;
       toast.classList.remove('translate-y-20', 'opacity-0');
-      setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3500);
+      setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
     }
   </script>
 </body>
