@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LendLand Pro v4.4 - Thẩm Định Giá BĐS Tín Dụng</title>
+  <title>LendLand Pro v4.6 - Thẩm Định Giá BĐS Tín Dụng</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -27,7 +27,7 @@
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col">
 
-  <!-- HEADER v4.4 -->
+  <!-- HEADER v4.6 -->
   <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md no-print border-b border-slate-700">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
@@ -37,7 +37,7 @@
         <div>
           <div class="font-bold text-base tracking-wide flex items-center gap-2">
             LendLand Pro
-            <span class="text-xs bg-emerald-500 text-slate-900 font-extrabold px-2 py-0.5 rounded shadow">v4.4 Live</span>
+            <span class="text-xs bg-emerald-500 text-slate-900 font-extrabold px-2 py-0.5 rounded shadow">v4.6 Live</span>
           </div>
           <div class="text-xs text-slate-400">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm ngân hàng</div>
         </div>
@@ -60,14 +60,14 @@
   <!-- NỘI DUNG CHÍNH -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-grow space-y-6 no-print">
 
-    <!-- KHỐI QUÉT & NHẬN DIỆN GCN -->
+    <!-- KHỐI QUÉT & NHẬN DIỆN GCN (TÙY CHỌN: CÓ THỂ BỎ QUA NẾU NHẬP TAY) -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
           <div class="p-2 bg-indigo-100 text-indigo-700 rounded-lg"><i class="ph-bold ph-scan text-xl"></i></div>
           <div>
-            <h2 class="font-bold text-slate-800 text-base">Quét & Nhận Diện Giấy Chứng Nhận QSD Đất (PDF / Nhiều Ảnh)</h2>
-            <p class="text-xs text-slate-500">Tự động đọc thông tin Sổ đỏ và khảo sát ngay 5 tài sản so sánh khu vực</p>
+            <h2 class="font-bold text-slate-800 text-base">Cách 1: Quét & Nhận Diện Giấy Chứng Nhận (PDF / Ảnh Sổ Đỏ)</h2>
+            <p class="text-xs text-slate-500">Tự động đọc thông tin nếu có ảnh/file scan. <em>(Nếu không có ảnh, hãy nhập trực tiếp vào Khối 1 bên dưới)</em></p>
           </div>
         </div>
         <button onclick="loadSampleTranThanhBa()" class="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 flex items-center gap-1.5 font-medium transition">
@@ -78,14 +78,14 @@
       <div class="p-6">
         <input type="file" id="gcnFileInput" accept="image/*,application/pdf" multiple class="hidden" onchange="handleFileSelected(event)">
         
-        <label for="gcnFileInput" class="block border-2 border-dashed border-indigo-300 hover:border-indigo-600 rounded-xl p-8 text-center transition bg-indigo-50/20 hover:bg-indigo-50/50 cursor-pointer">
-          <div class="w-14 h-14 mx-auto rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-3xl mb-3 shadow-inner">
+        <label for="gcnFileInput" class="block border-2 border-dashed border-indigo-300 hover:border-indigo-600 rounded-xl p-6 text-center transition bg-indigo-50/20 hover:bg-indigo-50/50 cursor-pointer">
+          <div class="w-12 h-12 mx-auto rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl mb-2 shadow-inner">
             <i class="ph-bold ph-cloud-arrow-up"></i>
           </div>
-          <div class="font-bold text-slate-800 text-base mb-1">Bấm vào đây để chọn ảnh hoặc file PDF Sổ đỏ / Sổ hồng</div>
-          <div class="text-xs text-slate-500 mb-3">Hỗ trợ tệp PDF hoặc chọn nhiều file ảnh (.JPG, .PNG) cùng lúc</div>
-          <div class="inline-flex items-center gap-2 text-xs text-indigo-700 font-bold bg-white px-4 py-2 rounded-lg border border-indigo-200 shadow-sm hover:bg-indigo-50">
-            <i class="ph-bold ph-folder-open text-base"></i> Chọn tệp từ máy tính / điện thoại
+          <div class="font-bold text-slate-800 text-sm mb-1">Bấm vào đây để chọn ảnh hoặc file PDF Sổ đỏ / Sổ hồng (Nếu có)</div>
+          <div class="text-xs text-slate-500 mb-2">Hỗ trợ tệp PDF hoặc chọn nhiều file ảnh (.JPG, .PNG) cùng lúc</div>
+          <div class="inline-flex items-center gap-1.5 text-xs text-indigo-700 font-bold bg-white px-3 py-1.5 rounded-lg border border-indigo-200 shadow-sm hover:bg-indigo-50">
+            <i class="ph-bold ph-folder-open"></i> Chọn tệp từ máy tính / điện thoại
           </div>
         </label>
 
@@ -107,76 +107,78 @@
       </div>
     </div>
 
-    <!-- KHỐI 1: THÔNG TIN TÀI SẢN MỤC TIÊU -->
+    <!-- KHỐI 1: THÔNG TIN TÀI SẢN MỤC TIÊU (HỖ TRỢ NHẬP LIỆU THỦ CÔNG LINH HOẠT) -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
           <div class="p-2 bg-emerald-100 text-emerald-700 rounded-lg"><i class="ph-bold ph-map-pin text-xl"></i></div>
           <div>
-            <h2 class="font-bold text-slate-800 text-base">Thông Tin Chi Tiết Tài Sản Cần Khảo Sát Giá (Tài Sản Mục Tiêu)</h2>
-            <p class="text-xs text-slate-500">Cơ sở dữ liệu trích lục pháp lý phục vụ so sánh và lập tờ trình</p>
+            <h2 class="font-bold text-slate-800 text-base">Thông Tin Tài Sản Mục Tiêu (Nhập Tay Thủ Công Hoặc Trích Xuất Sổ)</h2>
+            <p class="text-xs text-slate-500">Chỉ cần tối thiểu Xã/Phường và Huyện/Tỉnh là có thể khảo sát giá & tìm BĐS so sánh ngay</p>
           </div>
         </div>
         <div class="flex items-center gap-2">
           <span id="targetBadgeLot" class="text-xs font-semibold px-2.5 py-1 rounded bg-slate-200 text-slate-600">Chưa nạp tài sản</span>
-          <span id="targetBadgeType" class="text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 text-slate-500 border border-slate-300">Đang chờ GCN</span>
+          <span id="targetBadgeType" class="text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 text-slate-500 border border-slate-300">Đang chờ thông số</span>
         </div>
       </div>
 
       <div class="p-6 space-y-5">
+        <!-- HÀNG 1: THÔNG TIN HÀNH CHÍNH & VỊ TRÍ ĐỊA LÝ -->
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4 text-xs font-medium">
           <div>
-            <label class="block text-slate-500 mb-1">Thửa đất số / Tờ BĐ *</label>
-            <input type="text" id="targetLot" placeholder="Ví dụ: Thửa 75 / Tờ 53" class="w-full font-semibold border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
+            <label class="block text-slate-500 mb-1">Thửa đất / Tờ BĐ <span class="text-[10px] text-slate-400 font-normal">(Có thể để trống)</span></label>
+            <input type="text" id="targetLot" placeholder="Để trống nếu chưa có sổ" class="w-full font-semibold border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
           </div>
           <div>
-            <label class="block text-slate-500 mb-1">Tuyến đường / Lối đi *</label>
-            <input type="text" id="targetStreet" placeholder="Ví dụ: Đường liên thôn / Hẻm 4m" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
+            <label class="block text-slate-500 mb-1">Tuyến đường / Số nhà / Lối đi</label>
+            <input type="text" id="targetStreet" placeholder="Ví dụ: 124 Hùng Vương / Hẻm 3m" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
           </div>
           <div>
-            <label class="block text-slate-500 mb-1">Thôn / Xóm / Khu phố *</label>
-            <input type="text" id="targetHamlet" placeholder="Ví dụ: Thôn Hòa Dõng" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
+            <label class="block text-slate-500 mb-1">Thôn / Xóm / Khu phố <span class="text-[10px] text-slate-400 font-normal">(Không bắt buộc)</span></label>
+            <input type="text" id="targetHamlet" placeholder="Ví dụ: Tổ 4, Khu vực 7" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
           </div>
           <div>
-            <label class="block text-slate-500 mb-1">Xã / Phường *</label>
-            <input type="text" id="targetWard" placeholder="Ví dụ: Xã Cát Tân" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
+            <label class="block text-emerald-800 font-bold mb-1">Xã / Phường * <span class="text-[10px] text-emerald-600 font-normal">(Cũ/mới đều được)</span></label>
+            <input type="text" id="targetWard" placeholder="Ví dụ: Phường Trần Quang Diệu" class="w-full font-semibold border-2 border-emerald-400 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30" oninput="updateTargetOverview()">
           </div>
           <div>
-            <label class="block text-slate-500 mb-1">Huyện / TX / TP - Tỉnh *</label>
-            <input type="text" id="targetDistrictProvince" placeholder="Ví dụ: Huyện Phù Cát, Tỉnh Bình Định" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
+            <label class="block text-emerald-800 font-bold mb-1">Huyện/TP & Tỉnh * <span class="text-[10px] text-emerald-600 font-normal">(Cũ/mới đều được)</span></label>
+            <input type="text" id="targetDistrictProvince" placeholder="Ví dụ: TP Quy Nhơn, Bình Định" class="w-full font-semibold border-2 border-emerald-400 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30" oninput="updateTargetOverview()">
           </div>
         </div>
 
+        <!-- HÀNG 2: DIỆN TÍCH & KÍCH THƯỚC HÌNH THỂ THAM KHẢO -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 text-xs font-medium bg-slate-50 p-4 rounded-xl border border-slate-200">
           <div>
-            <label class="block text-slate-500 mb-1">Tổng diện tích thửa (m²) *</label>
-            <input type="number" id="targetArea" placeholder="0.0" step="0.1" class="w-full font-bold text-slate-900 border border-slate-300 rounded-lg p-2.5 text-sm" onchange="recalculateTargetValues()">
+            <label class="block text-slate-700 font-semibold mb-1">Tổng diện tích (m²) *</label>
+            <input type="number" id="targetArea" placeholder="Ví dụ: 60" step="0.1" class="w-full font-bold text-slate-900 border border-slate-300 rounded-lg p-2.5 text-sm" oninput="recalculateTargetValues()">
           </div>
           <div>
             <label class="block text-slate-500 mb-1">Diện tích đất ở (ODT/ONT) (m²)</label>
-            <input type="number" id="targetResArea" placeholder="0.0" step="0.1" class="w-full text-emerald-700 font-semibold border border-slate-300 rounded-lg p-2.5 text-sm" onchange="recalculateTargetValues()">
+            <input type="number" id="targetResArea" placeholder="Ví dụ: 60" step="0.1" class="w-full text-emerald-700 font-semibold border border-slate-300 rounded-lg p-2.5 text-sm" oninput="recalculateTargetValues()">
           </div>
           <div>
-            <label class="block text-slate-500 mb-1">Diện tích đất Vườn/CLN/Khác (m²)</label>
-            <input type="number" id="targetAgriArea" placeholder="0.0" step="0.1" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" onchange="recalculateTargetValues()">
+            <label class="block text-slate-500 mb-1">Diện tích đất Vườn/CLN (m²)</label>
+            <input type="number" id="targetAgriArea" placeholder="0.0" step="0.1" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" oninput="recalculateTargetValues()">
           </div>
           <div>
-            <label class="block text-slate-500 mb-1">Mặt tiền tiếp giáp × Sâu (m)</label>
+            <label class="block text-slate-500 mb-1">Mặt tiền (m) × Sâu (m) tham khảo</label>
             <div class="grid grid-cols-2 gap-2">
-              <input type="number" id="targetFrontage" placeholder="MT (m)" step="0.01" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium" onchange="recalculateTargetValues()">
-              <input type="number" id="targetDepth" placeholder="Sâu (m)" step="0.01" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium" onchange="recalculateTargetValues()">
+              <input type="number" id="targetFrontage" placeholder="MT (m)" step="0.01" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium" oninput="recalculateTargetValues()">
+              <input type="number" id="targetDepth" placeholder="Sâu (m)" step="0.01" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium" oninput="recalculateTargetValues()">
             </div>
           </div>
           <div>
             <label class="block text-slate-500 mb-1">Vị trí & Lộ giới đường (m)</label>
             <div class="grid grid-cols-2 gap-2">
               <select id="targetPosType" class="border border-slate-300 rounded-lg p-2.5 text-xs bg-white" onchange="recalculateTargetValues()">
-                <option value="mat_tien">Mặt tiền chính</option>
-                <option value="hem_oto" selected>Đường ô tô (≥3.5m)</option>
+                <option value="mat_tien">Mặt tiền</option>
+                <option value="hem_oto" selected>Hẻm/Đường ô tô (≥3.5m)</option>
                 <option value="hem_bagac">Hẻm ba gác (2.5 - 3m)</option>
                 <option value="hem_nho">Hẻm nhỏ (&lt;2.5m)</option>
               </select>
-              <input type="number" id="targetRoadWidth" placeholder="Lộ giới" step="0.1" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium" onchange="recalculateTargetValues()">
+              <input type="number" id="targetRoadWidth" placeholder="Lộ giới" step="0.1" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium" oninput="recalculateTargetValues()">
             </div>
           </div>
         </div>
@@ -186,7 +188,7 @@
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-2">
               <i class="ph-bold ph-house-line text-amber-700 text-lg"></i>
-              <span class="font-bold text-slate-800 text-xs uppercase tracking-wide">Thông Tin & Định Giá Công Trình Xây Dựng (CTXD) Trên Đất</span>
+              <span class="font-bold text-slate-800 text-xs uppercase tracking-wide">Công Trình Xây Dựng (CTXD) Trên Đất (Tùy Chọn)</span>
             </div>
             <span class="text-xs text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 font-medium">Bóc tách theo suất vốn đầu tư</span>
           </div>
@@ -194,7 +196,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 text-xs">
             <div>
               <label class="block text-slate-600 mb-1">Loại công trình</label>
-              <input type="text" id="targetBuildingType" placeholder="Nhà ở độc lập Cấp 4 / 2 tầng..." class="w-full border border-slate-300 rounded-lg p-2 bg-white" oninput="recalculateTargetValues()">
+              <input type="text" id="targetBuildingType" placeholder="Nhà cấp 4 / 2 tầng / Đất trống" class="w-full border border-slate-300 rounded-lg p-2 bg-white" oninput="recalculateTargetValues()">
             </div>
             <div>
               <label class="block text-slate-600 mb-1">Diện tích sàn XD (m²)</label>
@@ -217,6 +219,7 @@
           </div>
         </div>
 
+        <!-- HÀNG NÚT BẤM KHẢO SÁT & TÍNH TOÁN -->
         <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
           <div class="flex flex-wrap items-center gap-4 text-xs font-semibold">
             <div class="flex items-center gap-2">
@@ -232,9 +235,15 @@
               </select>
             </div>
           </div>
-          <button onclick="recalculateTargetValues()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2 rounded-lg transition flex items-center gap-1.5 shadow">
-            <i class="ph-bold ph-arrows-clockwise"></i> Cập Nhật Lại Bảng Tính
-          </button>
+          
+          <div class="flex items-center gap-2">
+            <button onclick="recalculateTargetValues()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition flex items-center gap-1.5 shadow">
+              <i class="ph-bold ph-arrows-clockwise"></i> Cập Nhật Bảng Tính
+            </button>
+            <button onclick="triggerManualSurvey()" id="btnManualSurvey" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-5 py-2.5 rounded-lg transition flex items-center gap-2 shadow-md active:scale-95">
+              <i class="ph-bold ph-magnifying-glass-plus text-base text-amber-300"></i> Khảo Sát Giá BĐS Theo Thông Số Nhập Tay
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -323,7 +332,7 @@
       </div>
     </div>
 
-    <!-- KHỐI 4: THU THẬP TIN RAO ĐA KÊNH & QUÉT BẰNG AI -->
+    <!-- KHỐI 4: THU THẬP TIN RAO ĐA KÊNH & KHẢO SÁT BẰNG AI -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
@@ -400,7 +409,7 @@
       </div>
       <div class="p-5 text-xs text-slate-700 leading-relaxed space-y-3">
         <p id="aiSummaryP1">
-          Hệ thống đang sẵn sàng. Vui lòng nạp Giấy chứng nhận quyền sử dụng đất hoặc nhập thông tin địa chỉ tài sản mục tiêu để nhận định giá trị thị trường và gợi ý định giá tín dụng an toàn.
+          Hệ thống đang sẵn sàng. Vui lòng nhập địa chỉ xã/phường hoặc nạp Giấy chứng nhận quyền sử dụng đất để nhận định giá trị thị trường và gợi ý định giá tín dụng an toàn.
         </p>
         <div id="aiSummaryTips" class="hidden bg-blue-50/50 border-l-4 border-blue-500 p-3 rounded-r-lg space-y-1">
           <div class="font-semibold text-slate-800">Khuyến nghị trọng tâm cho Tờ trình Tín dụng:</div>
@@ -438,7 +447,7 @@
             <tr>
               <td colspan="9" class="text-center py-8 text-slate-400">
                 <i class="ph-bold ph-magnifying-glass text-2xl mb-1 block"></i>
-                Chưa có tài sản so sánh. Hãy nạp file GCN hoặc bấm "Quét & Bổ Sung 5 TSSS Bằng Gemini AI".
+                Chưa có tài sản so sánh. Nhập xã/phường rồi bấm "Khảo Sát Giá BĐS Theo Thông Số Nhập Tay".
               </td>
             </tr>
           </tbody>
@@ -534,7 +543,7 @@
             <th class="border border-slate-300 p-1.5">DT (m²)</th>
             <th class="border border-slate-300 p-1.5">Mặt Tiền</th>
             <th class="border border-slate-300 p-1.5">Giá Rao Bán</th>
-            <th class="border border-slate-300 p-1.5">Giá Sau CK 10%</th>
+            <th class="border border-slate-300 p-1.5">Sau CK 10%</th>
             <th class="border border-slate-300 p-1.5">Tương Đồng</th>
             <th class="border border-slate-300 p-1.5">Nguồn Tin Rao Bán</th>
           </tr>
@@ -684,7 +693,7 @@
           iconSize: [34, 34], iconAnchor: [17, 17]
         });
         const lotName = document.getElementById('targetLot').value || "Tài sản mục tiêu";
-        const addrName = document.getElementById('targetStreet').value || "";
+        const addrName = document.getElementById('targetStreet').value || document.getElementById('targetWard').value || "";
         targetMarker = L.marker([targetCoords.lat, targetCoords.lng], { icon: targetIcon })
           .addTo(map)
           .bindPopup(`<b>${lotName}</b><br>${addrName}<br>Diện tích: ${area} m²`);
@@ -808,7 +817,7 @@
           <i class="ph-fill ph-warning-circle text-amber-600 text-xl flex-shrink-0"></i>
           <div>
             <div class="font-bold text-sm">Chưa phát hiện Gemini API Key!</div>
-            <p class="mt-0.5">Vui lòng bấm nút <strong>"Gemini API Key"</strong> ở góc trên bên phải để dán mã khóa AI Studio của bạn.</p>
+            <p class="mt-0.5">Vui lòng bấm nút <strong>"Gemini API Key"</strong> ở góc trên bên phải để dán mã khóa AI Studio của bạn. Nếu chưa có, bạn có thể tự nhập tay vào Khối 1 bên dưới.</p>
           </div>
         `;
         return;
@@ -972,47 +981,128 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
       });
     }
 
-    // THƯ VIỆN KHO DỮ LIỆU ĐỊA PHƯƠNG FALLBACK
+    // HÀM CHUẨN HÓA VÀ PHỎNG ĐOÁN GIÁ THÔNG MINH (QUY ĐỔI MỌI ĐƠN VỊ VỀ TỶ ĐỒNG)
+    function normalizePriceToTy(inputVal, contextStr = "") {
+      if (inputVal === null || inputVal === undefined) return 1.5;
+
+      let s = (typeof inputVal === 'string' ? inputVal : String(inputVal)).trim().toLowerCase();
+      if (contextStr) {
+        s += " " + contextStr.toLowerCase();
+      }
+
+      // Đổi dấu phẩy phân cách thập phân thành dấu chấm
+      s = s.replace(/(\d+),(\d+)/g, '$1.$2');
+
+      // 1. Nếu có chữ 'tỷ', 'ty' hoặc 't' riêng lẻ (ưu tiên kiểm tra đơn vị TỶ trước)
+      if (s.includes('tỷ') || s.includes('ty') || /\bt\b/.test(s)) {
+        // 1.1 Dạng: "1 tỷ 2xx", "1t2xx", "1.2xx tỷ", "1 tỷ 3xx" -> ước lượng 1.25 tỷ, 1.35 tỷ
+        const mTyXx = s.match(/(\d+)[\s\.\,\-]*(?:tỷ|ty|\bt\b)[\s\.\,\-]*(\d)[x\*]+/i);
+        if (mTyXx) {
+          return parseFloat(mTyXx[1] + "." + mTyXx[2] + "5");
+        }
+
+        // 1.2 Dạng: "1 tỷ xxx", "1tyxxx", "1.x tỷ", "1.xx tỷ" -> ước lượng khoảng 1.35 tỷ
+        const mTyOnlyXx = s.match(/(\d+)[\s\.\,\-]*(?:tỷ|ty|\bt\b)[\s\.\,\-]*[x\*]+/i);
+        if (mTyOnlyXx) {
+          return parseFloat(mTyOnlyXx[1]) + 0.35;
+        }
+        const mDotXTy = s.match(/(\d+)\.[x\*]+\s*(?:tỷ|ty|\bt\b)/i);
+        if (mDotXTy) {
+          return parseFloat(mDotXTy[1]) + 0.35;
+        }
+
+        // 1.3 Dạng: "1 tỷ 350", "1t5", "1 tỷ 500 triệu", "2.4 tỷ", "1 tỷ"
+        const mTyTr = s.match(/(\d+(?:\.\d+)?)\s*(?:tỷ|ty|\bt\b)\s*(\d+)?/i);
+        if (mTyTr) {
+          let mainTy = parseFloat(mTyTr[1]);
+          if (mTyTr[2]) {
+            let sub = mTyTr[2];
+            if (sub.length === 1) mainTy += parseFloat("0." + sub); // 1t5 -> 1.5
+            else if (sub.length === 2) mainTy += parseFloat("0." + sub); // 1t25 -> 1.25
+            else if (sub.length === 3) mainTy += parseFloat("0." + sub); // 1 tỷ 350 -> 1.35
+            else if (parseFloat(sub) >= 1000) mainTy += parseFloat(sub) / 1000000000;
+          }
+          return Math.round(mainTy * 1000) / 1000;
+        }
+      }
+
+      // 2. Dạng 'triệu', 'tr':
+      // 2.1 Dạng: "9xx tr", "8xx triệu", "9xx" -> ước lượng 950 triệu = 0.95 tỷ
+      const mTrXx = s.match(/(\d)[x\*]{2}\s*(?:tr|triệu|trieu)?/i);
+      if (mTrXx) {
+        return parseFloat(mTrXx[1] + "50") / 1000.0;
+      }
+
+      // 2.2 Dạng: "980 tr", "980 triệu", "450tr", "850 triệu" -> 0.98 tỷ, 0.45 tỷ
+      const mTrOnly = s.match(/(\d+(?:\.\d+)?)\s*(?:tr|triệu|trieu)(?!\w)/i);
+      if (mTrOnly) {
+        return Math.round((parseFloat(mTrOnly[1]) / 1000.0) * 1000) / 1000;
+      }
+
+      // 3. Xử lý số thuần (Number hoặc chuỗi số)
+      const numMatches = s.match(/\d+(?:\.\d+)?/);
+      if (!numMatches) return 1.5;
+      let num = parseFloat(numMatches[0]);
+      if (isNaN(num) || num <= 0) return 1.5;
+
+      // 3.1 Nếu là số tiền đầy đủ VNĐ (e.g. 980,000,000 hoặc 1,500,000,000)
+      if (num >= 10000000) {
+        return Math.round((num / 1000000000) * 1000) / 1000; // Quy đổi về TỶ ĐỒNG
+      }
+
+      // 3.2 Nếu là số nguyên hàng trăm/hàng nghìn (e.g. 980, 850, 1200, 2500)
+      if (num >= 50 && num < 10000) {
+        if (s.includes('tỷ') || s.includes('ty')) {
+          return num;
+        }
+        return Math.round((num / 1000.0) * 1000) / 1000; // 980 -> 0.98 tỷ
+      }
+
+      // 3.3 Đã ở đơn vị tỷ đồng (e.g. 0.98, 1.25, 2.4)
+      return Math.round(num * 1000) / 1000;
+    }
+
+    // THƯ VIỆN KHO DỮ LIỆU ĐỊA PHƯƠNG FALLBACK (NẾU API BỊ NGHẼN HOẶC HẾT QUOTA)
     function getFallbackCompsForArea(ward, district, area, roadType) {
       const isQuyNhon = (ward + district).toLowerCase().includes("trần quang diệu") || (ward + district).toLowerCase().includes("quy nhơn");
 
       if (isQuyNhon) {
         return {
-          aiSummary: `Thông tin khảo sát tại <strong>Phường Trần Quang Diệu, TP Quy Nhơn</strong>: Thị trường đất ở đô thị (ODT) trong các khu dân cư hiện hữu ghi nhận mức giá phổ biến từ <strong>18 - 24 triệu VNĐ/m²</strong> đối với hẻm bê tông 3 - 4m, và từ <strong>35 - 50 triệu VNĐ/m²</strong> đối với mặt tiền các trục chính (Hùng Vương, Trần Hưng Đạo kéo dài).`,
+          aiSummary: `Thông tin khảo sát tại <strong>${ward || 'Phường Trần Quang Diệu'}, ${district || 'TP Quy Nhơn'}</strong>: Thị trường đất ở đô thị (ODT) trong các khu dân cư hiện hữu ghi nhận mức giá phổ biến từ <strong>18 - 24 triệu VNĐ/m²</strong> đối với hẻm bê tông 3 - 4m, và từ <strong>35 - 50 triệu VNĐ/m²</strong> đối với mặt tiền các trục chính (Hùng Vương, Trần Hưng Đạo kéo dài).`,
           recommendations: [
-            "Các thửa đất trong hẻm ba gác / lối đi chung 3m tại KV 7 có thanh khoản ổn định, đơn giá định giá an toàn nên dao động 17 - 19.5 triệu VNĐ/m².",
-            "Tài sản mục tiêu có tính pháp lý chuẩn ODT lâu dài, diện tích gọn (40 - 60m²) dễ thanh khoản khi phát mãi.",
+            "Các thửa đất trong hẻm ba gác / lối đi chung 3m tại khu vực này có thanh khoản ổn định, đơn giá định giá an toàn nên dao động 17 - 19.5 triệu VNĐ/m².",
+            "Tài sản mục tiêu có tính pháp lý ODT lâu dài, diện tích phổ biến dễ thanh khoản khi phát mãi.",
             "Khuyến nghị áp dụng chiết khấu thương lượng 10% và tỷ lệ cho vay an toàn LTV tối đa 70%."
           ],
           lat: 13.7928, lng: 109.1554,
           comps: [
             {
-              id: 1, address: "Hẻm 3m đường Hùng Vương, KV7, P. Trần Quang Diệu, Quy Nhơn", roadType: "hem_oto",
-              roadDesc: "Hẻm bê tông 3.5m ô tô vào tận cổng", area: 52.0, frontage: 4.2, depth: 12.4,
-              rawPrice: 1.15, link: `https://www.google.com/search?q=${encodeURIComponent('site:facebook.com/groups "Trần Quang Diệu" "Quy Nhơn" "bán đất"')}`,
+              id: 1, address: `Hẻm 3.5m đường Hùng Vương, ${ward || 'Trần Quang Diệu'}, Quy Nhơn`, roadType: "hem_oto",
+              roadDesc: "Hẻm bê tông 3.5m ô tô vào tận cổng", area: Math.round(area * 1.05) || 55.0, frontage: 4.2, depth: 13.1,
+              rawPrice: 1.15, link: `https://www.google.com/search?q=${encodeURIComponent('site:facebook.com/groups "' + (ward || 'Trần Quang Diệu') + '" "Quy Nhơn" "bán đất"')}`,
               sourceType: "facebook", sourceName: "Group BĐS Quy Nhơn", distanceMeters: 280
             },
             {
-              id: 2, address: "Tổ 4, KV7, Phường Trần Quang Diệu, Quy Nhơn (Cách 350m)", roadType: "hem_bagac",
-              roadDesc: "Lối đi chung rộng 3m, khu dân cư đông đúc", area: 48.0, frontage: 4.0, depth: 12.0,
+              id: 2, address: `Khu dân cư hiện hữu, ${ward || 'Phường Trần Quang Diệu'}, Quy Nhơn`, roadType: "hem_bagac",
+              roadDesc: "Lối đi chung rộng 3m, khu dân cư đông đúc", area: Math.round(area * 0.95) || 48.0, frontage: 4.0, depth: 12.0,
               rawPrice: 1.05, link: `https://batdongsan.com.vn`,
               sourceType: "batdongsan", sourceName: "Batdongsan.com.vn", distanceMeters: 350
             },
             {
-              id: 3, address: "Gần Chợ Trần Quang Diệu, TP Quy Nhơn", roadType: "hem_oto",
-              roadDesc: "Đường bê tông 4m thông thoáng", area: 65.0, frontage: 4.5, depth: 14.4,
+              id: 3, address: `Gần Chợ ${ward || 'Trần Quang Diệu'}, TP Quy Nhơn`, roadType: "hem_oto",
+              roadDesc: "Đường bê tông 4m thông thoáng", area: Math.round(area * 1.2) || 65.0, frontage: 4.5, depth: 14.4,
               rawPrice: 1.45, link: `https://chotot.com`,
               sourceType: "chotot", sourceName: "Chợ Tốt Nhà Quy Nhơn", distanceMeters: 620
             },
             {
-              id: 4, address: "Đường nhánh QL1D, P. Trần Quang Diệu, Quy Nhơn", roadType: "hem_oto",
-              roadDesc: "Hẻm ô tô 4m nối đường lớn", area: 75.0, frontage: 5.0, depth: 15.0,
+              id: 4, address: `Đường nhánh QL1D, ${ward || 'Trần Quang Diệu'}, Quy Nhơn`, roadType: "hem_oto",
+              roadDesc: "Hẻm ô tô 4m nối đường lớn", area: Math.round(area * 1.3) || 75.0, frontage: 5.0, depth: 15.0,
               rawPrice: 1.65, link: `https://alonhadat.com.vn`,
               sourceType: "alonhadat", sourceName: "Alonhadat Quy Nhơn", distanceMeters: 780
             },
             {
-              id: 5, address: "Khu dân cư Chợ Chi Đán, P. Trần Quang Diệu, Quy Nhơn", roadType: "hem_bagac",
-              roadDesc: "Hẻm 3m, gần trường học, sổ hồng riêng ODT", area: 45.0, frontage: 3.8, depth: 11.8,
+              id: 5, address: `Khu dân cư Chợ Chi Đán, ${ward || 'Trần Quang Diệu'}, Quy Nhơn`, roadType: "hem_bagac",
+              roadDesc: "Hẻm 3m, gần trường học, sổ hồng riêng ODT", area: Math.round(area * 0.9) || 45.0, frontage: 3.8, depth: 11.8,
               rawPrice: 0.98, link: `https://thuviennhadat.vn`,
               sourceType: "thuviennhadat", sourceName: "Thư Viện Nhà Đất", distanceMeters: 850
             }
@@ -1020,12 +1110,12 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
         };
       }
 
-      // Mặc định hoặc Phù Cát
+      // Mặc định hoặc Phù Cát / các địa phương khác
       return {
-        aiSummary: `Thông tin khảo sát tại <strong>${ward || 'Khu vực khảo sát'}, ${district || 'Bình Định'}</strong>: Thị trường đất ở trong khu dân cư ghi nhận mức giá rao bán dao động từ <strong>3.5 - 5.5 triệu VNĐ/m²</strong> đối với đường bê tông liên thôn, ô tô tránh nhau.`,
+        aiSummary: `Thông tin khảo sát tại <strong>${ward || 'Khu vực khảo sát'}, ${district || 'Bình Định'}</strong>: Thị trường đất ở trong khu dân cư ghi nhận mức giá rao bán dao động từ <strong>3.5 - 5.5 triệu VNĐ/m²</strong> đối với đường bê tông liên thôn/hẻm ô tô, và cao hơn đối với các trục giao thông chính.`,
         recommendations: [
           "Ưu tiên so sánh với các thửa đất có cùng lộ giới đường bê tông và diện tích tương đương trong bán kính 1km.",
-          "Cần xác minh hiện trạng mốc giới thực tế và quy hoạch mở rộng lộ giới đường liên thôn trước khi trình hạn mức.",
+          "Cần xác minh hiện trạng mốc giới thực tế và quy hoạch mở rộng lộ giới đường trước khi trình hạn mức.",
           "Đề xuất áp dụng chiết khấu thương lượng 10% để đảm bảo giá trị phát mại an toàn cho ngân hàng."
         ],
         lat: 13.9845, lng: 109.0745,
@@ -1033,7 +1123,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
           {
             id: 1, address: `Gần trung tâm ${ward || 'khu vực'}, đường ô tô vào tận cổng`, roadType: "hem_oto",
             roadDesc: "Đường bê tông 4m", area: Math.round(area * 0.9) || 280, frontage: 8.5, depth: 33.0,
-            rawPrice: 1.25, link: `https://www.google.com/search?q=${encodeURIComponent('site:facebook.com/groups ' + ward + ' bán đất')}`,
+            rawPrice: 1.25, link: `https://www.google.com/search?q=${encodeURIComponent('site:facebook.com/groups ' + (ward || '') + ' bán đất')}`,
             sourceType: "facebook", sourceName: "Group FB BĐS Địa Phương", distanceMeters: 250
           },
           {
@@ -1100,7 +1190,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
 
         const promptText = `Bạn là chuyên gia thẩm định giá tài sản bảo đảm của ngân hàng tại Việt Nam.
 Tài sản mục tiêu cần khảo sát giá có thông tin:
-- Địa bàn: ${target.ward || ''}, ${target.districtProvince || ''}
+- Địa bàn: ${target.ward || ''}, ${target.districtProvince || ''} (Lưu ý: hỗ trợ cả tên hành chính mới và cũ trước/sau sáp nhập)
 - Tuyến đường / vị trí: ${target.street || ''}, ${target.hamlet || ''}
 - Tổng diện tích: ${target.area || 0} m2 (Đất ở: ${target.resArea || 0} m2)
 - Mặt tiền: ${target.frontage || 0}m, Chiều sâu: ${target.depth || 0}m, Hình thể: ${target.shape || ''}
@@ -1109,7 +1199,11 @@ Tài sản mục tiêu cần khảo sát giá có thông tin:
 Yêu cầu thực hiện:
 1. Tổng hợp giá cả thị trường thực tế tại ${target.ward || ''}, ${target.districtProvince || ''}.
 2. Trả về đúng 5 tài sản so sánh (TSSS) gần đây tại cùng tuyến đường hoặc khu vực lân cận, tương đồng nhất với tài sản mục tiêu, phân bố qua các kênh: Facebook Group BĐS địa phương, Batdongsan.com.vn, Chotot Nhà, Alonhadat, Thư Viện Nhà Đất.
-3. Viết 1 đoạn tóm tắt thị trường (aiSummary) và 3 khuyến nghị thẩm định cho tờ trình tín dụng.
+3. QUY TẮC BẮT BUỘC VỀ GIÁ ("rawPrice"):
+   - Đơn vị tính BẮT BUỘC LÀ SỐ THỰC TỶ ĐỒNG (Ví dụ: 980 triệu ghi 0.98, 1 tỷ 250 ghi 1.25, 850 triệu ghi 0.85).
+   - Tuyệt đối KHÔNG trả về số tiền đầy đủ hàng trăm triệu hay hàng tỷ dạng 980000000 hay 980.
+   - Nếu tin rao không nêu giá cụ thể (như '1tỷxxx', '9xx triệu', '1.x tỷ', 'giá thoả thuận'), hãy dùng chuyên môn thẩm định giá để PHỎNG ĐOÁN một con số hợp lý nhất theo mặt bằng khu vực và trả về số thực theo TỶ ĐỒNG (Ví dụ: 1tỷxxx -> 1.35, 9xx tr -> 0.95).
+4. Viết 1 đoạn tóm tắt thị trường (aiSummary) và 3 khuyến nghị thẩm định cho tờ trình tín dụng.
 
 Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
 {
@@ -1190,6 +1284,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
       }
 
       currentComps = (marketData.comps || []).map((c, i) => {
+        const normalizedPrice = normalizePriceToTy(c.rawPrice, c.address + " " + (c.roadDesc || ""));
         return {
           id: i + 1,
           address: c.address,
@@ -1198,7 +1293,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
           area: parseFloat(c.area) || 100,
           frontage: parseFloat(c.frontage) || 5,
           depth: parseFloat(c.depth) || 20,
-          rawPrice: parseFloat(c.rawPrice) || 1.5,
+          rawPrice: normalizedPrice,
           link: c.link || `https://www.google.com/search?q=${encodeURIComponent(c.address + ' bán đất')}`,
           sourceType: c.sourceType || "facebook",
           sourceName: c.sourceName || "Tin rao BĐS",
@@ -1236,6 +1331,50 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
       if (linkAlonhadat) linkAlonhadat.href = `https://www.google.com/search?q=${encodeURIComponent('site:alonhadat.com.vn "' + w + '" "bán đất"')}`;
     }
 
+    // HÀM KÍCH HOẠT KHẢO SÁT KHI NGƯỜI DÙNG NHẬP LIỆU BẰNG TAY (KHÔNG CÓ ẢNH)
+    function triggerManualSurvey() {
+      const ward = document.getElementById('targetWard').value.trim();
+      const dist = document.getElementById('targetDistrictProvince').value.trim();
+      const area = parseFloat(document.getElementById('targetArea').value) || 0;
+
+      if (!ward && !dist) {
+        showToast("Vui lòng nhập tối thiểu Xã/Phường và Huyện/Tỉnh!");
+        document.getElementById('targetWard').focus();
+        return;
+      }
+
+      const target = {
+        lot: document.getElementById('targetLot').value.trim() || "Tài sản mục tiêu",
+        street: document.getElementById('targetStreet').value.trim() || "Tuyến đường chính",
+        hamlet: document.getElementById('targetHamlet').value.trim(),
+        ward: ward,
+        districtProvince: dist,
+        area: area || 100,
+        resArea: parseFloat(document.getElementById('targetResArea').value) || area || 100,
+        agriArea: parseFloat(document.getElementById('targetAgriArea').value) || 0,
+        frontage: parseFloat(document.getElementById('targetFrontage').value) || 5.0,
+        depth: parseFloat(document.getElementById('targetDepth').value) || 20.0,
+        roadType: document.getElementById('targetPosType').value,
+        roadWidth: parseFloat(document.getElementById('targetRoadWidth').value) || 4.0,
+        buildingType: document.getElementById('targetBuildingType').value.trim() || "Nhà ở hoặc Đất trống"
+      };
+
+      const btn = document.getElementById('btnManualSurvey');
+      btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang khảo sát giá...`;
+      btn.disabled = true;
+
+      // Cập nhật huy hiệu
+      document.getElementById('targetBadgeLot').innerText = target.lot;
+      document.getElementById('targetBadgeLot').className = "text-xs font-semibold px-2.5 py-1 rounded bg-slate-200 text-slate-700";
+      document.getElementById('targetBadgeType').innerText = `Đất ${target.area}m² (${target.ward || 'Khu vực'})`;
+      document.getElementById('targetBadgeType').className = "text-xs font-semibold px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
+
+      generateSmartCompsForArea(target).finally(() => {
+        btn.innerHTML = `<i class="ph-bold ph-magnifying-glass-plus text-base text-amber-300"></i> Khảo Sát Giá BĐS Theo Thông Số Nhập Tay`;
+        btn.disabled = false;
+      });
+    }
+
     function loadSampleTranThanhBa() {
       applyParsedData({
         lot: "Thửa 75 / Tờ bản đồ số 53", street: "Đường liên thôn (Đường bê tông)",
@@ -1260,7 +1399,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
     }
 
     function applyParsedData(data) {
-      if (data.lot) document.getElementById('targetLot').value = data.lot;
+      if (data.lot !== undefined) document.getElementById('targetLot').value = data.lot;
       if (data.street) document.getElementById('targetStreet').value = data.street;
       if (data.hamlet) document.getElementById('targetHamlet').value = data.hamlet;
       if (data.ward) document.getElementById('targetWard').value = data.ward;
@@ -1279,7 +1418,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
 
       if (data.lat && data.lng) targetCoords = { lat: data.lat, lng: data.lng };
 
-      document.getElementById('targetBadgeLot').innerText = data.lot || "Đã nạp";
+      document.getElementById('targetBadgeLot').innerText = data.lot || "Tài sản mục tiêu";
       document.getElementById('targetBadgeLot').className = "text-xs font-semibold px-2.5 py-1 rounded bg-slate-200 text-slate-700";
       document.getElementById('targetBadgeType').innerText = `Đất ${data.area || 0}m² + ${data.buildingType || 'CTXD'}`;
       document.getElementById('targetBadgeType').className = "text-xs font-semibold px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
@@ -1287,7 +1426,6 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
       renderMapElements();
       recalculateTargetValues();
 
-      // TỰ ĐỘNG KHẢO SÁT 5 BĐS SO SÁNH VÀ BÁO CÁO AI OVERVIEW NGAY LẬP TỨC
       generateSmartCompsForArea(data);
     }
 
@@ -1309,14 +1447,14 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
 
       document.getElementById('targetBadgeLot').innerText = 'Chưa nạp tài sản';
       document.getElementById('targetBadgeLot').className = "text-xs font-semibold px-2.5 py-1 rounded bg-slate-200 text-slate-600";
-      document.getElementById('targetBadgeType').innerText = 'Đang chờ GCN';
+      document.getElementById('targetBadgeType').innerText = 'Đang chờ thông số';
       document.getElementById('targetBadgeType').className = "text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 text-slate-500 border border-slate-300";
 
       document.getElementById('ocrStatusNotice').classList.add('hidden');
       clearAllFiles();
 
       currentComps = [];
-      document.getElementById('aiSummaryP1').innerText = 'Hệ thống đang sẵn sàng. Vui lòng nạp Giấy chứng nhận quyền sử dụng đất hoặc nhập thông tin địa chỉ tài sản mục tiêu để nhận định giá trị thị trường và gợi ý định giá tín dụng an toàn.';
+      document.getElementById('aiSummaryP1').innerText = 'Hệ thống đang sẵn sàng. Vui lòng nhập địa chỉ xã/phường hoặc nạp Giấy chứng nhận quyền sử dụng đất để nhận định giá trị thị trường và gợi ý định giá tín dụng an toàn.';
       document.getElementById('aiSummaryTips').classList.add('hidden');
 
       renderMapElements();
@@ -1329,11 +1467,16 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
       if (lot) {
         document.getElementById('targetBadgeLot').innerText = lot;
         document.getElementById('targetBadgeLot').className = "text-xs font-semibold px-2.5 py-1 rounded bg-slate-200 text-slate-700";
+      } else {
+        document.getElementById('targetBadgeLot').innerText = "Tài sản mục tiêu";
       }
+
       const ward = document.getElementById('targetWard').value.trim();
       const dist = document.getElementById('targetDistrictProvince').value.trim();
       if (ward || dist) {
         updateMultiChannelSearchLinks(ward, dist);
+        document.getElementById('targetBadgeType').innerText = `${ward || ''} ${dist || ''}`.trim();
+        document.getElementById('targetBadgeType').className = "text-xs font-semibold px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
       }
     }
 
@@ -1366,7 +1509,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
 
       if (currentComps.length === 0) {
         document.getElementById('compsCountBadge').innerText = "Chưa có tài sản so sánh";
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-slate-400"><i class="ph-bold ph-magnifying-glass text-2xl mb-1 block"></i>Chưa có tài sản so sánh. Hãy nạp file GCN hoặc bấm "Quét & Bổ Sung 5 TSSS Bằng Gemini AI".</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-slate-400"><i class="ph-bold ph-magnifying-glass text-2xl mb-1 block"></i>Chưa có tài sản so sánh. Nhập xã/phường rồi bấm "Khảo Sát Giá BĐS Theo Thông Số Nhập Tay".</td></tr>`;
         document.getElementById('statAvgSurveyPrice').innerHTML = `-- <span class="text-xs font-normal text-slate-500">tr/m²</span>`;
         document.getElementById('statProposedPrice').innerHTML = `-- <span class="text-xs font-normal text-emerald-700">tr/m²</span>`;
         document.getElementById('statTotalAssetValue').innerHTML = `-- <span class="text-xs font-normal text-slate-500">Tỷ VNĐ</span>`;
@@ -1377,11 +1520,13 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
 
       document.getElementById('compsCountBadge').innerText = `Đã chọn lọc ${currentComps.length} tài sản so sánh lân cận`;
       currentComps.forEach((comp, idx) => {
+        // Chuẩn hóa tuyệt đối về TỶ ĐỒNG (xử lý triệt để lỗi số tiền VNĐ hàng trăm triệu bị nhân nhầm)
+        comp.rawPrice = normalizePriceToTy(comp.rawPrice, comp.address + " " + (comp.roadDesc || ""));
         const rawUnitPrice = (comp.rawPrice * 1000) / comp.area;
         const discountedUnitPrice = rawUnitPrice * (1 - discountPercent / 100);
         let score = 85;
-        if (comp.roadType === 'hem_oto') score += 10;
-        if (area > 0 && Math.abs(comp.area - area) < 50) score += 5;
+        if (comp.roadType === document.getElementById('targetPosType').value) score += 10;
+        if (area > 0 && Math.abs(comp.area - area) < 40) score += 5;
         score = Math.min(score, 98);
 
         const weight = score / 100;
@@ -1417,7 +1562,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
         printTbody.appendChild(ptr);
       });
 
-      const avgDiscountedPrice = totalWeight > 0 ? (totalWeightedPrice / totalWeight) : 3.78;
+      const avgDiscountedPrice = totalWeight > 0 ? (totalWeightedPrice / totalWeight) : 18.5;
       const rawAvgPrice = avgDiscountedPrice / (1 - discountPercent / 100);
       const totalLandValue = area > 0 ? (area * (avgDiscountedPrice * 1000000)) / 1000000000 : 0;
       const grandTotalAsset = totalLandValue + bldTotalValue;
@@ -1429,11 +1574,11 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
       document.getElementById('statAssetBreakdown').innerText = `Đất: ${totalLandValue.toFixed(2)} Tỷ | Nhà: ${bldTotalValue.toFixed(2)} Tỷ`;
       document.getElementById('statMaxLoanLimit').innerHTML = `${maxLoan.toFixed(2)} <span class="text-xs font-normal text-slate-300">Tỷ VNĐ</span>`;
 
-      document.getElementById('pLotNumber').innerText = document.getElementById('targetLot').value || "--";
-      document.getElementById('pAddress').innerText = `${document.getElementById('targetStreet').value || ''}, ${document.getElementById('targetHamlet').value || ''}, ${document.getElementById('targetWard').value || ''}, ${document.getElementById('targetDistrictProvince').value || ''}`;
+      document.getElementById('pLotNumber').innerText = document.getElementById('targetLot').value || "Chưa có thông tin số thửa";
+      document.getElementById('pAddress').innerText = `${document.getElementById('targetStreet').value || ''}, ${document.getElementById('targetHamlet').value || ''}, ${document.getElementById('targetWard').value || ''}, ${document.getElementById('targetDistrictProvince').value || ''}`.replace(/^[\s,]+|[\s,]+$/g, '');
       document.getElementById('pAreaStructure').innerText = area > 0 ? `${area} m² (Đất ở lâu dài)` : "--";
       document.getElementById('pShape').innerText = `Mặt tiền ${document.getElementById('targetFrontage').value || '--'}m, Sâu ${document.getElementById('targetDepth').value || '--'}m`;
-      document.getElementById('pRoadWidth').innerText = `${document.getElementById('targetStreet').value || '--'} (Rộng ~${document.getElementById('targetRoadWidth').value || '--'}m)`;
+      document.getElementById('pRoadWidth').innerText = `${document.getElementById('targetStreet').value || 'Đường tiếp giáp'} (Rộng ~${document.getElementById('targetRoadWidth').value || '--'}m)`;
       document.getElementById('pBuilding').innerText = bldArea > 0 ? `${document.getElementById('targetBuildingType').value} (DT: ${bldArea} m², CLCL: ${bldQuality}%)` : "Không có / Đất trống";
       
       document.getElementById('pLandArea').innerText = `${area} m²`;
@@ -1446,29 +1591,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
     }
 
     function runAutoCrawler() {
-      const target = {
-        lot: document.getElementById('targetLot').value,
-        street: document.getElementById('targetStreet').value,
-        hamlet: document.getElementById('targetHamlet').value,
-        ward: document.getElementById('targetWard').value,
-        districtProvince: document.getElementById('targetDistrictProvince').value,
-        area: parseFloat(document.getElementById('targetArea').value) || 100,
-        resArea: parseFloat(document.getElementById('targetResArea').value) || 0,
-        frontage: parseFloat(document.getElementById('targetFrontage').value) || 5,
-        depth: parseFloat(document.getElementById('targetDepth').value) || 20,
-        roadType: document.getElementById('targetPosType').value,
-        roadWidth: parseFloat(document.getElementById('targetRoadWidth').value) || 4,
-        buildingType: document.getElementById('targetBuildingType').value
-      };
-
-      const btn = document.getElementById('btnAutoCrawl');
-      btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang quét tin...`;
-      btn.disabled = true;
-
-      generateSmartCompsForArea(target).finally(() => {
-        btn.innerHTML = `<i class="ph-bold ph-sparkle text-amber-300 text-base"></i> Quét & Bổ Sung 5 TSSS Bằng Gemini AI`;
-        btn.disabled = false;
-      });
+      triggerManualSurvey();
     }
 
     async function pasteFromClipboard() {
@@ -1483,14 +1606,12 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
       const text = document.getElementById('manualRawText').value.trim();
       if (!text) { showToast("Vui lòng nhập hoặc dán nội dung tin rao."); return; }
 
-      let area = 80, price = 1.2, frontage = 4.5, depth = 18;
+      let area = 80, frontage = 4.5, depth = 18;
       const mArea = text.match(/(\d+[\.,]?\d*)\s*(m2|m²)/i);
       if (mArea) area = parseFloat(mArea[1].replace(',', '.'));
 
-      const mPriceTy = text.match(/(\d+[\.,]?\d*)\s*(tỷ|ty)/i);
-      const mPriceTr = text.match(/(\d+[\.,]?\d*)\s*(triệu|tr)/i);
-      if (mPriceTy) price = parseFloat(mPriceTy[1].replace(',', '.'));
-      else if (mPriceTr) price = parseFloat(mPriceTr[1].replace(',', '.')) / 1000;
+      // Tự động phân tích và phỏng đoán giá ẩn/mập mờ (1tỷxxx, 9xx tr, 1 tỷ 2xx...) về TỶ ĐỒNG
+      let price = normalizePriceToTy(text, text);
 
       const mFront = text.match(/(ngang|mặt tiền|mt)\s*(\d+[\.,]?\d*)/i);
       if (mFront) frontage = parseFloat(mFront[2].replace(',', '.'));
@@ -1498,9 +1619,9 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
 
       currentComps.push({
         id: currentComps.length + 1,
-        address: text.slice(0, 45) + "...",
+        address: text.slice(0, 50) + "...",
         roadType: text.toLowerCase().includes("mặt tiền") ? "mat_tien" : "hem_oto",
-        roadDesc: text.toLowerCase().includes("mặt tiền") ? "Đường lớn" : "Đường bê tông",
+        roadDesc: text.toLowerCase().includes("mặt tiền") ? "Đường mặt tiền" : "Đường bê tông",
         area: area, frontage: frontage, depth: depth,
         rawPrice: price,
         link: "https://zalo.me", sourceType: "zalo", sourceName: "Tin nhắn môi giới Zalo",
