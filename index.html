@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LendLand Pro v4.8 - Thẩm Định Giá BĐS Tín Dụng</title>
+  <title>LendLand Pro v4.9 - Thẩm Định Giá BĐS Tín Dụng</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -27,7 +27,7 @@
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col">
 
-  <!-- HEADER v4.8 -->
+  <!-- HEADER v4.9 -->
   <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md no-print border-b border-slate-700">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
@@ -37,7 +37,7 @@
         <div>
           <div class="font-bold text-base tracking-wide flex items-center gap-2">
             LendLand Pro
-            <span class="text-xs bg-emerald-500 text-slate-900 font-extrabold px-2 py-0.5 rounded shadow">v4.8 Live</span>
+            <span class="text-xs bg-emerald-500 text-slate-900 font-extrabold px-2 py-0.5 rounded shadow">v4.9 Live</span>
           </div>
           <div class="text-xs text-slate-400">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm ngân hàng</div>
         </div>
@@ -45,7 +45,7 @@
       
       <div class="flex items-center gap-2">
         <button onclick="openApiKeyModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-2 rounded-lg border border-slate-600 flex items-center gap-1.5 transition shadow-sm">
-          <i class="ph-bold ph-key"></i> <span id="apiKeyBtnText">Cấu hình API Key</span>
+          <i class="ph-bold ph-key"></i> <span id="apiKeyBtnText">Cấu hình 2 API Key</span>
         </button>
         <button onclick="resetAllData()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-2 rounded-lg border border-slate-600 flex items-center gap-1.5 transition">
           <i class="ph-bold ph-arrow-counter-clockwise"></i> <span>Làm Mới</span>
@@ -181,7 +181,6 @@
           </div>
         </div>
 
-        <!-- KHỐI ĐỊNH GIÁ CTXD -->
         <div class="border border-amber-200 bg-amber-50/40 rounded-xl p-4">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-2">
@@ -217,7 +216,6 @@
           </div>
         </div>
 
-        <!-- HÀNG NÚT BẤM KHẢO SÁT & TÍNH TOÁN -->
         <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
           <div class="flex flex-wrap items-center gap-4 text-xs font-semibold">
             <div class="flex items-center gap-2">
@@ -460,37 +458,40 @@
     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
         <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
-          <i class="ph-bold ph-gear text-indigo-600 text-lg"></i> Cấu hình Google Gemini AI & Chế Độ Hoạt Động
+          <i class="ph-bold ph-gear text-indigo-600 text-lg"></i> Cấu hình Google Gemini AI & Quản Lý 2 Khóa API
         </h3>
         <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-slate-600"><i class="ph-bold ph-x text-lg"></i></button>
       </div>
       
-      <div class="space-y-3 text-xs">
-        <div>
-          <label class="block font-semibold text-slate-700 mb-1">Google AI Studio API Key:</label>
-          <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy..." class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 font-mono text-xs">
-          <p class="text-[11px] text-slate-400 mt-1">Khóa API được lưu trữ cục bộ (localStorage) trên máy của bạn, tuyệt đối bảo mật.</p>
+      <p class="text-xs text-slate-500">
+        Bạn có thể lưu sẵn cả 2 mã API Key độc lập (Gói Miễn Phí và Gói Trả Phí). Chọn chế độ nào, ứng dụng sẽ tự động kích hoạt mã khóa tương ứng mà không cần dán lại.
+      </p>
+
+      <div class="space-y-3.5 text-xs">
+        <!-- Ô 1: KHÓA CHO GÓI FREE TIER -->
+        <div id="boxModeFree" class="border rounded-xl p-3 bg-slate-50 transition border-slate-200">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="flex items-center gap-2 font-bold text-slate-800 cursor-pointer">
+              <input type="radio" name="apiMode" value="free" id="radioModeFree" class="text-indigo-600 focus:ring-indigo-500" onchange="updateApiModeUI()">
+              <span>1. API Key - Gói Miễn Phí (Free Tier)</span>
+            </label>
+            <span id="badgeStatusFree" class="text-[10px] px-2 py-0.5 rounded font-semibold bg-slate-200 text-slate-600">Chưa lưu</span>
+          </div>
+          <input type="password" id="geminiApiKeyFreeInput" placeholder="AIzaSy... (Khóa miễn phí từ AI Studio)" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 font-mono text-xs bg-white" oninput="updateKeyBadgeUI()">
+          <p class="text-[10px] text-slate-400 mt-1">Dành cho dự án chưa gắn thẻ thanh toán. Tự động điều tiết prompt chống vượt ngưỡng RPM.</p>
         </div>
 
-        <!-- TÙY CHỌN 2 CHẾ ĐỘ: FREE TIER VS PAY-AS-YOU-GO -->
-        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
-          <label class="block font-bold text-slate-800">Chế Độ Tài Khoản API:</label>
-          <div class="grid grid-cols-2 gap-2">
-            <label class="flex items-start gap-2 p-2.5 rounded-lg border bg-white cursor-pointer hover:border-indigo-400 transition" id="lblModeFree">
-              <input type="radio" name="apiMode" value="free" id="radioModeFree" class="mt-0.5 text-indigo-600 focus:ring-indigo-500" onchange="updateApiModeUI()">
-              <div>
-                <span class="font-bold text-slate-800 block">Miễn Phí (Free Tier)</span>
-                <span class="text-[10px] text-slate-500 leading-tight block mt-0.5">Tiết kiệm, tự động giãn cách lệnh, tối ưu prompt chống vượt hạn mức RPM.</span>
-              </div>
+        <!-- Ô 2: KHÓA CHO GÓI PAY-AS-YOU-GO -->
+        <div id="boxModePayg" class="border rounded-xl p-3 bg-slate-50 transition border-slate-200">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="flex items-center gap-2 font-bold text-emerald-800 cursor-pointer">
+              <input type="radio" name="apiMode" value="payg" id="radioModePayg" class="text-emerald-600 focus:ring-emerald-500" onchange="updateApiModeUI()">
+              <span class="flex items-center gap-1">2. API Key - Gói Trả Phí (Pay-As-You-Go <i class="ph-bold ph-lightning text-amber-500"></i>)</span>
             </label>
-            <label class="flex items-start gap-2 p-2.5 rounded-lg border bg-white cursor-pointer hover:border-indigo-400 transition" id="lblModePayg">
-              <input type="radio" name="apiMode" value="payg" id="radioModePayg" class="mt-0.5 text-indigo-600 focus:ring-indigo-500" onchange="updateApiModeUI()">
-              <div>
-                <span class="font-bold text-emerald-700 block flex items-center gap-1">Pay-As-You-Go <i class="ph-bold ph-lightning text-amber-500"></i></span>
-                <span class="text-[10px] text-slate-500 leading-tight block mt-0.5">Tốc độ tối đa, không chờ hàng đợi, ưu tiên phản hồi tức thì 1-2 giây.</span>
-              </div>
-            </label>
+            <span id="badgeStatusPayg" class="text-[10px] px-2 py-0.5 rounded font-semibold bg-slate-200 text-slate-600">Chưa lưu</span>
           </div>
+          <input type="password" id="geminiApiKeyPaygInput" placeholder="AIzaSy... (Khóa từ Project đã liên kết thẻ thanh toán)" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 font-mono text-xs bg-white" oninput="updateKeyBadgeUI()">
+          <p class="text-[10px] text-slate-400 mt-1">Dành cho dự án đã bật Billing. Tốc độ cực nhanh 1–2s, không chờ hàng đợi, băng thông lớn.</p>
         </div>
 
         <!-- BẬT/TẮT TÍNH NĂNG GOOGLE SEARCH GROUNDING -->
@@ -499,8 +500,8 @@
             <div class="flex items-center gap-2">
               <i class="ph-bold ph-globe-hemisphere-east text-indigo-600 text-lg"></i>
               <div>
-                <span class="font-bold text-slate-800 block text-xs">Google Search Grounding (Neo Tìm Kiếm)</span>
-                <span class="text-[10px] text-slate-500 block">AI tự động quét web thời gian thực để lấy tin rao thật và link bài viết gốc.</span>
+                <span class="font-bold text-slate-800 block text-xs">Google Search Grounding (Neo Tìm Kiếm Web Thật)</span>
+                <span class="text-[10px] text-slate-500 block">AI tự động tìm kiếm trực tiếp trên internet để lấy link và tin rao BĐS thực tế.</span>
               </div>
             </div>
             <label class="relative inline-flex items-center cursor-pointer">
@@ -509,14 +510,14 @@
             </label>
           </div>
           <p class="text-[10px] text-indigo-800/80 bg-white/70 p-2 rounded border border-indigo-100">
-            * <strong>Khuyên dùng:</strong> Kích hoạt tính năng này giúp các tài sản so sánh có link bài viết thật trên Facebook, Batdongsan.com.vn, Chợ Tốt... với thông số chuẩn xác nhất.
+            * <strong>Khuyên dùng:</strong> Bật tính năng này giúp bảng TSSS có đường link bài viết gốc trên Batdongsan, Chợ Tốt, Facebook... để cán bộ tín dụng dễ dàng đối chiếu.
           </p>
         </div>
       </div>
 
       <div class="flex justify-between items-center pt-2 border-t border-slate-200">
         <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-xs text-indigo-600 hover:underline flex items-center gap-1 font-semibold">
-          <i class="ph-bold ph-arrow-square-out"></i> Lấy khóa API miễn phí
+          <i class="ph-bold ph-arrow-square-out"></i> Lấy khóa API trên AI Studio
         </a>
         <div class="flex gap-2">
           <button onclick="closeApiKeyModal()" class="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Đóng</button>
@@ -741,26 +742,42 @@
       checkSavedApiKey();
     });
 
-    function checkSavedApiKey() {
-      const key = localStorage.getItem('gemini_api_key');
+    function getActiveApiKey() {
       const mode = localStorage.getItem('gemini_api_mode') || 'free';
+      if (mode === 'payg') {
+        return localStorage.getItem('gemini_api_key_payg') || localStorage.getItem('gemini_api_key') || '';
+      } else {
+        return localStorage.getItem('gemini_api_key_free') || localStorage.getItem('gemini_api_key') || '';
+      }
+    }
+
+    function checkSavedApiKey() {
+      const mode = localStorage.getItem('gemini_api_mode') || 'free';
+      const keyFree = localStorage.getItem('gemini_api_key_free') || (mode === 'free' ? localStorage.getItem('gemini_api_key') : '');
+      const keyPayg = localStorage.getItem('gemini_api_key_payg') || (mode === 'payg' ? localStorage.getItem('gemini_api_key') : '');
+      const activeKey = mode === 'payg' ? keyPayg : keyFree;
+
       const btnText = document.getElementById('apiKeyBtnText');
-      if (key) {
+      if (activeKey) {
         if (mode === 'payg') {
-          btnText.innerHTML = `⚡ PAYG: Đã kết nối`;
+          btnText.innerHTML = `<span class="text-amber-300 font-bold">⚡ PAYG</span>: Đã kết nối`;
         } else {
-          btnText.innerHTML = `Gemini: Free Tier`;
+          btnText.innerHTML = `<span class="text-emerald-300 font-bold">Free Tier</span>: Đã kết nối`;
         }
       } else {
-        btnText.innerText = "Cấu hình API Key";
+        btnText.innerText = "Cấu hình 2 API Key";
       }
     }
 
     function openApiKeyModal() {
       document.getElementById('apiKeyModal').classList.remove('hidden');
-      document.getElementById('geminiApiKeyInput').value = localStorage.getItem('gemini_api_key') || '';
-      
       const mode = localStorage.getItem('gemini_api_mode') || 'free';
+      const keyFree = localStorage.getItem('gemini_api_key_free') || (mode === 'free' ? localStorage.getItem('gemini_api_key') : '') || '';
+      const keyPayg = localStorage.getItem('gemini_api_key_payg') || (mode === 'payg' ? localStorage.getItem('gemini_api_key') : '') || '';
+
+      document.getElementById('geminiApiKeyFreeInput').value = keyFree;
+      document.getElementById('geminiApiKeyPaygInput').value = keyPayg;
+
       if (mode === 'payg') {
         document.getElementById('radioModePayg').checked = true;
       } else {
@@ -769,21 +786,45 @@
 
       const grounding = localStorage.getItem('gemini_search_grounding') !== 'false';
       document.getElementById('chkSearchGrounding').checked = grounding;
-      
+
       updateApiModeUI();
+      updateKeyBadgeUI();
     }
 
     function updateApiModeUI() {
       const isPayg = document.getElementById('radioModePayg').checked;
-      const lblFree = document.getElementById('lblModeFree');
-      const lblPayg = document.getElementById('lblModePayg');
+      const boxFree = document.getElementById('boxModeFree');
+      const boxPayg = document.getElementById('boxModePayg');
 
       if (isPayg) {
-        lblPayg.className = "flex items-start gap-2 p-2.5 rounded-lg border-2 border-emerald-500 bg-emerald-50/40 cursor-pointer shadow-xs";
-        lblFree.className = "flex items-start gap-2 p-2.5 rounded-lg border border-slate-200 bg-white cursor-pointer hover:border-slate-300 opacity-70";
+        boxPayg.className = "border-2 border-emerald-500 rounded-xl p-3 bg-emerald-50/40 shadow-sm transition";
+        boxFree.className = "border border-slate-200 rounded-xl p-3 bg-slate-50 opacity-70 transition";
       } else {
-        lblFree.className = "flex items-start gap-2 p-2.5 rounded-lg border-2 border-indigo-500 bg-indigo-50/40 cursor-pointer shadow-xs";
-        lblPayg.className = "flex items-start gap-2 p-2.5 rounded-lg border border-slate-200 bg-white cursor-pointer hover:border-slate-300 opacity-70";
+        boxFree.className = "border-2 border-indigo-500 rounded-xl p-3 bg-indigo-50/40 shadow-sm transition";
+        boxPayg.className = "border border-slate-200 rounded-xl p-3 bg-slate-50 opacity-70 transition";
+      }
+    }
+
+    function updateKeyBadgeUI() {
+      const kf = document.getElementById('geminiApiKeyFreeInput').value.trim();
+      const kp = document.getElementById('geminiApiKeyPaygInput').value.trim();
+      const badgeF = document.getElementById('badgeStatusFree');
+      const badgeP = document.getElementById('badgeStatusPayg');
+
+      if (kf) {
+        badgeF.innerText = "Đã nhập";
+        badgeF.className = "text-[10px] px-2 py-0.5 rounded font-semibold bg-indigo-100 text-indigo-700 border border-indigo-200";
+      } else {
+        badgeF.innerText = "Chưa lưu";
+        badgeF.className = "text-[10px] px-2 py-0.5 rounded font-semibold bg-slate-200 text-slate-600";
+      }
+
+      if (kp) {
+        badgeP.innerText = "Đã nhập ⚡";
+        badgeP.className = "text-[10px] px-2 py-0.5 rounded font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300";
+      } else {
+        badgeP.innerText = "Chưa lưu";
+        badgeP.className = "text-[10px] px-2 py-0.5 rounded font-semibold bg-slate-200 text-slate-600";
       }
     }
 
@@ -792,23 +833,31 @@
     }
 
     function saveApiKey() {
-      const key = document.getElementById('geminiApiKeyInput').value.trim();
+      const keyFree = document.getElementById('geminiApiKeyFreeInput').value.trim();
+      const keyPayg = document.getElementById('geminiApiKeyPaygInput').value.trim();
       const mode = document.getElementById('radioModePayg').checked ? 'payg' : 'free';
       const grounding = document.getElementById('chkSearchGrounding').checked;
 
-      if (key) {
-        localStorage.setItem('gemini_api_key', key);
-        localStorage.setItem('gemini_api_mode', mode);
-        localStorage.setItem('gemini_search_grounding', grounding ? 'true' : 'false');
-        localStorage.removeItem('gemini_cached_model');
-        checkSavedApiKey();
-        showToast("Đã lưu cấu hình API Key & Chế độ hoạt động thành công!");
+      if (keyFree) localStorage.setItem('gemini_api_key_free', keyFree);
+      else localStorage.removeItem('gemini_api_key_free');
+
+      if (keyPayg) localStorage.setItem('gemini_api_key_payg', keyPayg);
+      else localStorage.removeItem('gemini_api_key_payg');
+
+      localStorage.setItem('gemini_api_mode', mode);
+      localStorage.setItem('gemini_search_grounding', grounding ? 'true' : 'false');
+      localStorage.removeItem('gemini_cached_model');
+
+      const activeKey = mode === 'payg' ? keyPayg : keyFree;
+      if (activeKey) {
+        localStorage.setItem('gemini_api_key', activeKey);
+        showToast(`Đã lưu 2 khóa API & kích hoạt chế độ ${mode === 'payg' ? 'Pay-As-You-Go ⚡' : 'Miễn Phí (Free Tier)'}!`);
       } else {
         localStorage.removeItem('gemini_api_key');
-        localStorage.removeItem('gemini_cached_model');
-        checkSavedApiKey();
-        showToast("Đã xóa API Key");
+        showToast("Đã lưu cài đặt! Lưu ý: Chế độ đang chọn chưa có mã API Key.");
       }
+
+      checkSavedApiKey();
       closeApiKeyModal();
     }
 
@@ -969,7 +1018,8 @@
     async function executeOCRWithRealAI() {
       if (uploadedFilesList.length === 0) return;
 
-      const apiKey = localStorage.getItem('gemini_api_key');
+      const apiKey = getActiveApiKey();
+      const activeMode = localStorage.getItem('gemini_api_mode') || 'free';
       const statusBox = document.getElementById('ocrStatusNotice');
       statusBox.classList.remove('hidden');
 
@@ -978,8 +1028,8 @@
         statusBox.innerHTML = `
           <i class="ph-fill ph-warning-circle text-amber-600 text-xl flex-shrink-0"></i>
           <div>
-            <div class="font-bold text-sm">Chưa phát hiện Gemini API Key!</div>
-            <p class="mt-0.5">Vui lòng bấm nút <strong>"Cấu hình API Key"</strong> ở góc trên bên phải để dán mã khóa AI Studio của bạn.</p>
+            <div class="font-bold text-sm">Chưa có API Key cho chế độ ${activeMode === 'payg' ? 'Pay-As-You-Go ⚡' : 'Miễn Phí (Free Tier)'}!</div>
+            <p class="mt-0.5">Vui lòng bấm nút <strong>"Cấu hình 2 API Key"</strong> ở góc trên bên phải để điền mã khóa tương ứng cho chế độ này.</p>
           </div>
         `;
         return;
@@ -1304,12 +1354,14 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
     async function generateSmartCompsForArea(target) {
       updateMultiChannelSearchLinks(target.ward, target.districtProvince);
 
-      const apiKey = localStorage.getItem('gemini_api_key');
+      const apiKey = getActiveApiKey();
       const apiMode = localStorage.getItem('gemini_api_mode') || 'free';
       const enableGrounding = localStorage.getItem('gemini_search_grounding') !== 'false';
 
       const aiStatusBadge = document.getElementById('compsCountBadge');
-      if (aiStatusBadge) aiStatusBadge.innerText = enableGrounding ? "Đang quét thị trường với Google Search Grounding..." : "Đang phân tích thị trường bằng AI...";
+      if (aiStatusBadge) {
+        aiStatusBadge.innerText = enableGrounding ? "Đang quét tìm TSSS bằng Google Search Grounding..." : "Đang phân tích thị trường bằng Gemini AI...";
+      }
 
       if (!apiKey) {
         const fbData = getFallbackCompsForArea(target.ward, target.districtProvince, target.area, target.roadType);
@@ -1317,7 +1369,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
         return;
       }
 
-      showToast(enableGrounding ? "Google AI đang tìm kiếm tin rao thời gian thực trên web..." : "Gemini AI đang khảo sát thị trường...");
+      showToast(enableGrounding ? "Google AI đang tìm kiếm tin rao thời gian thực trên internet..." : "Gemini AI đang khảo sát thị trường...");
 
       try {
         let validModels = [];
@@ -1344,22 +1396,23 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
         }
 
         const promptText = `Bạn là chuyên gia thẩm định giá tài sản bảo đảm của ngân hàng tại Việt Nam.
-Hãy thực hiện tìm kiếm và khảo sát giá bất động sản thực tế cho khu vực sau:
-- Địa bàn: ${target.ward || ''}, ${target.districtProvince || ''} (Hỗ trợ cả tên hành chính mới và cũ trước/sau sáp nhập)
+Hãy tìm kiếm và khảo sát giá bất động sản thực tế cho khu vực sau:
+- Địa bàn: ${target.ward || ''}, ${target.districtProvince || ''} (Lưu ý: hỗ trợ cả tên hành chính mới và cũ trước/sau sáp nhập)
 - Tuyến đường / vị trí: ${target.street || ''}, ${target.hamlet || ''}
-- Tổng diện tích thửa đất: ${target.area || 0} m2 (Đất ở: ${target.resArea || 0} m2)
-- Mặt tiền: ${target.frontage || 0}m, Chiều sâu: ${target.depth || 0}m
-- Vị trí tiếp giáp: ${target.roadType || 'hem_oto'}, lộ giới đường: ${target.roadWidth || 4}m
+- Tổng diện tích: ${target.area || 0} m2 (Đất ở: ${target.resArea || 0} m2)
+- Mặt tiền: ${target.frontage || 0}m, Chiều sâu: ${target.depth || 0}m, Hình thể: ${target.shape || ''}
+- Vị trí tiếp giáp: ${target.roadType || 'hem_oto'}, lộ giới: ${target.roadWidth || 4}m
 
-YÊU CẦU BẮT BUỘC:
+Yêu cầu thực hiện:
 1. Tra cứu các tin rao bán đất/nhà THẬT mới nhất đang giao dịch tại khu vực ${target.ward || ''}, ${target.districtProvince || ''} qua các nguồn (Facebook Groups BĐS, Batdongsan.com.vn, Chợ Tốt Nhà, Alonhadat, Thư Viện Nhà Đất).
-2. Lập danh sách 6 đến 8 tài sản so sánh (TSSS) sát nhất với tài sản mục tiêu. Với mỗi TSSS:
-   - "rawPrice": Đơn vị tính BẮT BUỘC LÀ SỐ THỰC TỶ ĐỒNG (Ví dụ: 980 triệu ghi 0.98, 1 tỷ 250 ghi 1.25, 850 triệu ghi 0.85). Tuyệt đối KHÔNG ghi 980000000 hay 980.
-   - Nếu tin rao không nêu giá cụ thể (như '1tỷxxx', '9xx tr', '1.x tỷ'), hãy ước tính con số hợp lý nhất theo mặt bằng khu vực và trả về số thực theo TỶ ĐỒNG (Ví dụ: 1.35, 0.95).
+2. Lập danh sách 7 đến 8 tài sản so sánh (TSSS) gần đây tại cùng tuyến đường hoặc khu vực lân cận, tương đồng nhất với tài sản mục tiêu.
+3. QUY TẮC BẮT BUỘC VỀ GIÁ ("rawPrice"):
+   - Đơn vị tính BẮT BUỘC LÀ SỐ THỰC TỶ ĐỒNG (Ví dụ: 980 triệu ghi 0.98, 1 tỷ 250 ghi 1.25, 850 triệu ghi 0.85). Tuyệt đối KHÔNG ghi số tiền nguyên hàng trăm triệu hay hàng tỷ dạng 980000000 hay 980.
+   - Nếu tin rao không nêu giá cụ thể (như '1tỷxxx', '9xx triệu', '1.x tỷ', 'giá thoả thuận'), hãy dùng chuyên môn thẩm định giá để PHỎNG ĐOÁN một con số hợp lý nhất theo mặt bằng khu vực và trả về số thực theo TỶ ĐỒNG (Ví dụ: 1tỷxxx -> 1.35, 9xx tr -> 0.95).
    - "link": Đường link bài đăng thực tế nếu tìm thấy từ tìm kiếm, hoặc link tìm kiếm sàn tương ứng.
-3. Viết 1 đoạn tóm tắt thị trường (aiSummary) ghi rõ khoảng giá mặt tiền vs giá hẻm tại ${target.ward || ''}, và 3 khuyến nghị thẩm định cho tờ trình tín dụng.
+4. Viết 1 đoạn tóm tắt thị trường (aiSummary) và 3 khuyến nghị thẩm định cho tờ trình tín dụng.
 
-Chỉ trả về DUY NHẤT một chuỗi JSON hợp lệ theo cấu trúc sau (không kèm markdown \`\`\`):
+Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\`\`):
 {
   "aiSummary": "Thông tin khảo sát bất động sản tại...",
   "recommendations": [
@@ -1379,13 +1432,14 @@ Chỉ trả về DUY NHẤT một chuỗi JSON hợp lệ theo cấu trúc sau (
       "rawPrice": 0.0,
       "link": "https://...",
       "sourceType": "facebook | batdongsan | chotot | alonhadat | thuviennhadat",
-      "sourceName": "Tên nguồn tin...",
+      "sourceName": "Facebook BĐS Địa Phương",
       "distanceMeters": 350
     }
   ]
 }`;
 
         let successMarket = null;
+        let usedModelName = "";
 
         for (const model of validModels) {
           try {
@@ -1405,6 +1459,7 @@ Chỉ trả về DUY NHẤT một chuỗi JSON hợp lệ theo cấu trúc sau (
             });
 
             if (!res.ok && enableGrounding) {
+              console.warn(`Thử lại ${model.name} không kèm tools googleSearch...`);
               delete payload.tools;
               res = await fetch(endpoint, {
                 method: "POST",
@@ -1439,12 +1494,13 @@ Chỉ trả về DUY NHẤT một chuỗi JSON hợp lệ theo cấu trúc sau (
                   });
                 }
 
+                usedModelName = model.name.replace('models/', '');
                 localStorage.setItem('gemini_cached_model', model.name);
                 break;
               }
             }
           } catch(e) {
-            console.warn(`Lỗi khi khảo sát với ${model.name}:`, e);
+            console.warn("Lỗi model market:", e);
           }
         }
 
