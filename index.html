@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LendLand Pro v4.2 - Thẩm Định Giá BĐS Tín Dụng</title>
+  <title>LendLand Pro v4.3 - Thẩm Định Giá BĐS Tín Dụng</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -27,7 +27,7 @@
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col">
 
-  <!-- HEADER v4.2 -->
+  <!-- HEADER v4.3 -->
   <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md no-print border-b border-slate-700">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
@@ -37,7 +37,7 @@
         <div>
           <div class="font-bold text-base tracking-wide flex items-center gap-2">
             LendLand Pro
-            <span class="text-xs bg-emerald-500 text-slate-900 font-extrabold px-2 py-0.5 rounded shadow">v4.2 Live</span>
+            <span class="text-xs bg-emerald-500 text-slate-900 font-extrabold px-2 py-0.5 rounded shadow">v4.3 Live</span>
           </div>
           <div class="text-xs text-slate-400">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm ngân hàng</div>
         </div>
@@ -67,7 +67,7 @@
           <div class="p-2 bg-indigo-100 text-indigo-700 rounded-lg"><i class="ph-bold ph-scan text-xl"></i></div>
           <div>
             <h2 class="font-bold text-slate-800 text-base">Quét & Nhận Diện Giấy Chứng Nhận QSD Đất (PDF / Nhiều Ảnh)</h2>
-            <p class="text-xs text-slate-500">Tự động dò tìm Model Gemini phù hợp để bóc tách thông số pháp lý, diện tích, kích thước thửa đất</p>
+            <p class="text-xs text-slate-500">Tự động dùng Gemini AI bóc tách thông số pháp lý, diện tích, kích thước thửa đất</p>
           </div>
         </div>
         <button onclick="loadSampleTranThanhBa()" class="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 flex items-center gap-1.5 font-medium transition">
@@ -703,6 +703,7 @@
       } catch (e) { zoomToTarget(); }
     }
 
+    // XỬ LÝ CHỌN TỆP
     function handleFileSelected(event) {
       const files = event.target.files;
       if (!files || files.length === 0) return;
@@ -774,7 +775,7 @@
       document.getElementById('ocrStatusNotice').classList.add('hidden');
     }
 
-    // THUẬT TOÁN TỰ ĐỘNG DÒ TÌM MODEL QUA LISTMODELS (KHÔNG BAO GIỜ BỊ LỖI NOT FOUND)
+    // THUẬT TOÁN TỰ ĐỘNG THỬ TỪNG MODEL KHẢ DỤNG (ƯU TIÊN GEMINI-3.8-FLASH & AUTO-FALLBACK)
     async function executeOCRWithRealAI() {
       if (uploadedFilesList.length === 0) return;
 
@@ -798,32 +799,41 @@
       statusBox.innerHTML = `
         <i class="ph-bold ph-spinner animate-spin text-blue-600 text-xl flex-shrink-0"></i>
         <div>
-          <div class="font-bold text-sm">Đang kết nối Google AI Studio & Tự động dò tìm Model khả dụng...</div>
+          <div class="font-bold text-sm">Đang đọc hiểu Giấy chứng nhận bằng Google Gemini AI...</div>
           <p class="mt-0.5">Hệ thống đang chuẩn bị dữ liệu và gửi sang Gemini AI để trích xuất thông tin thửa đất.</p>
         </div>
       `;
 
       try {
-        // 1. Tự động truy vấn danh sách Model mà API Key này được phép dùng
+        // 1. Tự động truy vấn danh sách Model từ Google AI Studio
         const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
         if (!listResponse.ok) {
           const errData = await listResponse.json();
           throw new Error(errData.error?.message || "Mã API Key không hợp lệ hoặc bị chặn.");
         }
         const listData = await listResponse.json();
-        const availableModels = (listData.models || []).filter(m => 
+        let validModels = (listData.models || []).filter(m => 
           m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")
         );
 
-        if (availableModels.length === 0) {
+        if (validModels.length === 0) {
           throw new Error("Tài khoản của bạn không có model nào hỗ trợ tính năng generateContent.");
         }
 
-        // Ưu tiên chọn model flash mới nhất
-        let selectedModel = availableModels.find(m => m.name.includes("2.5-flash") || m.name.includes("2.0-flash") || m.name.includes("1.5-flash"));
-        if (!selectedModel) selectedModel = availableModels[0];
-        
-        console.log("Model được chọn tự động:", selectedModel.name);
+        // Sắp xếp ưu tiên: gemini-3.8-flash lên đầu, tiếp đến 2.0-flash, 1.5-flash, loại bỏ 2.5-flash bị ngừng cung cấp
+        validModels.sort((a, b) => {
+          const getScore = name => {
+            if (name.includes("3.8-flash")) return 100;
+            if (name.includes("2.0-flash")) return 90;
+            if (name.includes("1.5-flash")) return 80;
+            if (name.includes("flash") && !name.includes("2.5")) return 70;
+            if (name.includes("2.5-flash")) return -1; // Đẩy xuống cuối do Google đã ngừng
+            return 50;
+          };
+          return getScore(b.name) - getScore(a.name);
+        });
+
+        console.log("Danh sách model theo thứ tự ưu tiên:", validModels.map(m => m.name));
 
         // 2. Đọc toàn bộ các file ảnh/PDF người dùng đã tải lên vào mảng parts
         const promptText = `Bạn là chuyên gia thẩm định giá tín dụng ngân hàng Việt Nam. Đọc kỹ tất cả các trang/ảnh Giấy chứng nhận quyền sử dụng đất (Sổ đỏ / Sổ hồng) này và trả về kết quả dạng JSON với cấu trúc chính xác như sau:
@@ -863,41 +873,60 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
           });
         }
 
-        // 3. Gửi request đến model đã được Google xác nhận khả dụng
-        const generateUrl = `https://generativelanguage.googleapis.com/v1beta/${selectedModel.name}:generateContent?key=${apiKey}`;
-        const genResponse = await fetch(generateUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: parts }] })
-        });
+        // 3. VÒNG LẶP THỬ LẦN LƯỢT TỪNG MODEL: Nếu một model bị deprecated thì tự chuyển ngay sang model kế tiếp
+        let parsedData = null;
+        let lastErrorMsg = "";
+        let usedModelName = "";
 
-        if (!genResponse.ok) {
-          const genErr = await genResponse.json();
-          throw new Error(genErr.error?.message || "Lỗi xử lý hình ảnh từ Gemini AI.");
+        for (const model of validModels) {
+          try {
+            console.log(`Đang thử trích xuất bằng: ${model.name}...`);
+            const generateUrl = `https://generativelanguage.googleapis.com/v1beta/${model.name}:generateContent?key=${apiKey}`;
+            const genResponse = await fetch(generateUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ contents: [{ parts: parts }] })
+            });
+
+            if (!genResponse.ok) {
+              const genErr = await genResponse.json();
+              lastErrorMsg = genErr.error?.message || genResponse.statusText;
+              console.warn(`Model ${model.name} không khả dụng, thử model tiếp theo:`, lastErrorMsg);
+              continue; // Chuyển sang model tiếp theo trong danh sách
+            }
+
+            const genData = await genResponse.json();
+            const rawOutput = genData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            
+            let cleanJsonStr = rawOutput.trim();
+            const firstBrace = cleanJsonStr.indexOf('{');
+            const lastBrace = cleanJsonStr.lastIndexOf('}');
+            if (firstBrace !== -1 && lastBrace !== -1) {
+              cleanJsonStr = cleanJsonStr.substring(firstBrace, lastBrace + 1);
+            }
+            parsedData = JSON.parse(cleanJsonStr);
+            usedModelName = model.name.replace('models/', '');
+            break; // Đã trích xuất thành công, thoát vòng lặp
+          } catch (e) {
+            lastErrorMsg = e.message;
+            console.warn(`Lỗi khi gọi ${model.name}:`, e);
+          }
         }
 
-        const genData = await genResponse.json();
-        const rawOutput = genData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        
-        // Bóc tách JSON an toàn
-        let cleanJsonStr = rawOutput.trim();
-        const firstBrace = cleanJsonStr.indexOf('{');
-        const lastBrace = cleanJsonStr.lastIndexOf('}');
-        if (firstBrace !== -1 && lastBrace !== -1) {
-          cleanJsonStr = cleanJsonStr.substring(firstBrace, lastBrace + 1);
+        if (parsedData) {
+          applyParsedData(parsedData);
+          statusBox.className = "mt-4 p-4 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs flex items-start gap-3 shadow-sm";
+          statusBox.innerHTML = `
+            <i class="ph-fill ph-check-circle text-emerald-600 text-2xl flex-shrink-0"></i>
+            <div>
+              <div class="font-bold text-sm">Gemini AI (${usedModelName}) đã trích xuất thành công!</div>
+              <p class="mt-0.5">Thông tin pháp lý và sơ đồ đã được tự động điền vào biểu mẫu bên dưới. Vui lòng kiểm tra lại trước khi lập tờ trình.</p>
+            </div>
+          `;
+          showToast("AI đã đọc xong toàn bộ ảnh tài sản!");
+        } else {
+          throw new Error(lastErrorMsg || "Không có model nào trong tài khoản thực hiện được lệnh đọc ảnh.");
         }
-        const parsedData = JSON.parse(cleanJsonStr);
-
-        applyParsedData(parsedData);
-        statusBox.className = "mt-4 p-4 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs flex items-start gap-3 shadow-sm";
-        statusBox.innerHTML = `
-          <i class="ph-fill ph-check-circle text-emerald-600 text-2xl flex-shrink-0"></i>
-          <div>
-            <div class="font-bold text-sm">Gemini AI (${selectedModel.name.replace('models/', '')}) đã trích xuất thành công!</div>
-            <p class="mt-0.5">Thông tin pháp lý và sơ đồ đã được tự động điền vào biểu mẫu bên dưới. Vui lòng kiểm tra lại trước khi lập tờ trình.</p>
-          </div>
-        `;
-        showToast("AI đã đọc xong toàn bộ ảnh tài sản!");
 
       } catch (err) {
         console.error("Lỗi trích xuất AI:", err);
@@ -919,8 +948,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
         `;
       }
     }
-
-    function fileToBase64(file) {
+function fileToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -1211,18 +1239,22 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
         const text = await navigator.clipboard.readText();
         document.getElementById('manualRawText').value = text;
         showToast("Đã dán văn bản từ bộ nhớ tạm!");
-      } catch (err) { showToast("Vui lòng cấp quyền truy cập clipboard."); }
+      } catch (err) {
+        showToast("Vui lòng cấp quyền truy cập clipboard trên trình duyệt.");
+      }
     }
 
     function parseManualText() {
       const text = document.getElementById('manualRawText').value.trim();
       if (!text) { showToast("Vui lòng nhập hoặc dán nội dung tin rao."); return; }
+
       currentComps.push({
         id: currentComps.length + 1, address: "Tài sản môi giới cung cấp (Khu vực khảo sát)",
         roadType: "hem_oto", roadDesc: "Đường ô tô", area: 250.0, frontage: 7.5, depth: 33.3,
         rawPrice: 1.15, link: "https://zalo.me", sourceType: "zalo", sourceName: "Zalo Môi giới",
         lat: targetCoords.lat + 0.002, lng: targetCoords.lng + 0.002, distanceMeters: 300
       });
+
       document.getElementById('manualRawText').value = '';
       renderMapElements();
       recalculateTargetValues();
