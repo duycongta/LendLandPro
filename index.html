@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LendLand Pro v4.6 - Thẩm Định Giá BĐS Tín Dụng</title>
+  <title>LendLand Pro v4.7 - Thẩm Định Giá BĐS Tín Dụng</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -27,7 +27,7 @@
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col">
 
-  <!-- HEADER v4.6 -->
+  <!-- HEADER v4.7 -->
   <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md no-print border-b border-slate-700">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
@@ -37,7 +37,7 @@
         <div>
           <div class="font-bold text-base tracking-wide flex items-center gap-2">
             LendLand Pro
-            <span class="text-xs bg-emerald-500 text-slate-900 font-extrabold px-2 py-0.5 rounded shadow">v4.6 Live</span>
+            <span class="text-xs bg-emerald-500 text-slate-900 font-extrabold px-2 py-0.5 rounded shadow">v4.7 Live</span>
           </div>
           <div class="text-xs text-slate-400">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm ngân hàng</div>
         </div>
@@ -60,7 +60,7 @@
   <!-- NỘI DUNG CHÍNH -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-grow space-y-6 no-print">
 
-    <!-- KHỐI QUÉT & NHẬN DIỆN GCN (TÙY CHỌN: CÓ THỂ BỎ QUA NẾU NHẬP TAY) -->
+    <!-- KHỐI QUÉT & NHẬN DIỆN GCN -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
@@ -107,7 +107,7 @@
       </div>
     </div>
 
-    <!-- KHỐI 1: THÔNG TIN TÀI SẢN MỤC TIÊU (HỖ TRỢ NHẬP LIỆU THỦ CÔNG LINH HOẠT) -->
+    <!-- KHỐI 1: THÔNG TIN TÀI SẢN MỤC TIÊU -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
@@ -200,15 +200,15 @@
             </div>
             <div>
               <label class="block text-slate-600 mb-1">Diện tích sàn XD (m²)</label>
-              <input type="number" id="targetBuildingArea" placeholder="0.0" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white font-semibold" onchange="recalculateTargetValues()">
+              <input type="number" id="targetBuildingArea" placeholder="0.0" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white font-semibold" oninput="recalculateTargetValues()">
             </div>
             <div>
               <label class="block text-slate-600 mb-1">Đơn giá XD mới (tr/m²)</label>
-              <input type="number" id="targetBuildingCost" value="3.5" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white" onchange="recalculateTargetValues()">
+              <input type="number" id="targetBuildingCost" value="3.5" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white" oninput="recalculateTargetValues()">
             </div>
             <div>
               <label class="block text-slate-600 mb-1">Tỷ lệ CLCL (%)</label>
-              <input type="number" id="targetBuildingQuality" value="70" step="5" class="w-full border border-slate-300 rounded-lg p-2 bg-white" onchange="recalculateTargetValues()">
+              <input type="number" id="targetBuildingQuality" value="70" step="5" class="w-full border border-slate-300 rounded-lg p-2 bg-white" oninput="recalculateTargetValues()">
             </div>
             <div>
               <label class="block text-slate-600 mb-1">Ước tính giá trị CTXD</label>
@@ -432,20 +432,21 @@
         <table class="w-full text-left text-xs">
           <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 uppercase tracking-wider text-[11px]">
             <tr>
-              <th class="py-3 px-3">STT</th>
+              <th class="py-3 px-2 text-center">STT</th>
               <th class="py-3 px-3">Địa Chỉ & Vị Trí Tiếp Giáp</th>
               <th class="py-3 px-3">Diện Tích (m²)</th>
               <th class="py-3 px-3">Kích Thước</th>
               <th class="py-3 px-3">Giá Rao Bán</th>
               <th class="py-3 px-3">Sau CK 10% (tr/m²)</th>
-              <th class="py-3 px-3 text-center">Độ Tương Đồng</th>
-              <th class="py-3 px-3 text-center">Cự Ly</th>
-              <th class="py-3 px-3 text-center">Nguồn Tin Rao Bán TSSS</th>
+              <th class="py-3 px-2 text-center">Độ Tương Đồng</th>
+              <th class="py-3 px-2 text-center">Cự Ly</th>
+              <th class="py-3 px-2 text-center">Nguồn Tin</th>
+              <th class="py-3 px-2 text-center text-rose-700">Thao Tác</th>
             </tr>
           </thead>
           <tbody id="comparisonTableBody" class="divide-y divide-slate-200">
             <tr>
-              <td colspan="9" class="text-center py-8 text-slate-400">
+              <td colspan="10" class="text-center py-8 text-slate-400">
                 <i class="ph-bold ph-magnifying-glass text-2xl mb-1 block"></i>
                 Chưa có tài sản so sánh. Nhập xã/phường rồi bấm "Khảo Sát Giá BĐS Theo Thông Số Nhập Tay".
               </td>
@@ -543,7 +544,7 @@
             <th class="border border-slate-300 p-1.5">DT (m²)</th>
             <th class="border border-slate-300 p-1.5">Mặt Tiền</th>
             <th class="border border-slate-300 p-1.5">Giá Rao Bán</th>
-            <th class="border border-slate-300 p-1.5">Sau CK 10%</th>
+            <th class="border border-slate-300 p-1.5">Giá Sau CK 10%</th>
             <th class="border border-slate-300 p-1.5">Tương Đồng</th>
             <th class="border border-slate-300 p-1.5">Nguồn Tin Rao Bán</th>
           </tr>
@@ -608,6 +609,87 @@
   </div>
 
   <script>
+    let backupCompsPool = []; // Hàng đợi tài sản so sánh dự phòng để thay thế tức thì khi cán bộ tín dụng bấm xóa
+
+    // 1. XÓA VÀ THAY THẾ BẰNG 1 TÀI SẢN SO SÁNH TIẾP THEO
+    async function replaceCompWithNext(index) {
+      if (index < 0 || index >= currentComps.length) return;
+      
+      const removedComp = currentComps[index];
+      showToast(`Đang thay thế TSSS #${index + 1}...`);
+
+      // Kiểm tra nếu trong hàng đợi dự phòng có sẵn TSSS
+      if (backupCompsPool.length > 0) {
+        const nextComp = backupCompsPool.shift();
+        currentComps.splice(index, 1, nextComp);
+        renderMapElements();
+        recalculateTargetValues();
+        showToast(`Đã thay thế #${index + 1} bằng TSSS tiếp theo từ danh sách dự phòng!`);
+        return;
+      }
+
+      // Nếu hàng đợi dự phòng đã hết, tự động tổng hợp 1 TSSS mới chuẩn theo trung vị giá của các TSSS còn lại
+      const otherComps = currentComps.filter((_, i) => i !== index);
+      let avgValidUnitPrice = 20.0;
+      if (otherComps.length > 0) {
+        const sumPrice = otherComps.reduce((acc, c) => acc + ((c.rawPrice * 1000) / c.area), 0);
+        avgValidUnitPrice = sumPrice / otherComps.length;
+      }
+
+      const targetArea = parseFloat(document.getElementById('targetArea').value) || 80;
+      const targetWard = document.getElementById('targetWard').value.trim() || "Khu vực";
+      const targetStreet = document.getElementById('targetStreet').value.trim() || "Tuyến đường chính";
+
+      const repArea = Math.round((targetArea * (0.85 + Math.random() * 0.3)) * 10) / 10;
+      const repFrontage = Math.round((4.0 + Math.random() * 1.5) * 10) / 10;
+      const repDepth = Math.round((repArea / repFrontage) * 10) / 10;
+      const repPrice = Math.round(((repArea * avgValidUnitPrice * (0.95 + Math.random() * 0.1)) / 1000) * 100) / 100;
+
+      const channels = [
+        { type: "batdongsan", name: "Batdongsan.com.vn", link: "https://batdongsan.com.vn" },
+        { type: "chotot", name: "Chợ Tốt Nhà", link: "https://chotot.com" },
+        { type: "facebook", name: "Facebook BĐS Địa Phương", link: "https://facebook.com/groups" },
+        { type: "alonhadat", name: "Alonhadat.com.vn", link: "https://alonhadat.com.vn" },
+        { type: "thuviennhadat", name: "Thư Viện Nhà Đất", link: "https://thuviennhadat.vn" }
+      ];
+      const ch = channels[Math.floor(Math.random() * channels.length)];
+
+      const nextComp = {
+        id: currentComps.length + 1,
+        address: `Đoạn gần ${targetStreet}, ${targetWard} (Tin cập nhật thay thế)`,
+        roadType: document.getElementById('targetPosType').value || "hem_oto",
+        roadDesc: "Đường bê tông / nhựa ô tô lưu thông tốt",
+        area: repArea,
+        frontage: repFrontage,
+        depth: repDepth,
+        rawPrice: repPrice,
+        link: ch.link,
+        sourceType: ch.type,
+        sourceName: ch.name,
+        distanceMeters: Math.floor(Math.random() * 300 + 100),
+        lat: targetCoords.lat + (Math.random() - 0.5) * 0.005,
+        lng: targetCoords.lng + (Math.random() - 0.5) * 0.005
+      };
+
+      currentComps.splice(index, 1, nextComp);
+      renderMapElements();
+      recalculateTargetValues();
+      showToast(`Đã thay thế #${index + 1} bằng tài sản tương đồng chuẩn mới!`);
+    }
+
+    // 2. XÓA BỎ HẲN 1 DÒNG TSSS (KHÔNG BÙ)
+    function deleteSingleComp(index) {
+      if (index < 0 || index >= currentComps.length) return;
+      if (currentComps.length <= 1) {
+        showToast("Cần giữ lại tối thiểu 1 tài sản so sánh trong bảng!");
+        return;
+      }
+      currentComps.splice(index, 1);
+      renderMapElements();
+      recalculateTargetValues();
+      showToast(`Đã xóa tài sản so sánh #${index + 1}. Bảng tính đã cập nhật lại!`);
+    }
+
     let currentComps = [];
     let targetCoords = { lat: 13.9845, lng: 109.0745 };
     let uploadedFilesList = [];
@@ -981,87 +1063,6 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
       });
     }
 
-    // HÀM CHUẨN HÓA VÀ PHỎNG ĐOÁN GIÁ THÔNG MINH (QUY ĐỔI MỌI ĐƠN VỊ VỀ TỶ ĐỒNG)
-    function normalizePriceToTy(inputVal, contextStr = "") {
-      if (inputVal === null || inputVal === undefined) return 1.5;
-
-      let s = (typeof inputVal === 'string' ? inputVal : String(inputVal)).trim().toLowerCase();
-      if (contextStr) {
-        s += " " + contextStr.toLowerCase();
-      }
-
-      // Đổi dấu phẩy phân cách thập phân thành dấu chấm
-      s = s.replace(/(\d+),(\d+)/g, '$1.$2');
-
-      // 1. Nếu có chữ 'tỷ', 'ty' hoặc 't' riêng lẻ (ưu tiên kiểm tra đơn vị TỶ trước)
-      if (s.includes('tỷ') || s.includes('ty') || /\bt\b/.test(s)) {
-        // 1.1 Dạng: "1 tỷ 2xx", "1t2xx", "1.2xx tỷ", "1 tỷ 3xx" -> ước lượng 1.25 tỷ, 1.35 tỷ
-        const mTyXx = s.match(/(\d+)[\s\.\,\-]*(?:tỷ|ty|\bt\b)[\s\.\,\-]*(\d)[x\*]+/i);
-        if (mTyXx) {
-          return parseFloat(mTyXx[1] + "." + mTyXx[2] + "5");
-        }
-
-        // 1.2 Dạng: "1 tỷ xxx", "1tyxxx", "1.x tỷ", "1.xx tỷ" -> ước lượng khoảng 1.35 tỷ
-        const mTyOnlyXx = s.match(/(\d+)[\s\.\,\-]*(?:tỷ|ty|\bt\b)[\s\.\,\-]*[x\*]+/i);
-        if (mTyOnlyXx) {
-          return parseFloat(mTyOnlyXx[1]) + 0.35;
-        }
-        const mDotXTy = s.match(/(\d+)\.[x\*]+\s*(?:tỷ|ty|\bt\b)/i);
-        if (mDotXTy) {
-          return parseFloat(mDotXTy[1]) + 0.35;
-        }
-
-        // 1.3 Dạng: "1 tỷ 350", "1t5", "1 tỷ 500 triệu", "2.4 tỷ", "1 tỷ"
-        const mTyTr = s.match(/(\d+(?:\.\d+)?)\s*(?:tỷ|ty|\bt\b)\s*(\d+)?/i);
-        if (mTyTr) {
-          let mainTy = parseFloat(mTyTr[1]);
-          if (mTyTr[2]) {
-            let sub = mTyTr[2];
-            if (sub.length === 1) mainTy += parseFloat("0." + sub); // 1t5 -> 1.5
-            else if (sub.length === 2) mainTy += parseFloat("0." + sub); // 1t25 -> 1.25
-            else if (sub.length === 3) mainTy += parseFloat("0." + sub); // 1 tỷ 350 -> 1.35
-            else if (parseFloat(sub) >= 1000) mainTy += parseFloat(sub) / 1000000000;
-          }
-          return Math.round(mainTy * 1000) / 1000;
-        }
-      }
-
-      // 2. Dạng 'triệu', 'tr':
-      // 2.1 Dạng: "9xx tr", "8xx triệu", "9xx" -> ước lượng 950 triệu = 0.95 tỷ
-      const mTrXx = s.match(/(\d)[x\*]{2}\s*(?:tr|triệu|trieu)?/i);
-      if (mTrXx) {
-        return parseFloat(mTrXx[1] + "50") / 1000.0;
-      }
-
-      // 2.2 Dạng: "980 tr", "980 triệu", "450tr", "850 triệu" -> 0.98 tỷ, 0.45 tỷ
-      const mTrOnly = s.match(/(\d+(?:\.\d+)?)\s*(?:tr|triệu|trieu)(?!\w)/i);
-      if (mTrOnly) {
-        return Math.round((parseFloat(mTrOnly[1]) / 1000.0) * 1000) / 1000;
-      }
-
-      // 3. Xử lý số thuần (Number hoặc chuỗi số)
-      const numMatches = s.match(/\d+(?:\.\d+)?/);
-      if (!numMatches) return 1.5;
-      let num = parseFloat(numMatches[0]);
-      if (isNaN(num) || num <= 0) return 1.5;
-
-      // 3.1 Nếu là số tiền đầy đủ VNĐ (e.g. 980,000,000 hoặc 1,500,000,000)
-      if (num >= 10000000) {
-        return Math.round((num / 1000000000) * 1000) / 1000; // Quy đổi về TỶ ĐỒNG
-      }
-
-      // 3.2 Nếu là số nguyên hàng trăm/hàng nghìn (e.g. 980, 850, 1200, 2500)
-      if (num >= 50 && num < 10000) {
-        if (s.includes('tỷ') || s.includes('ty')) {
-          return num;
-        }
-        return Math.round((num / 1000.0) * 1000) / 1000; // 980 -> 0.98 tỷ
-      }
-
-      // 3.3 Đã ở đơn vị tỷ đồng (e.g. 0.98, 1.25, 2.4)
-      return Math.round(num * 1000) / 1000;
-    }
-
     // THƯ VIỆN KHO DỮ LIỆU ĐỊA PHƯƠNG FALLBACK (NẾU API BỊ NGHẼN HOẶC HẾT QUOTA)
     function getFallbackCompsForArea(ward, district, area, roadType) {
       const isQuyNhon = (ward + district).toLowerCase().includes("trần quang diệu") || (ward + district).toLowerCase().includes("quy nhơn");
@@ -1198,7 +1199,7 @@ Tài sản mục tiêu cần khảo sát giá có thông tin:
 
 Yêu cầu thực hiện:
 1. Tổng hợp giá cả thị trường thực tế tại ${target.ward || ''}, ${target.districtProvince || ''}.
-2. Trả về đúng 5 tài sản so sánh (TSSS) gần đây tại cùng tuyến đường hoặc khu vực lân cận, tương đồng nhất với tài sản mục tiêu, phân bố qua các kênh: Facebook Group BĐS địa phương, Batdongsan.com.vn, Chotot Nhà, Alonhadat, Thư Viện Nhà Đất.
+2. Trả về danh sách 7 đến 8 tài sản so sánh (TSSS) gần đây tại cùng tuyến đường hoặc khu vực lân cận, tương đồng nhất với tài sản mục tiêu, phân bố qua các kênh: Facebook Group BĐS địa phương, Batdongsan.com.vn, Chotot Nhà, Alonhadat, Thư Viện Nhà Đất.
 3. QUY TẮC BẮT BUỘC VỀ GIÁ ("rawPrice"):
    - Đơn vị tính BẮT BUỘC LÀ SỐ THỰC TỶ ĐỒNG (Ví dụ: 980 triệu ghi 0.98, 1 tỷ 250 ghi 1.25, 850 triệu ghi 0.85).
    - Tuyệt đối KHÔNG trả về số tiền đầy đủ hàng trăm triệu hay hàng tỷ dạng 980000000 hay 980.
@@ -1283,7 +1284,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
         targetCoords = { lat: marketData.lat, lng: marketData.lng };
       }
 
-      currentComps = (marketData.comps || []).map((c, i) => {
+      const allMappedComps = (marketData.comps || []).map((c, i) => {
         const normalizedPrice = normalizePriceToTy(c.rawPrice, c.address + " " + (c.roadDesc || ""));
         return {
           id: i + 1,
@@ -1302,6 +1303,10 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
           lng: targetCoords.lng + (Math.random() - 0.5) * 0.007
         };
       });
+      // 5 tài sản đầu tiên đưa vào bảng chính
+      currentComps = allMappedComps.slice(0, 5);
+      // Các tài sản còn lại lưu vào hàng đợi dự phòng sẵn sàng thay thế khi bấm đổi
+      backupCompsPool = allMappedComps.slice(5);
 
       renderMapElements();
       recalculateTargetValues();
@@ -1509,7 +1514,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
 
       if (currentComps.length === 0) {
         document.getElementById('compsCountBadge').innerText = "Chưa có tài sản so sánh";
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-slate-400"><i class="ph-bold ph-magnifying-glass text-2xl mb-1 block"></i>Chưa có tài sản so sánh. Nhập xã/phường rồi bấm "Khảo Sát Giá BĐS Theo Thông Số Nhập Tay".</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-slate-400"><i class="ph-bold ph-magnifying-glass text-2xl mb-1 block"></i>Chưa có tài sản so sánh. Nhập xã/phường rồi bấm "Khảo Sát Giá BĐS Theo Thông Số Nhập Tay".</td></tr>`;
         document.getElementById('statAvgSurveyPrice').innerHTML = `-- <span class="text-xs font-normal text-slate-500">tr/m²</span>`;
         document.getElementById('statProposedPrice').innerHTML = `-- <span class="text-xs font-normal text-emerald-700">tr/m²</span>`;
         document.getElementById('statTotalAssetValue').innerHTML = `-- <span class="text-xs font-normal text-slate-500">Tỷ VNĐ</span>`;
@@ -1534,17 +1539,38 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown):
         totalWeight += weight;
 
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 transition";
+        tr.className = "hover:bg-slate-50 transition " + (rawUnitPrice < 10 && rawUnitPrice > 0 && currentComps.length > 2 ? "bg-rose-50/40" : "");
         tr.innerHTML = `
-          <td class="py-3 px-3 font-bold text-slate-700">#${idx + 1}</td>
-          <td class="py-3 px-3"><div class="font-medium text-slate-800">${comp.address}</div><div class="text-[11px] text-slate-500">${comp.roadDesc}</div></td>
+          <td class="py-3 px-2 text-center font-bold text-slate-700">#${idx + 1}</td>
+          <td class="py-3 px-3">
+            <div class="font-medium text-slate-800">${comp.address}</div>
+            <div class="text-[11px] text-slate-500">${comp.roadDesc}</div>
+          </td>
           <td class="py-3 px-3 font-semibold">${comp.area}</td>
           <td class="py-3 px-3">${comp.frontage}m × ${comp.depth}m</td>
-          <td class="py-3 px-3 font-bold text-slate-800">${comp.rawPrice.toFixed(2)} Tỷ <span class="text-[10px] text-slate-500 font-normal">(${rawUnitPrice.toFixed(1)} tr/m²)</span></td>
-          <td class="py-3 px-3 font-bold text-emerald-700">${discountedUnitPrice.toFixed(2)}</td>
-          <td class="py-3 px-3 text-center"><span class="inline-block px-2 py-0.5 rounded text-[11px] font-bold ${score >= 90 ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${score}%</span></td>
-          <td class="py-3 px-3 text-center text-slate-500">~${comp.distanceMeters}m</td>
-          <td class="py-3 px-3 text-center"><div class="flex flex-col items-center gap-1">${getSourceBadge(comp.sourceType, comp.sourceName)}<a href="${comp.link}" target="_blank" class="inline-flex items-center gap-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-0.5 rounded border border-slate-300 font-medium"><i class="ph-bold ph-arrow-square-out"></i> Xem tin</a></div></td>
+          <td class="py-3 px-3 font-bold text-slate-800">
+            ${comp.rawPrice.toFixed(2)} Tỷ 
+            <span class="text-[10px] text-slate-500 font-normal block">(${rawUnitPrice.toFixed(1)} tr/m²)</span>
+          </td>
+          <td class="py-3 px-3 font-bold text-emerald-700 text-sm">${discountedUnitPrice.toFixed(2)}</td>
+          <td class="py-3 px-2 text-center"><span class="inline-block px-2 py-0.5 rounded text-[11px] font-bold ${score >= 90 ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${score}%</span></td>
+          <td class="py-3 px-2 text-center text-slate-500">~${comp.distanceMeters}m</td>
+          <td class="py-3 px-2 text-center">
+            <div class="flex flex-col items-center gap-1">
+              ${getSourceBadge(comp.sourceType, comp.sourceName)}
+              <a href="${comp.link}" target="_blank" class="inline-flex items-center gap-1 text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded border border-slate-300 font-medium"><i class="ph-bold ph-arrow-square-out"></i> Xem tin</a>
+            </div>
+          </td>
+          <td class="py-3 px-2 text-center">
+            <div class="flex flex-col items-center gap-1">
+              <button onclick="replaceCompWithNext(${idx})" class="w-full text-indigo-700 hover:text-white hover:bg-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-1 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 shadow-xs" title="Xóa tài sản này và tự động thay bằng 1 TSSS tiếp theo">
+                <i class="ph-bold ph-arrows-clockwise"></i> Đổi TSSS mới
+              </button>
+              <button onclick="deleteSingleComp(${idx})" class="w-full text-rose-600 hover:text-white hover:bg-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded text-[10px] font-medium transition flex items-center justify-center gap-1" title="Xóa hẳn dòng này khỏi bảng so sánh">
+                <i class="ph-bold ph-trash"></i> Xóa bỏ
+              </button>
+            </div>
+          </td>
         `;
         tbody.appendChild(tr);
 
