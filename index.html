@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>LendLand Pro v5.3 - Thẩm Định Giá BĐS Tín Dụng</title>
+  <title>LendLand Pro v5.6 - Thẩm Định Giá BĐS Tín Dụng</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -12,7 +12,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   
-  <!-- THƯ VIỆN TẠO VÀ ĐỌC MÃ QR CODE SIÊU NHẸ -->
+  <!-- THƯ VIỆN MẬT MÃ AES-256 & QR CODE -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 
@@ -21,7 +22,7 @@
     body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
     @media print {
       body { background-color: #fff !important; font-size: 11pt; color: #000 !important; }
-      .no-print, header, nav, #toastNotification, #floatingStatusBar, .leaflet-control-zoom, .leaflet-control-layers { display: none !important; }
+      .no-print, header, nav, #toastNotification, #floatingStatusBar, #lockScreenOverlay, .leaflet-control-zoom, .leaflet-control-layers { display: none !important; }
       #printArea { display: block !important; padding: 0 !important; }
       .print-page-break { page-break-after: always; }
       .shadow-sm, .shadow-md, .shadow-lg { box-shadow: none !important; border: 1px solid #cbd5e1 !important; }
@@ -31,37 +32,89 @@
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col relative select-none sm:select-auto">
 
-  <!-- THANH TRẠNG THÁI NỔI TRÔI CỐ ĐỊNH (RESPONSIVE FLOATING TOP BAR) -->
-  <div id="floatingStatusBar" class="hidden fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-50 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md max-w-[92vw] truncate">
+  <!-- MÀN HÌNH KHÓA MÃ PIN BẢO MẬT (PIN GATE LOCK SCREEN) -->
+  <div id="lockScreenOverlay" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 sm:p-7 shadow-2xl border border-slate-100 text-center space-y-4">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center text-3xl shadow-lg">
+        <i class="ph-bold ph-shield-check"></i>
+      </div>
+      <div>
+        <h2 class="font-bold text-slate-900 text-lg">LendLand Pro</h2>
+        <div class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider mt-0.5">Xác Thực Bảo Mật Tín Dụng</div>
+        <p class="text-xs text-slate-500 mt-1">Nhập mã PIN để mở khóa và tự động nạp 2 API Key</p>
+      </div>
+
+      <!-- Ô NHẬP MÃ PIN -->
+      <div class="space-y-2">
+        <div class="relative">
+          <input type="password" id="pinInput" maxlength="12" placeholder="Nhập mã PIN" class="w-full text-center text-lg tracking-[0.3em] font-bold border-2 border-slate-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition" onkeydown="if(event.key==='Enter') unlockAppWithPin()">
+          <button type="button" onclick="togglePinVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+            <i id="btnPinEye" class="ph-bold ph-eye text-lg"></i>
+          </button>
+        </div>
+        <div id="pinErrorMsg" class="hidden text-[11px] text-rose-600 font-semibold text-center"></div>
+      </div>
+
+      <!-- TÙY CHỌN DUY TRÌ ĐĂNG NHẬP THEO XX NGÀY -->
+      <div class="flex items-center justify-center gap-2 text-xs text-slate-600 bg-slate-50 py-2 px-3 rounded-xl border border-slate-200">
+        <input type="checkbox" id="chkRememberDays" class="rounded text-emerald-600 focus:ring-emerald-500" checked>
+        <label for="chkRememberDays" class="cursor-pointer font-medium">Ghi nhớ mở khóa trong:</label>
+        <input type="number" id="rememberDaysInput" value="30" min="1" max="365" class="w-12 border border-slate-300 rounded px-1.5 py-0.5 text-center font-bold text-emerald-700 bg-white">
+        <span>ngày</span>
+      </div>
+
+      <button onclick="unlockAppWithPin()" id="btnUnlockPin" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm active:scale-95">
+        <i class="ph-bold ph-lock-key-open"></i> Mở Khóa Ứng Dụng
+      </button>
+
+      <!-- 2 PHƯƠNG THỨC: NẠP TỪ CLOUD HOẶC NẠP QR -->
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+        <button onclick="openApiKeyModal()" class="text-indigo-600 hover:underline font-semibold flex items-center gap-1">
+          <i class="ph-bold ph-gear"></i> Cấu hình Két Cloud
+        </button>
+        <label class="text-emerald-700 hover:underline font-semibold flex items-center gap-1 cursor-pointer">
+          <i class="ph-bold ph-qr-code"></i> Nạp từ Ảnh QR
+          <input type="file" accept="image/*" class="hidden" onchange="handleQRFileSelected(event)">
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- THANH TRẠNG THÁI NỔI TRÔI CỐ ĐỊNH -->
+  <div id="floatingStatusBar" class="hidden fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md max-w-[92vw] truncate">
     <div id="floatingStatusIcon"></div>
     <span id="floatingStatusText" class="truncate">Đang xử lý dữ liệu...</span>
   </div>
 
-  <!-- HEADER v5.3 (RESPONSIVE MOBILE & PC) -->
-  <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md no-print border-b border-slate-700">
-    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
-      <div class="flex items-center space-x-2 sm:space-x-3 overflow-hidden">
-        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-lg sm:text-xl shadow-inner flex-shrink-0">
+  <!-- HEADER v5.6 -->
+  <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md no-print border-b border-slate-700">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-2.5 sm:space-x-3 overflow-hidden">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-lg sm:text-xl shadow-inner flex-shrink-0">
           <i class="ph-bold ph-shield-check"></i>
         </div>
         <div class="truncate">
           <div class="font-bold text-sm sm:text-base tracking-wide flex items-center gap-1.5 sm:gap-2">
             <span>LendLand Pro</span>
-            <span class="text-[10px] sm:text-xs bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow">v5.3 Live</span>
+            <span class="text-[10px] sm:text-xs bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow whitespace-nowrap">v5.6 Live</span>
+            <span class="text-[10px] text-slate-400 hidden sm:inline font-normal">by duycongta@gmail.com</span>
           </div>
-          <div class="text-[10px] sm:text-xs text-slate-400 truncate hidden xs:block">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm</div>
+          <div class="text-[11px] sm:text-xs text-slate-300 truncate">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm</div>
         </div>
       </div>
       
       <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
         <button onclick="openApiKeyModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-slate-600 flex items-center gap-1 transition shadow-sm">
-          <i class="ph-bold ph-key"></i> <span id="apiKeyBtnText" class="truncate max-w-[90px] sm:max-w-none">Cấu hình 2 Key</span>
+          <i class="ph-bold ph-key"></i> <span id="apiKeyBtnText">Cấu hình 2 Key</span>
         </button>
-        <button onclick="resetAllData()" title="Làm mới dữ liệu" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs p-1.5 sm:px-3 sm:py-2 rounded-lg border border-slate-600 flex items-center gap-1 transition">
+        <button onclick="lockAppNow()" title="Khóa ứng dụng ngay lập tức" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-lg border border-slate-600 flex items-center gap-1 transition">
+          <i class="ph-bold ph-lock-key"></i> <span class="hidden sm:inline">Khóa</span>
+        </button>
+        <button onclick="resetAllData()" title="Làm mới dữ liệu" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs p-1.5 sm:px-2.5 sm:py-2 rounded-lg border border-slate-600 flex items-center gap-1 transition">
           <i class="ph-bold ph-arrow-counter-clockwise"></i> <span class="hidden md:inline">Làm Mới</span>
         </button>
-        <button onclick="handleExportPDF()" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow text-[11px] sm:text-xs flex items-center gap-1 transition">
-          <i class="ph-bold ph-file-pdf text-sm sm:text-base"></i> <span class="hidden sm:inline">Xuất PDF</span><span class="sm:hidden">PDF</span>
+        <button onclick="handleExportPDF()" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg shadow text-[11px] sm:text-xs flex items-center gap-1 transition">
+          <i class="ph-bold ph-file-pdf text-sm"></i> <span class="hidden sm:inline">Xuất PDF</span><span class="sm:hidden">PDF</span>
         </button>
       </div>
     </div>
@@ -94,7 +147,6 @@
           </div>
         </label>
 
-        <!-- DANH SÁCH ẢNH PREVIEW -->
         <div id="loadedFilesContainer" class="hidden mt-4 space-y-3">
           <div class="flex items-center justify-between text-xs font-semibold text-slate-600">
             <span id="filesCountBadge" class="text-indigo-700 font-bold">Đã nạp 0 tệp</span>
@@ -129,7 +181,6 @@
       </div>
 
       <div class="p-4 sm:p-6 space-y-4 sm:space-y-5">
-        <!-- HÀNG 1: THÔNG TIN HÀNH CHÍNH -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 text-xs font-medium">
           <div>
             <label class="block text-slate-500 mb-1">Thửa đất / Tờ BĐ <span class="text-[10px] text-slate-400 font-normal">(Có thể để trống)</span></label>
@@ -153,7 +204,6 @@
           </div>
         </div>
 
-        <!-- HÀNG 2: DIỆN TÍCH & KÍCH THƯỚC -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 text-xs font-medium bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200">
           <div>
             <label class="block text-slate-700 font-semibold mb-1">Tổng diện tích (m²) *</label>
@@ -188,7 +238,6 @@
           </div>
         </div>
 
-        <!-- KHỐI ĐỊNH GIÁ CTXD -->
         <div class="border border-amber-200 bg-amber-50/40 rounded-xl p-3.5 sm:p-4">
           <div class="flex items-center justify-between mb-2.5">
             <div class="flex items-center gap-1.5 sm:gap-2">
@@ -224,7 +273,6 @@
           </div>
         </div>
 
-        <!-- HÀNG NÚT BẤM KHẢO SÁT DUY NHẤT -->
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
           <div class="flex flex-wrap items-center gap-3 text-xs font-semibold">
             <div class="flex items-center gap-1.5">
@@ -345,7 +393,6 @@
       </div>
 
       <div class="p-3.5 sm:p-4 grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
-        <!-- Dán tin thủ công / Zalo -->
         <div class="space-y-2">
           <div class="flex items-center justify-between text-xs font-semibold text-slate-700">
             <span>Dán tin rao từ Zalo / Facebook môi giới:</span>
@@ -361,7 +408,6 @@
           </div>
         </div>
 
-        <!-- 5 Cổng Tra Cứu Trực Tiếp Đa Kênh -->
         <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs space-y-2">
           <div class="font-bold text-slate-700 flex items-center gap-1.5">
             <i class="ph-bold ph-globe text-blue-600"></i> Tra Cứu Trực Tiếp 5 Kênh Lớn
@@ -411,7 +457,7 @@
       </div>
     </div>
 
-    <!-- KHỐI 6: BẢNG SO SÁNH (RESPONSIVE SCROLL) -->
+    <!-- KHỐI 6: BẢNG SO SÁNH (ĐÃ FIX TRIỆT ĐỂ LỖI CO CỘT TRÊN MOBILE) -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center gap-1.5 sm:gap-2">
@@ -421,20 +467,26 @@
         <span id="compsCountBadge" class="text-[11px] sm:text-xs text-slate-500">Chưa có tài sản so sánh</span>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs min-w-[700px] sm:min-w-full">
-          <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 uppercase tracking-wider text-[10px] sm:text-[11px]">
+      <!-- CHỈ BÁO VUỐT TRÊN MOBILE -->
+      <div class="text-[11px] text-indigo-700 bg-indigo-50/70 px-3 py-1.5 border-b border-indigo-100 flex items-center justify-between sm:hidden font-medium">
+        <span class="flex items-center gap-1.5"><i class="ph-bold ph-arrows-left-right text-base text-indigo-600"></i> Vuốt ngang bảng để xem đầy đủ cột</span>
+        <i class="ph-bold ph-hand-swipe text-base text-indigo-600"></i>
+      </div>
+
+      <div class="overflow-x-auto w-full" style="-webkit-overflow-scrolling: touch;">
+        <table class="w-full text-left text-xs" style="min-width: 980px;">
+          <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 uppercase tracking-wider text-[11px]">
             <tr>
-              <th class="py-2.5 sm:py-3 px-2 text-center w-10">STT</th>
-              <th class="py-2.5 sm:py-3 px-3">Địa Chỉ & Vị Trí Tiếp Giáp</th>
-              <th class="py-2.5 sm:py-3 px-2 text-center">DT (m²)</th>
-              <th class="py-2.5 sm:py-3 px-2 text-center">Kích Thước</th>
-              <th class="py-2.5 sm:py-3 px-2.5 text-right">Giá Rao Bán</th>
-              <th class="py-2.5 sm:py-3 px-2.5 text-right">Sau CK 10%</th>
-              <th class="py-2.5 sm:py-3 px-2 text-center">Tương Đồng</th>
-              <th class="py-2.5 sm:py-3 px-2 text-center">Cự Ly</th>
-              <th class="py-2.5 sm:py-3 px-2 text-center">Nguồn Tin</th>
-              <th class="py-2.5 sm:py-3 px-2 text-center text-rose-700 w-24">Thao Tác</th>
+              <th class="py-3 px-2 text-center w-12">STT</th>
+              <th class="py-3 px-3" style="min-width: 270px; max-width: 320px;">Địa Chỉ & Vị Trí Tiếp Giáp</th>
+              <th class="py-3 px-2 text-center w-20">DT (m²)</th>
+              <th class="py-3 px-2 text-center w-28">Kích Thước</th>
+              <th class="py-3 px-3 text-right w-28">Giá Rao Bán</th>
+              <th class="py-3 px-3 text-right w-32">Sau CK 10%</th>
+              <th class="py-3 px-2 text-center w-24">Tương Đồng</th>
+              <th class="py-3 px-2 text-center w-20">Cự Ly</th>
+              <th class="py-3 px-2 text-center w-32">Nguồn Tin</th>
+              <th class="py-3 px-2 text-center text-rose-700 w-28">Thao Tác</th>
             </tr>
           </thead>
           <tbody id="comparisonTableBody" class="divide-y divide-slate-200">
@@ -450,22 +502,22 @@
     </div>
   </main>
 
-  <!-- MODAL CẤU HÌNH API KEY VỚI TÍNH NĂNG XUẤT/NHẬP MÃ QR CỐ ĐỊNH -->
+  <!-- MODAL CẤU HÌNH KÉT CLOUD (JSONBIN.IO) & TẠO/NẠP QR BẢO MẬT -->
   <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-3.5 my-auto max-h-[95vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b pb-2.5">
         <h3 class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
-          <i class="ph-bold ph-gear text-indigo-600 text-base sm:text-lg"></i> Cấu hình Google Gemini AI & Quản Lý 2 Key
+          <i class="ph-bold ph-vault text-indigo-600 text-lg"></i> Két Cloud JSONBin.io & Quản Lý 2 Key
         </h3>
         <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-slate-600"><i class="ph-bold ph-x text-lg"></i></button>
       </div>
       
       <p class="text-[11px] sm:text-xs text-slate-500 leading-relaxed">
-        Lưu sẵn 2 mã API Key độc lập. Chọn chế độ nào, ứng dụng tự kích hoạt mã khóa tương ứng.
+        Key được lưu trữ bảo mật trên Két Cloud riêng của bạn. Đổi PIN đồng nghĩa thu hồi quyền truy cập của mọi người dùng khác ngay lập tức.
       </p>
 
       <div class="space-y-3 text-xs">
-        <!-- Ô 1: KHÓA CHO GÓI FREE TIER -->
+        <!-- Ô 1: KHÓA FREE TIER -->
         <div id="boxModeFree" class="border rounded-xl p-2.5 sm:p-3 bg-slate-50 transition border-slate-200">
           <div class="flex items-center justify-between mb-1">
             <label class="flex items-center gap-2 font-bold text-slate-800 cursor-pointer">
@@ -475,10 +527,9 @@
             <span id="badgeStatusFree" class="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-slate-200 text-slate-600">Chưa lưu</span>
           </div>
           <input type="password" id="geminiApiKeyFreeInput" placeholder="AIzaSy... (Khóa miễn phí từ AI Studio)" class="w-full border border-slate-300 rounded-lg p-2 sm:p-2.5 focus:ring-2 focus:ring-indigo-500 font-mono text-xs bg-white" oninput="updateKeyBadgeUI()">
-          <p class="text-[10px] text-slate-400 mt-0.5">Dành cho dự án chưa gắn thẻ. Tự động giãn cách tránh nghẽn RPM.</p>
         </div>
 
-        <!-- Ô 2: KHÓA CHO GÓI PAY-AS-YOU-GO -->
+        <!-- Ô 2: KHÓA PAY-AS-YOU-GO -->
         <div id="boxModePayg" class="border rounded-xl p-2.5 sm:p-3 bg-slate-50 transition border-slate-200">
           <div class="flex items-center justify-between mb-1">
             <label class="flex items-center gap-2 font-bold text-emerald-800 cursor-pointer">
@@ -488,86 +539,109 @@
             <span id="badgeStatusPayg" class="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-slate-200 text-slate-600">Chưa lưu</span>
           </div>
           <input type="password" id="geminiApiKeyPaygInput" placeholder="AIzaSy... (Khóa từ Project đã liên kết thẻ)" class="w-full border border-slate-300 rounded-lg p-2 sm:p-2.5 focus:ring-2 focus:ring-emerald-500 font-mono text-xs bg-white" oninput="updateKeyBadgeUI()">
-          <p class="text-[10px] text-slate-400 mt-0.5">Dành cho dự án đã bật Billing. Tốc độ cao 1–2s, không chờ đợi.</p>
         </div>
+
+        <!-- NÚT KIỂM TRA ĐỘ SẴN SÀNG CỦA CẢ 2 KEY -->
+        <div class="flex justify-between items-center bg-slate-100 p-2 rounded-lg">
+          <span class="text-[11px] text-slate-600 font-semibold">Kiểm tra kết nối 2 Key:</span>
+          <button onclick="testBothApiKeys()" id="btnTestKeys" type="button" class="text-xs bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 font-bold py-1 px-3 rounded shadow-xs flex items-center gap-1">
+            <i class="ph-bold ph-activity text-indigo-600"></i> Thử Kết Nối Ngay
+          </button>
+        </div>
+        <div id="keyTestResultNotice" class="hidden text-[11px] p-2.5 rounded-lg border font-medium"></div>
 
         <!-- BẬT/TẮT TÍNH NĂNG GOOGLE SEARCH GROUNDING -->
-        <div class="border border-indigo-100 rounded-xl p-2.5 sm:p-3 bg-indigo-50/40 space-y-1.5">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-1.5 sm:gap-2">
-              <i class="ph-bold ph-globe-hemisphere-east text-indigo-600 text-base sm:text-lg flex-shrink-0"></i>
-              <div>
-                <span class="font-bold text-slate-800 block text-xs">Google Search Grounding (Neo Tìm Kiếm)</span>
-                <span class="text-[10px] text-slate-500 block">AI quét web trực tiếp để lấy link và tin rao BĐS thật.</span>
-              </div>
+        <div class="border border-indigo-100 rounded-xl p-2.5 bg-indigo-50/40 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="ph-bold ph-globe-hemisphere-east text-indigo-600 text-lg flex-shrink-0"></i>
+            <div>
+              <span class="font-bold text-slate-800 block text-xs">Google Search Grounding (Neo Tìm Kiếm)</span>
+              <span class="text-[10px] text-slate-500 block">AI quét web trực tiếp để lấy link bài đăng thật.</span>
             </div>
-            <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-2">
-              <input type="checkbox" id="chkSearchGrounding" class="sr-only peer" checked>
-              <div class="w-8 h-4 sm:w-9 sm:h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 sm:after:h-4 sm:after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-2">
+            <input type="checkbox" id="chkSearchGrounding" class="sr-only peer" checked>
+            <div class="w-8 h-4 sm:w-9 sm:h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 sm:after:h-4 sm:after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+          </label>
+        </div>
+
+        <!-- KHỐI KẾT NỐI KÉT CLOUD (JSONBIN.IO) & ĐẶT MÃ PIN -->
+        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2.5">
+          <div class="font-bold text-slate-800 flex items-center justify-between">
+            <span class="flex items-center gap-1.5 text-xs"><i class="ph-bold ph-cloud-check text-indigo-600 text-base"></i> Cấu Hình Két Cloud JSONBin.io & Mã PIN</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] text-slate-500 mb-0.5 font-semibold">Bin ID:</label>
+              <input type="text" id="vaultBinIdInput" placeholder="Ví dụ: 672..." class="w-full border border-slate-300 rounded-lg p-2 font-mono text-[11px] bg-white">
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-500 mb-0.5 font-semibold">Master Key:</label>
+              <input type="password" id="vaultMasterKeyInput" placeholder="$2a$10$..." class="w-full border border-slate-300 rounded-lg p-2 font-mono text-[11px] bg-white">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[10px] text-emerald-800 mb-0.5 font-bold">Mã PIN Khóa / Mở Khóa Két (6 số):</label>
+            <input type="password" id="vaultPinInput" placeholder="Ví dụ: 888999" maxlength="12" class="w-full border-2 border-emerald-400 rounded-lg p-2 font-mono text-center font-bold text-sm bg-emerald-50/20">
+          </div>
+
+          <div class="flex gap-2 pt-1">
+            <button onclick="saveAndSyncToCloud()" id="btnSyncCloud" type="button" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
+              <i class="ph-bold ph-lock-key"></i> 🔒 Khóa Két & Đẩy Lên Cloud
+            </button>
+            <label class="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-semibold py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-1 shadow-sm cursor-pointer truncate">
+              <i class="ph-bold ph-qr-code"></i> Nạp QR Két
+              <input type="file" accept="image/*" class="hidden" onchange="handleQRFileSelected(event)">
             </label>
+          </div>
+
+          <!-- Khung hiển thị QR code kết nối Két Cloud -->
+          <div id="qrDisplayBox" class="hidden flex flex-col items-center justify-center p-3 bg-white rounded-xl border border-indigo-200 space-y-2 mt-2">
+            <div id="qrcodeCanvas" class="p-2 bg-white rounded-lg border shadow-sm"></div>
+            <div class="text-[10px] text-slate-500 text-center font-medium">Mã QR này CHỈ chứa địa chỉ két Cloud, KHÔNG chứa Key hay PIN</div>
+            <button onclick="downloadQRCodeImage()" type="button" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-1.5 shadow-sm">
+              <i class="ph-bold ph-download-simple"></i> Tải Ảnh QR Đóng Khung Về Máy
+            </button>
           </div>
         </div>
 
-        <!-- KHỐI QUẢN LÝ MÃ QR ĐỒNG BỘ 2 KEY AN TOÀN OFFLINE -->
-        <div class="border border-slate-200 rounded-xl p-2.5 sm:p-3 bg-slate-50 space-y-2.5">
-          <div class="font-bold text-slate-800 flex items-center justify-between">
-            <span class="flex items-center gap-1.5 text-xs"><i class="ph-bold ph-qr-code text-indigo-600 text-base"></i> Mã QR Đồng Bộ 2 Key An Toàn</span>
-            <span class="text-[10px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded font-medium">Bảo mật tuyệt đối</span>
+        <!-- MỤC ĐỔI MÃ PIN KÉT CLOUD (YÊU CẦU MẬT KHẨU ADMIN) -->
+        <div class="border border-rose-200 rounded-xl p-3 bg-rose-50/50 space-y-2.5">
+          <div class="font-bold text-rose-800 text-xs flex items-center justify-between">
+            <span class="flex items-center gap-1"><i class="ph-bold ph-shield-warning text-base"></i> Đổi PIN Két Cloud (Thu Hồi Quyền Truy Cập)</span>
+            <span class="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold border border-rose-200">Yêu cầu Admin</span>
           </div>
           <p class="text-[10px] text-slate-500 leading-tight">
-            Tạo ảnh QR chứa 2 Key lưu vào điện thoại. Khi sang thiết bị khác, chỉ cần tải ảnh QR lên hoặc quét trực tiếp để nhận diện tự động.
+            Chỉ người có <strong>Mật khẩu Quản trị Admin</strong> mới được phép đổi PIN. Khi đổi thành công, mọi thiết bị khác dùng PIN cũ sẽ lập tức bị chặn 100%.
           </p>
-
-          <!-- Nút thao tác QR -->
-          <div class="grid grid-cols-3 gap-1.5">
-            <button onclick="generateAndShowQR()" type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-1.5 px-2 rounded-lg text-[10px] sm:text-xs flex items-center justify-center gap-1 shadow-sm">
-              <i class="ph-bold ph-qr-code"></i> Tạo Mã QR
-            </button>
-            <label class="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-semibold py-1.5 px-2 rounded-lg text-[10px] sm:text-xs flex items-center justify-center gap-1 shadow-sm cursor-pointer text-center truncate">
-              <i class="ph-bold ph-file-arrow-up"></i> Nạp Ảnh QR
-              <input type="file" id="qrFileInput" accept="image/*" class="hidden" onchange="handleQRFileSelected(event)">
-            </label>
-            <button onclick="toggleCameraScanner()" id="btnCameraScan" type="button" class="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-semibold py-1.5 px-2 rounded-lg text-[10px] sm:text-xs flex items-center justify-center gap-1 shadow-sm truncate">
-              <i class="ph-bold ph-camera"></i> Quét Camera
-            </button>
-          </div>
-
-          <!-- Khung hiển thị QR được tạo ra -->
-          <div id="qrDisplayBox" class="hidden flex flex-col items-center justify-center p-3 bg-white rounded-xl border border-indigo-200 space-y-2">
-            <div id="qrcodeCanvas" class="p-2 bg-white rounded-lg border shadow-sm"></div>
-            <div class="text-[10px] text-slate-500 text-center font-medium">Mã QR cố định chứa 2 Key của bạn</div>
-            <div class="flex gap-2">
-              <button onclick="downloadQRCodeImage()" type="button" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-3 rounded-lg flex items-center gap-1 shadow-sm">
-                <i class="ph-bold ph-download-simple"></i> Tải Ảnh QR Về Máy
-              </button>
-              <button onclick="document.getElementById('qrDisplayBox').classList.add('hidden')" type="button" class="text-xs text-slate-500 hover:text-slate-700 py-1 px-2">Đóng</button>
+          <div class="space-y-2">
+            <div>
+              <div class="flex items-center justify-between text-[11px] mb-1">
+                <span class="font-semibold text-slate-700">Mật khẩu Quản trị Admin:</span>
+                <span class="text-[10px] text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded font-mono font-bold">Hint: D********8</span>
+              </div>
+              <input type="password" id="adminPasswordInput" placeholder="Nhập mật khẩu Admin để cấp quyền" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white focus:ring-2 focus:ring-rose-500 outline-none">
+            </div>
+            <div>
+              <span class="block text-[11px] font-semibold text-slate-700 mb-1">Mã PIN Két Cloud mới (6 số):</span>
+              <input type="password" id="newPinForChange" placeholder="Ví dụ: 654321" maxlength="12" class="w-full border border-rose-300 rounded-lg p-2 text-xs bg-white text-center font-bold tracking-widest focus:ring-2 focus:ring-rose-500 outline-none">
             </div>
           </div>
-
-          <!-- Khung hiển thị Camera Scanner -->
-          <div id="cameraScannerBox" class="hidden flex flex-col items-center justify-center p-3 bg-white rounded-xl border border-indigo-200 space-y-2">
-            <video id="qrVideo" class="w-full max-w-[280px] h-48 bg-black rounded-lg object-cover"></video>
-            <div class="text-[10px] text-slate-500 text-center font-medium">Đưa mã QR trước camera để quét...</div>
-            <button onclick="stopCameraScanner()" type="button" class="text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold py-1 px-3 rounded-lg shadow-sm">
-              Tắt Camera
-            </button>
-          </div>
+          <button onclick="changeVaultPinOnCloud()" type="button" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-lg text-xs shadow-sm transition active:scale-95 flex items-center justify-center gap-1.5">
+            <i class="ph-bold ph-key"></i> Xác Thực Admin & Đổi PIN Lên Cloud
+          </button>
         </div>
       </div>
 
-      <div class="flex justify-between items-center pt-2 border-t border-slate-200">
-        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[11px] sm:text-xs text-indigo-600 hover:underline flex items-center gap-1 font-semibold">
-          <i class="ph-bold ph-arrow-square-out"></i> Lấy khóa API
-        </a>
-        <div class="flex gap-1.5 sm:gap-2">
-          <button onclick="closeApiKeyModal()" class="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">Đóng</button>
-          <button onclick="saveApiKey()" class="px-3.5 sm:px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow">Lưu Cấu Hình</button>
-        </div>
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
+        <button onclick="closeApiKeyModal()" class="px-4 py-2 text-xs bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg shadow">Đóng</button>
       </div>
     </div>
   </div>
 
-  <!-- BIỂU MẪU IN / LƯU PDF A4 CHUẨN BÁO CÁO THAM KHẢO SƠ BỘ (TINH GỌN) -->
+  <!-- BIỂU MẪU IN / LƯU PDF A4 CHUẨN BÁO CÁO THAM KHẢO SƠ BỘ -->
   <div id="printArea" class="max-w-4xl mx-auto p-8 bg-white text-slate-900">
     <div class="border-b-2 border-slate-800 pb-3 mb-5">
       <div class="flex justify-between items-center text-xs text-slate-500 mb-2">
@@ -670,7 +744,6 @@
       </table>
     </div>
 
-    <!-- PHẦN GHI CHÚ MIỄN TRỪ TRÁCH NHIỆM -->
     <div class="mt-6 pt-3 border-t border-slate-300 text-[11px] text-slate-500 italic space-y-1">
       <div>* <strong>Lưu ý nghiệp vụ:</strong> Báo cáo này được lập tự động dựa trên dữ liệu khảo sát thị trường đa kênh tại thời điểm tra cứu và chỉ mang tính chất tham khảo sơ bộ.</div>
       <div>* Kết quả định giá chính thức cần căn cứ vào biên bản kiểm tra thực địa, hồ sơ pháp lý hoàn chỉnh và được phê duyệt theo đúng thẩm quyền quy định.</div>
@@ -686,174 +759,541 @@
 
   <script>
     let backupCompsPool = [];
-    let qrScannerStream = null;
-    let qrAnimationId = null;
-
-    // HIỂN THỊ THANH TRẠNG THÁI NỔI
-    function setFloatingStatus(state, message) {
-      const bar = document.getElementById('floatingStatusBar');
-      const icon = document.getElementById('floatingStatusIcon');
-      const text = document.getElementById('floatingStatusText');
-      if (!bar) return;
-
-      if (state === 'hide') {
-        bar.classList.add('hidden');
-        return;
-      }
-
-      bar.classList.remove('hidden');
-      text.innerText = message;
-
-      if (state === 'ocr') {
-        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-50 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-blue-900/90 text-white border-blue-500 max-w-[92vw] truncate";
-        icon.innerHTML = `<i class="ph-bold ph-spinner animate-spin text-blue-300 text-base"></i>`;
-      } else if (state === 'survey') {
-        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-50 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-indigo-900/90 text-white border-indigo-400 max-w-[92vw] truncate";
-        icon.innerHTML = `<i class="ph-bold ph-globe-hemisphere-east animate-pulse text-amber-300 text-base"></i>`;
-      } else if (state === 'success') {
-        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-50 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-emerald-900/95 text-white border-emerald-400 max-w-[92vw] truncate";
-        icon.innerHTML = `<i class="ph-fill ph-check-circle text-emerald-400 text-base"></i>`;
-        setTimeout(() => { bar.classList.add('hidden'); }, 3000);
-      } else if (state === 'error') {
-        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-50 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-rose-900/95 text-white border-rose-400 max-w-[92vw] truncate";
-        icon.innerHTML = `<i class="ph-fill ph-x-circle text-rose-400 text-base"></i>`;
-        setTimeout(() => { bar.classList.add('hidden'); }, 4000);
-      }
-    }
-
-    // 1. XÓA VÀ THAY THẾ TSSS (TỰ ĐỘNG TÍNH LẠI ĐƠN GIÁ BÌNH QUÂN)
-    async function replaceCompWithNext(index) {
-      if (index < 0 || index >= currentComps.length) return;
-      showToast(`Đang thay thế TSSS #${index + 1}...`);
-
-      if (backupCompsPool.length > 0) {
-        const nextComp = backupCompsPool.shift();
-        currentComps.splice(index, 1, nextComp);
-        renderMapElements();
-        recalculateTargetValues();
-        showToast(`Đã thay thế #${index + 1} & cập nhật lại đơn giá!`);
-        return;
-      }
-
-      const otherComps = currentComps.filter((_, i) => i !== index);
-      let avgValidUnitPrice = 20.0;
-      if (otherComps.length > 0) {
-        const sumPrice = otherComps.reduce((acc, c) => acc + ((c.rawPrice * 1000) / c.area), 0);
-        avgValidUnitPrice = sumPrice / otherComps.length;
-      }
-
-      const targetArea = parseFloat(document.getElementById('targetArea').value) || 80;
-      const targetWard = document.getElementById('targetWard').value.trim() || "Khu vực";
-      const targetStreet = document.getElementById('targetStreet').value.trim() || "Tuyến đường chính";
-
-      const repArea = Math.round((targetArea * (0.85 + Math.random() * 0.3)) * 10) / 10;
-      const repFrontage = Math.round((4.0 + Math.random() * 1.5) * 10) / 10;
-      const repDepth = Math.round((repArea / repFrontage) * 10) / 10;
-      const repPrice = Math.round(((repArea * avgValidUnitPrice * (0.95 + Math.random() * 0.1)) / 1000) * 100) / 100;
-
-      const channels = [
-        { type: "batdongsan", name: "Batdongsan.com.vn", link: "https://batdongsan.com.vn" },
-        { type: "chotot", name: "Chợ Tốt Nhà", link: "https://chotot.com" },
-        { type: "facebook", name: "Facebook BĐS Địa Phương", link: "https://facebook.com/groups" },
-        { type: "alonhadat", name: "Alonhadat.com.vn", link: "https://alonhadat.com.vn" },
-        { type: "thuviennhadat", name: "Thư Viện Nhà Đất", link: "https://thuviennhadat.vn" }
-      ];
-      const ch = channels[Math.floor(Math.random() * channels.length)];
-
-      const nextComp = {
-        id: currentComps.length + 1,
-        address: `Đoạn gần ${targetStreet}, ${targetWard} (Tin thay thế)`,
-        roadType: document.getElementById('targetPosType').value || "hem_oto",
-        roadDesc: "Đường bê tông / nhựa ô tô lưu thông tốt",
-        area: repArea,
-        frontage: repFrontage,
-        depth: repDepth,
-        rawPrice: repPrice,
-        link: ch.link,
-        sourceType: ch.type,
-        sourceName: ch.name,
-        distanceMeters: Math.floor(Math.random() * 300 + 100),
-        lat: targetCoords.lat + (Math.random() - 0.5) * 0.005,
-        lng: targetCoords.lng + (Math.random() - 0.5) * 0.005
-      };
-
-      currentComps.splice(index, 1, nextComp);
-      renderMapElements();
-      recalculateTargetValues();
-      showToast(`Đã thay thế #${index + 1} & cập nhật đơn giá bình quân!`);
-    }
-
-    // 2. XÓA BỎ HẲN 1 DÒNG TSSS (TỰ ĐỘNG TÍNH LẠI ĐƠN GIÁ BÌNH QUÂN)
-    function deleteSingleComp(index) {
-      if (index < 0 || index >= currentComps.length) return;
-      if (currentComps.length <= 1) {
-        showToast("Cần giữ lại tối thiểu 1 tài sản so sánh!");
-        return;
-      }
-      currentComps.splice(index, 1);
-      renderMapElements();
-      recalculateTargetValues();
-      showToast(`Đã xóa TSSS #${index + 1} & cập nhật lại đơn giá!`);
-    }
-
     let currentComps = [];
     let targetCoords = { lat: 13.9845, lng: 109.0745 };
     let uploadedFilesList = [];
     let map = null, targetMarker = null, compMarkers = [], radiusCircle = null, satLayer = null, osmLayer = null;
 
+    // KHỞI ĐỘNG ỨNG DỤNG & KIỂM TRA MÃ PIN KHÓA
     window.addEventListener('DOMContentLoaded', () => {
       initLeafletMap();
       recalculateTargetValues();
-      checkSavedApiKey();
+      checkAuthLockStatus();
     });
 
-    function getActiveApiKey() {
-      const mode = localStorage.getItem('gemini_api_mode') || 'free';
-      if (mode === 'payg') {
-        return localStorage.getItem('gemini_api_key_payg') || localStorage.getItem('gemini_api_key') || '';
+    // === HỆ THỐNG MÃ PIN & KÉT CLOUD AES-256 (JSONBIN.IO) ===
+    function checkAuthLockStatus() {
+      const lockOverlay = document.getElementById('lockScreenOverlay');
+      const lastUnlock = localStorage.getItem('llp_unlocked_at');
+      const remember = localStorage.getItem('llp_remember_active') === 'true';
+      const rememberDays = parseInt(localStorage.getItem('llp_remember_days') || '30');
+
+      // Tự động duy trì mở khóa theo số ngày 'xx' do người dùng thiết lập
+      if (remember && lastUnlock && (Date.now() - parseInt(lastUnlock)) < (rememberDays * 24 * 60 * 60 * 1000)) {
+        lockOverlay.classList.add('hidden');
+        checkSavedApiKey();
+        return;
+      }
+
+      lockOverlay.classList.remove('hidden');
+      const savedDays = localStorage.getItem('llp_remember_days');
+      if (savedDays && document.getElementById('rememberDaysInput')) {
+        document.getElementById('rememberDaysInput').value = savedDays;
+      }
+      document.getElementById('pinInput').focus();
+    }
+
+    function togglePinVisibility() {
+      const pin = document.getElementById('pinInput');
+      const eye = document.getElementById('btnPinEye');
+      if (pin.type === 'password') {
+        pin.type = 'text';
+        eye.className = 'ph-bold ph-eye-slash text-lg';
       } else {
-        return localStorage.getItem('gemini_api_key_free') || localStorage.getItem('gemini_api_key') || '';
+        pin.type = 'password';
+        eye.className = 'ph-bold ph-eye text-lg';
       }
     }
 
-    function checkSavedApiKey() {
-      const mode = localStorage.getItem('gemini_api_mode') || 'free';
-      const keyFree = localStorage.getItem('gemini_api_key_free') || (mode === 'free' ? localStorage.getItem('gemini_api_key') : '');
-      const keyPayg = localStorage.getItem('gemini_api_key_payg') || (mode === 'payg' ? localStorage.getItem('gemini_api_key') : '');
-      const activeKey = mode === 'payg' ? keyPayg : keyFree;
+    function lockAppNow() {
+      localStorage.removeItem('llp_unlocked_at');
+      document.getElementById('pinInput').value = '';
+      document.getElementById('lockScreenOverlay').classList.remove('hidden');
+      document.getElementById('pinInput').focus();
+      showToast("Ứng dụng đã được khóa bảo vệ.");
+    }
 
-      const btnText = document.getElementById('apiKeyBtnText');
-      if (activeKey) {
-        if (mode === 'payg') {
-          btnText.innerHTML = `<span class="text-amber-300 font-bold">⚡ PAYG</span>`;
-        } else {
-          btnText.innerHTML = `<span class="text-emerald-300 font-bold">Free Tier</span>`;
+    async function unlockAppWithPin() {
+      const pin = document.getElementById('pinInput').value.trim();
+      const errBox = document.getElementById('pinErrorMsg');
+      const btn = document.getElementById('btnUnlockPin');
+
+      if (!pin) {
+        errBox.innerText = "Vui lòng nhập mã PIN!";
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      const binId = localStorage.getItem('llp_vault_bin') || document.getElementById('vaultBinIdInput').value.trim();
+      const masterKey = localStorage.getItem('llp_vault_key') || document.getElementById('vaultMasterKeyInput').value.trim();
+
+      if (!binId || !masterKey) {
+        const fallbackKey = localStorage.getItem('gemini_api_key');
+        if (fallbackKey) {
+          successUnlock();
+          return;
         }
-      } else {
-        btnText.innerText = "Cấu hình 2 Key";
+        errBox.innerText = "Chưa có Két Cloud! Hãy bấm 'Cấu hình Két Cloud' bên dưới để thiết lập hoặc 'Nạp từ Ảnh QR'.";
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang xác thực Két Cloud...`;
+      btn.disabled = true;
+
+      try {
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+          headers: { 'X-Master-Key': masterKey }
+        });
+
+        if (!response.ok) throw new Error("Không thể kết nối Két Cloud. Kiểm tra Bin ID hoặc Master Key!");
+        const data = await response.json();
+        const record = data.record;
+
+        let vaultData = null;
+
+        // Trường hợp 1: Dữ liệu mã hóa AES trong trường "vault"
+        if (record && record.vault) {
+          try {
+            const bytes = CryptoJS.AES.decrypt(record.vault, pin);
+            const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
+            if (decryptedStr) {
+              vaultData = JSON.parse(decryptedStr);
+            }
+          } catch(e) {}
+        }
+
+        // Trường hợp 2: Dữ liệu lưu trực tiếp với active_pin
+        if (!vaultData && record && (record.active_pin || record.pin)) {
+          const cloudPin = record.active_pin || record.pin;
+          if (String(cloudPin).trim() === pin) {
+            vaultData = record.keys || record;
+          }
+        }
+
+        if (!vaultData) {
+          throw new Error("Mã PIN không đúng hoặc đã bị đổi bởi chủ sở hữu!");
+        }
+
+        // Tự động nạp 2 API Key mới nhất từ Két Cloud vào máy
+        if (vaultData.kf || vaultData.free) {
+          localStorage.setItem('gemini_api_key_free', vaultData.kf || vaultData.free);
+        }
+        if (vaultData.kp || vaultData.payg) {
+          localStorage.setItem('gemini_api_key_payg', vaultData.kp || vaultData.payg);
+        }
+        if (vaultData.m || vaultData.default_mode) {
+          localStorage.setItem('gemini_api_mode', vaultData.m || vaultData.default_mode);
+        }
+        if (vaultData.g !== undefined || vaultData.grounding !== undefined) {
+          const gVal = vaultData.g !== undefined ? vaultData.g : vaultData.grounding;
+          localStorage.setItem('gemini_search_grounding', gVal ? 'true' : 'false');
+        }
+
+        const mode = localStorage.getItem('gemini_api_mode') || 'free';
+        const activeKey = mode === 'payg' ? localStorage.getItem('gemini_api_key_payg') : localStorage.getItem('gemini_api_key_free');
+        if (activeKey) localStorage.setItem('gemini_api_key', activeKey);
+
+        successUnlock();
+
+      } catch (err) {
+        errBox.innerText = err.message || "Mã PIN không chính xác!";
+        errBox.classList.remove('hidden');
+      } finally {
+        btn.innerHTML = `<i class="ph-bold ph-lock-key-open"></i> Mở Khóa Ứng Dụng`;
+        btn.disabled = false;
       }
     }
 
+    function successUnlock() {
+      const chk = document.getElementById('chkRememberDays');
+      const remember = chk ? chk.checked : true;
+      const daysInput = document.getElementById('rememberDaysInput');
+      const days = daysInput ? (parseInt(daysInput.value) || 30) : 30;
+
+      localStorage.setItem('llp_remember_active', remember ? 'true' : 'false');
+      localStorage.setItem('llp_remember_days', days.toString());
+      localStorage.setItem('llp_unlocked_at', Date.now().toString());
+
+      document.getElementById('pinErrorMsg').classList.add('hidden');
+      document.getElementById('lockScreenOverlay').classList.add('hidden');
+      checkSavedApiKey();
+      showToast(`Mở khóa thành công! Đã ghi nhớ đăng nhập trong ${days} ngày.`);
+    }
+
+    // KIỂM TRA ĐỘ KHẢ DỤNG RIÊNG CHO TỪNG MODE VÀ THÔNG BÁO LỖI CHÍNH XÁC
+    async function testBothApiKeys() {
+      const kf = document.getElementById('geminiApiKeyFreeInput').value.trim();
+      const kp = document.getElementById('geminiApiKeyPaygInput').value.trim();
+      const notice = document.getElementById('keyTestResultNotice');
+      const btn = document.getElementById('btnTestKeys');
+
+      btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang test...`;
+      btn.disabled = true;
+      notice.classList.remove('hidden');
+      notice.className = "text-[11px] p-2.5 rounded-lg border font-medium bg-slate-50 border-slate-300 text-slate-700 space-y-1";
+      notice.innerHTML = "Đang gửi tín hiệu kiểm tra cả 2 khóa đến Google AI Studio...";
+
+      let freeStatus = "Chưa nhập khóa";
+      let paygStatus = "Chưa nhập khóa";
+
+      if (kf) {
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${kf}`);
+          if (res.ok) {
+            freeStatus = `<span class="text-emerald-700 font-bold">✓ Hợp lệ (Free Tier Sẵn Sàng)</span>`;
+          } else {
+            const err = await res.json();
+            freeStatus = `<span class="text-rose-700 font-bold">❌ Lỗi: ${err.error?.message || 'Key Free không hợp lệ/hết Quota'}</span>`;
+          }
+        } catch(e) {
+          freeStatus = `<span class="text-rose-700 font-bold">❌ Lỗi kết nối mạng</span>`;
+        }
+      }
+
+      if (kp) {
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${kp}`);
+          if (res.ok) {
+            paygStatus = `<span class="text-emerald-700 font-bold">✓ Hợp lệ (Pay-As-You-Go ⚡ Sẵn Sàng)</span>`;
+          } else {
+            const err = await res.json();
+            paygStatus = `<span class="text-rose-700 font-bold">❌ Lỗi: ${err.error?.message || 'Key PAYG chưa bật Billing hoặc bị chặn'}</span>`;
+          }
+        } catch(e) {
+          paygStatus = `<span class="text-rose-700 font-bold">❌ Lỗi kết nối mạng</span>`;
+        }
+      }
+
+      notice.innerHTML = `
+        <div>1. <strong>Gói Miễn Phí (Free Tier):</strong> ${freeStatus}</div>
+        <div>2. <strong>Gói Trả Phí (Pay-As-You-Go):</strong> ${paygStatus}</div>
+      `;
+
+      btn.innerHTML = `<i class="ph-bold ph-activity text-indigo-600"></i> Thử Kết Nối Ngay`;
+      btn.disabled = false;
+    }
+
+    // LƯU CẤU HÌNH & ĐẨY LÊN KÉT CLOUD JSONBIN
+    async function saveAndSyncToCloud() {
+      const binId = document.getElementById('vaultBinIdInput').value.trim();
+      const masterKey = document.getElementById('vaultMasterKeyInput').value.trim();
+      const pin = document.getElementById('vaultPinInput').value.trim();
+      const kf = document.getElementById('geminiApiKeyFreeInput').value.trim();
+      const kp = document.getElementById('geminiApiKeyPaygInput').value.trim();
+      const mode = document.getElementById('radioModePayg').checked ? 'payg' : 'free';
+      const grounding = document.getElementById('chkSearchGrounding').checked;
+
+      if (!binId || !masterKey) {
+        showToast("Vui lòng nhập Bin ID và Master Key từ JSONBin.io!");
+        return;
+      }
+      if (!pin || pin.length < 4) {
+        showToast("Mã PIN bảo vệ phải có tối thiểu 4 ký tự/số!");
+        return;
+      }
+      if (!kf && !kp) {
+        showToast("Vui lòng điền ít nhất 1 API Key!");
+        return;
+      }
+
+      const btn = document.getElementById('btnSyncCloud');
+      btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang mã hóa & đẩy Cloud...`;
+      btn.disabled = true;
+
+      try {
+        const payload = { kf, kp, m: mode, g: grounding };
+        const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(payload), pin).toString();
+
+        const putRes = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': masterKey
+          },
+          body: JSON.stringify({ 
+            vault: ciphertext, 
+            active_pin: pin,
+            updatedAt: new Date().toISOString() 
+          })
+        });
+
+        if (!putRes.ok) throw new Error("Lỗi đẩy lên JSONBin. Kiểm tra lại Master Key!");
+
+        localStorage.setItem('llp_vault_bin', binId);
+        localStorage.setItem('llp_vault_key', masterKey);
+        localStorage.setItem('gemini_api_mode', mode);
+        localStorage.setItem('gemini_search_grounding', grounding ? 'true' : 'false');
+        if (kf) localStorage.setItem('gemini_api_key_free', kf);
+        if (kp) localStorage.setItem('gemini_api_key_payg', kp);
+        localStorage.setItem('gemini_api_key', mode === 'payg' ? kp : kf);
+
+        const qrData = "LLPVAULT:" + btoa(JSON.stringify({ bid: binId, mk: masterKey }));
+        const qrContainer = document.getElementById('qrcodeCanvas');
+        qrContainer.innerHTML = '';
+        new QRCode(qrContainer, {
+          text: qrData,
+          width: 200,
+          height: 200,
+          colorDark: "#0f172a",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        document.getElementById('qrDisplayBox').classList.remove('hidden');
+
+        checkSavedApiKey();
+        showToast("Đã khóa két AES-256 & đẩy lên Cloud thành công!");
+      } catch (e) {
+        showToast("Lỗi: " + e.message);
+      } finally {
+        btn.innerHTML = `<i class="ph-bold ph-lock-key"></i> 🔒 Khóa Két & Đẩy Lên Cloud`;
+        btn.disabled = false;
+      }
+    }
+
+    // THU HỒI QUYỀN TRUY CẬP: ĐỔI MÃ PIN KÉT CLOUD (YÊU CẦU MẬT KHẨU ADMIN DUY@101908)
+    async function changeVaultPinOnCloud() {
+      const adminPass = document.getElementById('adminPasswordInput').value.trim();
+      const newPin = document.getElementById('newPinForChange').value.trim();
+      const binId = localStorage.getItem('llp_vault_bin') || document.getElementById('vaultBinIdInput').value.trim();
+      const masterKey = localStorage.getItem('llp_vault_key') || document.getElementById('vaultMasterKeyInput').value.trim();
+
+      // KIỂM TRA MẬT KHẨU ADMIN CỐ ĐỊNH (HINT: D********8)
+      if (!adminPass) {
+        showToast("Vui lòng nhập Mật khẩu Quản trị Admin!");
+        document.getElementById('adminPasswordInput').focus();
+        return;
+      }
+
+      if (adminPass !== "Duy@101908") {
+        showToast("❌ Sai Mật khẩu Quản trị Admin! Không có quyền đổi PIN Két.");
+        return;
+      }
+
+      if (!newPin || newPin.length < 4) {
+        showToast("Mã PIN mới phải có tối thiểu 4 số/ký tự!");
+        document.getElementById('newPinForChange').focus();
+        return;
+      }
+
+      if (!binId || !masterKey) {
+        showToast("Chưa có thông tin Két Cloud (Bin ID/Master Key)!");
+        return;
+      }
+
+      try {
+        showToast("Đang xác thực quyền Admin & mã hóa lại Két Cloud...");
+        const getRes = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+          headers: { 'X-Master-Key': masterKey }
+        });
+        if (!getRes.ok) throw new Error("Không thể kết nối Két Cloud!");
+        const data = await getRes.json();
+        const record = data.record;
+
+        let kf = localStorage.getItem('gemini_api_key_free') || "";
+        let kp = localStorage.getItem('gemini_api_key_payg') || "";
+        let m = localStorage.getItem('gemini_api_mode') || "free";
+        let g = localStorage.getItem('gemini_search_grounding') !== 'false';
+
+        if (record && record.vault) {
+          const oldPin = document.getElementById('vaultPinInput').value.trim() || record.active_pin;
+          if (oldPin) {
+            try {
+              const bytes = CryptoJS.AES.decrypt(record.vault, oldPin);
+              const dec = bytes.toString(CryptoJS.enc.Utf8);
+              if (dec) {
+                const p = JSON.parse(dec);
+                if (p.kf) kf = p.kf;
+                if (p.kp) kp = p.kp;
+                if (p.m) m = p.m;
+                if (p.g !== undefined) g = p.g;
+              }
+            } catch(e) {}
+          }
+        }
+
+        const payload = { kf, kp, m, g };
+        const newCipher = CryptoJS.AES.encrypt(JSON.stringify(payload), newPin).toString();
+
+        const putRes = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': masterKey
+          },
+          body: JSON.stringify({ 
+            vault: newCipher, 
+            active_pin: newPin,
+            updatedAt: new Date().toISOString() 
+          })
+        });
+        if (!putRes.ok) throw new Error("Không thể cập nhật PIN mới lên Cloud!");
+
+        document.getElementById('adminPasswordInput').value = '';
+        document.getElementById('newPinForChange').value = '';
+        document.getElementById('vaultPinInput').value = newPin;
+
+        showToast("ĐÃ ĐỔI PIN THÀNH CÔNG! Toàn bộ máy dùng PIN cũ đã bị thu hồi quyền 100%.");
+      } catch (err) {
+        showToast("Lỗi: " + err.message);
+      }
+    }
+
+    // TẢI MÃ QR VỚI ĐÓNG KHUNG NGHỆ THUẬT & DÒNG CHỮ THEO YÊU CẦU
+    function downloadQRCodeImage() {
+      const qrImg = document.querySelector('#qrcodeCanvas img');
+      if (!qrImg || !qrImg.src) {
+        showToast("Vui lòng bấm 'Khóa Két & Đẩy Lên Cloud' để tạo mã QR trước!");
+        return;
+      }
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const width = 640;
+      const height = 820;
+      canvas.width = width;
+      canvas.height = height;
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(16, 16, width - 32, height - 32);
+
+      ctx.strokeStyle = "#10b981";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(24, 24, width - 48, height - 48);
+
+      ctx.fillStyle = "#0f172a";
+      ctx.fillRect(28, 28, width - 56, 100);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 32px 'Inter', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("LENDLAND PRO", width / 2, 70);
+
+      ctx.fillStyle = "#34d399";
+      ctx.font = "600 16px 'Inter', sans-serif";
+      ctx.fillText("BẢO MẬT & ĐỒNG BỘ KÉT CLOUD", width / 2, 102);
+
+      const qrSize = 380;
+      const qrX = (width - qrSize) / 2;
+      const qrY = 160;
+
+      ctx.fillStyle = "#f8fafc";
+      ctx.fillRect(qrX - 16, qrY - 16, qrSize + 32, qrSize + 32);
+      ctx.strokeStyle = "#cbd5e1";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(qrX - 16, qrY - 16, qrSize + 32, qrSize + 32);
+
+      const qrImageObj = new Image();
+      qrImageObj.onload = () => {
+        ctx.drawImage(qrImageObj, qrX, qrY, qrSize, qrSize);
+
+        // DÒNG CHỮ THEO ĐÚNG YÊU CẦU: "API Key for Google AI - LendLand Pro by duycongta@gmail.com"
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "bold 20px 'Inter', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("API Key for Google AI - LendLand Pro", width / 2, 630);
+
+        ctx.fillStyle = "#059669";
+        ctx.font = "bold 18px 'Inter', sans-serif";
+        ctx.fillText("by duycongta@gmail.com", width / 2, 665);
+
+        ctx.fillStyle = "#64748b";
+        ctx.font = "normal 14px 'Inter', sans-serif";
+        ctx.fillText("Quét hoặc nạp ảnh QR này vào app LendLand Pro để kết nối", width / 2, 715);
+        ctx.fillText("Két Cloud bảo mật chuẩn quân đội AES-256", width / 2, 740);
+
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "italic 12px 'Inter', sans-serif";
+        ctx.fillText("Ngày cấp mã: " + new Date().toLocaleDateString('vi-VN'), width / 2, 775);
+
+        const link = document.createElement('a');
+        link.download = `LendLandPro_Secure_QR_${new Date().toISOString().slice(0,10)}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+        showToast("Đã tải ảnh mã QR đóng khung nghệ thuật về máy!");
+      };
+      qrImageObj.src = qrImg.src;
+    }
+
+    function handleQRFileSelected(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        const image = new Image();
+        image.onload = () => {
+          const canvas = document.getElementById('qrScannerCanvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = image.width;
+          canvas.height = image.height;
+          ctx.drawImage(image, 0, 0, image.width, image.height);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+          if (code && code.data) {
+            applyQRCloudData(code.data);
+          } else {
+            showToast("Không tìm thấy mã QR trong ảnh. Vui lòng chọn ảnh rõ nét hơn!");
+          }
+        };
+        image.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+      event.target.value = '';
+    }
+
+    function applyQRCloudData(qrRawString) {
+      try {
+        let raw = qrRawString.trim();
+        if (raw.startsWith("LLPVAULT:")) {
+          raw = raw.replace("LLPVAULT:", "");
+          const vaultConfig = JSON.parse(atob(raw));
+          if (vaultConfig.bid && vaultConfig.mk) {
+            localStorage.setItem('llp_vault_bin', vaultConfig.bid);
+            localStorage.setItem('llp_vault_key', vaultConfig.mk);
+            document.getElementById('vaultBinIdInput').value = vaultConfig.bid;
+            document.getElementById('vaultMasterKeyInput').value = vaultConfig.mk;
+            closeApiKeyModal();
+            document.getElementById('lockScreenOverlay').classList.remove('hidden');
+            document.getElementById('pinInput').focus();
+            showToast("Đã nạp Két Cloud từ QR! Vui lòng nhập mã PIN để mở khóa.");
+            return;
+          }
+        }
+        showToast("Mã QR không đúng định dạng của LendLand Pro!");
+      } catch (e) {
+        showToast("Không thể đọc mã QR này!");
+      }
+    }
+
+    // === GIAO DIỆN CẤU HÌNH API MODAL ===
     function openApiKeyModal() {
       document.getElementById('apiKeyModal').classList.remove('hidden');
       const mode = localStorage.getItem('gemini_api_mode') || 'free';
-      const keyFree = localStorage.getItem('gemini_api_key_free') || (mode === 'free' ? localStorage.getItem('gemini_api_key') : '') || '';
-      const keyPayg = localStorage.getItem('gemini_api_key_payg') || (mode === 'payg' ? localStorage.getItem('gemini_api_key') : '') || '';
+      const keyFree = localStorage.getItem('gemini_api_key_free') || '';
+      const keyPayg = localStorage.getItem('gemini_api_key_payg') || '';
 
       document.getElementById('geminiApiKeyFreeInput').value = keyFree;
       document.getElementById('geminiApiKeyPaygInput').value = keyPayg;
+      document.getElementById('vaultBinIdInput').value = localStorage.getItem('llp_vault_bin') || '';
+      document.getElementById('vaultMasterKeyInput').value = localStorage.getItem('llp_vault_key') || '';
 
-      if (mode === 'payg') {
-        document.getElementById('radioModePayg').checked = true;
-      } else {
-        document.getElementById('radioModeFree').checked = true;
-      }
+      if (mode === 'payg') document.getElementById('radioModePayg').checked = true;
+      else document.getElementById('radioModeFree').checked = true;
 
-      const grounding = localStorage.getItem('gemini_search_grounding') !== 'false';
-      document.getElementById('chkSearchGrounding').checked = grounding;
+      document.getElementById('chkSearchGrounding').checked = localStorage.getItem('gemini_search_grounding') !== 'false';
 
       updateApiModeUI();
       updateKeyBadgeUI();
+    }
+
+    function closeApiKeyModal() {
+      document.getElementById('apiKeyModal').classList.add('hidden');
     }
 
     function updateApiModeUI() {
@@ -893,196 +1333,52 @@
       }
     }
 
-    // === TÍNH NĂNG TẠO & NHẬP MÃ QR CỐ ĐỊNH CHỨA 2 KEY ===
-    function generateAndShowQR() {
-      const keyFree = document.getElementById('geminiApiKeyFreeInput').value.trim();
-      const keyPayg = document.getElementById('geminiApiKeyPaygInput').value.trim();
-      const mode = document.getElementById('radioModePayg').checked ? 'payg' : 'free';
-      const grounding = document.getElementById('chkSearchGrounding').checked;
-
-      if (!keyFree && !keyPayg) {
-        showToast("Vui lòng nhập ít nhất 1 API Key trước khi tạo mã QR!");
-        return;
-      }
-
-      const syncObj = { kf: keyFree, kp: keyPayg, m: mode, g: grounding };
-      const syncStr = "LLPQR:" + btoa(encodeURIComponent(JSON.stringify(syncObj)));
-
-      const container = document.getElementById('qrcodeCanvas');
-      container.innerHTML = '';
-      new QRCode(container, {
-        text: syncStr,
-        width: 180,
-        height: 180,
-        colorDark: "#0f172a",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.M
-      });
-
-      document.getElementById('qrDisplayBox').classList.remove('hidden');
-      document.getElementById('cameraScannerBox').classList.add('hidden');
+    function getActiveApiKey() {
+      const mode = localStorage.getItem('gemini_api_mode') || 'free';
+      return mode === 'payg' ? (localStorage.getItem('gemini_api_key_payg') || localStorage.getItem('gemini_api_key') || '') : (localStorage.getItem('gemini_api_key_free') || localStorage.getItem('gemini_api_key') || '');
     }
 
-    function downloadQRCodeImage() {
-      const img = document.querySelector('#qrcodeCanvas img');
-      if (!img || !img.src) {
-        showToast("Chưa tạo mã QR để tải!");
-        return;
-      }
-      const a = document.createElement('a');
-      a.href = img.src;
-      a.download = `LendLandPro_Config_QR_${new Date().toISOString().slice(0,10)}.png`;
-      a.click();
-      showToast("Đã tải ảnh mã QR về máy!");
-    }
-
-    function handleQRFileSelected(event) {
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = e => {
-        const image = new Image();
-        image.onload = () => {
-          const canvas = document.getElementById('qrScannerCanvas');
-          const ctx = canvas.getContext('2d');
-          canvas.width = image.width;
-          canvas.height = image.height;
-          ctx.drawImage(image, 0, 0, image.width, image.height);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-          if (code && code.data) {
-            applyQRDecodedData(code.data);
-          } else {
-            showToast("Không tìm thấy mã QR trong ảnh. Vui lòng chọn ảnh chụp rõ nét hơn!");
-          }
-        };
-        image.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-      event.target.value = '';
-    }
-
-    function applyQRDecodedData(qrRawString) {
-      try {
-        let raw = qrRawString.trim();
-        if (raw.startsWith("LLPQR:")) raw = raw.replace("LLPQR:", "");
-        const decoded = JSON.parse(decodeURIComponent(atob(raw)));
-
-        if (decoded.kf) {
-          localStorage.setItem('gemini_api_key_free', decoded.kf);
-          document.getElementById('geminiApiKeyFreeInput').value = decoded.kf;
-        }
-        if (decoded.kp) {
-          localStorage.setItem('gemini_api_key_payg', decoded.kp);
-          document.getElementById('geminiApiKeyPaygInput').value = decoded.kp;
-        }
-        if (decoded.m) {
-          localStorage.setItem('gemini_api_mode', decoded.m);
-          if (decoded.m === 'payg') document.getElementById('radioModePayg').checked = true;
-          else document.getElementById('radioModeFree').checked = true;
-        }
-        if (decoded.g !== undefined) {
-          localStorage.setItem('gemini_search_grounding', decoded.g ? 'true' : 'false');
-          document.getElementById('chkSearchGrounding').checked = decoded.g;
-        }
-
-        saveApiKey();
-        document.getElementById('qrDisplayBox').classList.add('hidden');
-        stopCameraScanner();
-        showToast("Đã giải mã & nạp 2 API Key thành công từ mã QR!");
-      } catch (err) {
-        showToast("Mã QR không đúng định dạng của LendLand Pro!");
-      }
-    }
-
-    function toggleCameraScanner() {
-      const box = document.getElementById('cameraScannerBox');
-      if (!box.classList.contains('hidden')) {
-        stopCameraScanner();
-        return;
-      }
-
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-        .then(stream => {
-          qrScannerStream = stream;
-          const video = document.getElementById('qrVideo');
-          video.srcObject = stream;
-          video.setAttribute("playsinline", true);
-          video.play();
-          box.classList.remove('hidden');
-          document.getElementById('qrDisplayBox').classList.add('hidden');
-          qrAnimationId = requestAnimationFrame(scanCameraFrame);
-        })
-        .catch(err => {
-          showToast("Không thể mở camera. Vui lòng cấp quyền truy cập camera!");
-        });
-    }
-
-    function scanCameraFrame() {
-      const video = document.getElementById('qrVideo');
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        const canvas = document.getElementById('qrScannerCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-        if (code && code.data) {
-          applyQRDecodedData(code.data);
-          return;
-        }
-      }
-      qrAnimationId = requestAnimationFrame(scanCameraFrame);
-    }
-
-    function stopCameraScanner() {
-      if (qrScannerStream) {
-        qrScannerStream.getTracks().forEach(track => track.stop());
-        qrScannerStream = null;
-      }
-      if (qrAnimationId) {
-        cancelAnimationFrame(qrAnimationId);
-        qrAnimationId = null;
-      }
-      document.getElementById('cameraScannerBox').classList.add('hidden');
-    }
-
-    function closeApiKeyModal() {
-      stopCameraScanner();
-      document.getElementById('apiKeyModal').classList.add('hidden');
-    }
-
-    function saveApiKey() {
-      const keyFree = document.getElementById('geminiApiKeyFreeInput').value.trim();
-      const keyPayg = document.getElementById('geminiApiKeyPaygInput').value.trim();
-      const mode = document.getElementById('radioModePayg').checked ? 'payg' : 'free';
-      const grounding = document.getElementById('chkSearchGrounding').checked;
-
-      if (keyFree) localStorage.setItem('gemini_api_key_free', keyFree);
-      else localStorage.removeItem('gemini_api_key_free');
-
-      if (keyPayg) localStorage.setItem('gemini_api_key_payg', keyPayg);
-      else localStorage.removeItem('gemini_api_key_payg');
-
-      localStorage.setItem('gemini_api_mode', mode);
-      localStorage.setItem('gemini_search_grounding', grounding ? 'true' : 'false');
-      localStorage.removeItem('gemini_cached_model');
-
-      const activeKey = mode === 'payg' ? keyPayg : keyFree;
+    function checkSavedApiKey() {
+      const mode = localStorage.getItem('gemini_api_mode') || 'free';
+      const activeKey = getActiveApiKey();
+      const btnText = document.getElementById('apiKeyBtnText');
       if (activeKey) {
-        localStorage.setItem('gemini_api_key', activeKey);
-        showToast(`Đã lưu 2 khóa API & kích hoạt ${mode === 'payg' ? 'Pay-As-You-Go ⚡' : 'Free Tier'}!`);
+        btnText.innerHTML = mode === 'payg' ? `<span class="text-amber-300 font-bold">⚡ PAYG</span>` : `<span class="text-emerald-300 font-bold">Free Tier</span>`;
       } else {
-        localStorage.removeItem('gemini_api_key');
-        showToast("Đã lưu! Chế độ đang chọn chưa có API Key.");
+        btnText.innerText = "Cấu hình 2 Key";
+      }
+    }
+
+    // === GIAO DIỆN VẬN HÀNH BẢN ĐỒ & TIỆN ÍCH ===
+    function setFloatingStatus(state, message) {
+      const bar = document.getElementById('floatingStatusBar');
+      const icon = document.getElementById('floatingStatusIcon');
+      const text = document.getElementById('floatingStatusText');
+      if (!bar) return;
+
+      if (state === 'hide') {
+        bar.classList.add('hidden');
+        return;
       }
 
-      checkSavedApiKey();
-      closeApiKeyModal();
+      bar.classList.remove('hidden');
+      text.innerText = message;
+
+      if (state === 'ocr') {
+        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-blue-900/90 text-white border-blue-500 max-w-[92vw] truncate";
+        icon.innerHTML = `<i class="ph-bold ph-spinner animate-spin text-blue-300 text-base"></i>`;
+      } else if (state === 'survey') {
+        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-indigo-900/90 text-white border-indigo-400 max-w-[92vw] truncate";
+        icon.innerHTML = `<i class="ph-bold ph-globe-hemisphere-east animate-pulse text-amber-300 text-base"></i>`;
+      } else if (state === 'success') {
+        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-emerald-900/95 text-white border-emerald-400 max-w-[92vw] truncate";
+        icon.innerHTML = `<i class="ph-fill ph-check-circle text-emerald-400 text-base"></i>`;
+        setTimeout(() => { bar.classList.add('hidden'); }, 3000);
+      } else if (state === 'error') {
+        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-rose-900/95 text-white border-rose-400 max-w-[92vw] truncate";
+        icon.innerHTML = `<i class="ph-fill ph-x-circle text-rose-400 text-base"></i>`;
+        setTimeout(() => { bar.classList.add('hidden'); }, 4000);
+      }
     }
 
     function initLeafletMap() {
@@ -1092,9 +1388,7 @@
         osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
         satLayer.addTo(map);
         setTimeout(() => { map.invalidateSize(); renderMapElements(); }, 350);
-      } catch (e) {
-        console.error("Lỗi khởi tạo bản đồ:", e);
-      }
+      } catch (e) {}
     }
 
     function setMapLayer(type) {
@@ -1128,12 +1422,7 @@
           html: `<div style="background-color:#e11d48; width:30px; height:30px; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; box-shadow:0 3px 8px rgba(0,0,0,0.4);"><i class="ph-bold ph-house"></i></div>`,
           iconSize: [30, 30], iconAnchor: [15, 15]
         });
-        const lotName = document.getElementById('targetLot').value || "Tài sản mục tiêu";
-        const addrName = document.getElementById('targetStreet').value || document.getElementById('targetWard').value || "";
-        targetMarker = L.marker([targetCoords.lat, targetCoords.lng], { icon: targetIcon })
-          .addTo(map)
-          .bindPopup(`<b>${lotName}</b><br>${addrName}<br>Diện tích: ${area} m²`);
-
+        targetMarker = L.marker([targetCoords.lat, targetCoords.lng], { icon: targetIcon }).addTo(map);
         radiusCircle = L.circle([targetCoords.lat, targetCoords.lng], {
           radius: 1000, color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.1, weight: 1.5, dashArray: '4, 4'
         }).addTo(map);
@@ -1145,9 +1434,7 @@
           html: `<div style="background-color:#2563eb; width:26px; height:26px; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; font-size:11px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">${idx + 1}</div>`,
           iconSize: [26, 26], iconAnchor: [13, 13]
         });
-        const m = L.marker([comp.lat, comp.lng], { icon: compIcon })
-          .addTo(map)
-          .bindPopup(`<b>Tài sản so sánh #${idx + 1}</b><br>${comp.address}<br>DT: ${comp.area} m² - Giá: ${comp.rawPrice} Tỷ<br>Khoảng cách: ~${comp.distanceMeters}m`);
+        const m = L.marker([comp.lat, comp.lng], { icon: compIcon }).addTo(map);
         compMarkers.push(m);
       });
     }
@@ -1156,26 +1443,20 @@
 
     function fitAllMarkersSafe() {
       if (!map) return;
-      try {
-        const pts = [];
-        const area = parseFloat(document.getElementById('targetArea').value) || 0;
-        if (area > 0) pts.push([targetCoords.lat, targetCoords.lng]);
-        currentComps.forEach(c => pts.push([c.lat, c.lng]));
-        if (pts.length > 0) {
-          const bounds = L.latLngBounds(pts);
-          if (bounds.isValid()) map.fitBounds(bounds, { padding: [25, 25], maxZoom: 16 });
-        }
-      } catch (e) { zoomToTarget(); }
+      const pts = [];
+      const area = parseFloat(document.getElementById('targetArea').value) || 0;
+      if (area > 0) pts.push([targetCoords.lat, targetCoords.lng]);
+      currentComps.forEach(c => pts.push([c.lat, c.lng]));
+      if (pts.length > 0) {
+        const bounds = L.latLngBounds(pts);
+        if (bounds.isValid()) map.fitBounds(bounds, { padding: [25, 25], maxZoom: 16 });
+      }
     }
 
     function handleFileSelected(event) {
       const files = event.target.files;
       if (!files || files.length === 0) return;
-
-      for (let i = 0; i < files.length; i++) {
-        uploadedFilesList.push(files[i]);
-      }
-      
+      for (let i = 0; i < files.length; i++) uploadedFilesList.push(files[i]);
       event.target.value = '';
       renderUploadedFiles();
       executeOCRWithRealAI();
@@ -1207,19 +1488,15 @@
               <i class="ph-bold ph-file-pdf text-2xl mb-0.5"></i>
               <span class="text-[9px] font-bold uppercase">PDF</span>
             </div>
-            <div class="w-full px-1 py-0.5 text-[10px] truncate text-slate-700 text-center font-medium" title="${file.name}">${file.name}</div>
-            <button onclick="removeFile(${index})" class="absolute top-1 right-1 w-4 h-4 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] shadow hover:bg-rose-700">
-              <i class="ph-bold ph-x"></i>
-            </button>
+            <div class="w-full px-1 py-0.5 text-[10px] truncate text-slate-700 text-center font-medium">${file.name}</div>
+            <button onclick="removeFile(${index})" class="absolute top-1 right-1 w-4 h-4 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] shadow hover:bg-rose-700"><i class="ph-bold ph-x"></i></button>
           `;
         } else {
           const imgUrl = URL.createObjectURL(file);
           item.innerHTML = `
             <img src="${imgUrl}" alt="${file.name}" class="w-full h-20 object-cover rounded bg-white">
-            <div class="w-full px-1 py-0.5 text-[10px] truncate text-slate-700 text-center font-medium" title="${file.name}">${file.name}</div>
-            <button onclick="removeFile(${index})" class="absolute top-1 right-1 w-4 h-4 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] shadow hover:bg-rose-700">
-              <i class="ph-bold ph-x"></i>
-            </button>
+            <div class="w-full px-1 py-0.5 text-[10px] truncate text-slate-700 text-center font-medium">${file.name}</div>
+            <button onclick="removeFile(${index})" class="absolute top-1 right-1 w-4 h-4 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] shadow hover:bg-rose-700"><i class="ph-bold ph-x"></i></button>
           `;
         }
         list.appendChild(item);
@@ -1240,558 +1517,6 @@
       setFloatingStatus('hide');
     }
 
-    async function executeOCRWithRealAI() {
-      if (uploadedFilesList.length === 0) return;
-
-      const apiKey = getActiveApiKey();
-      const activeMode = localStorage.getItem('gemini_api_mode') || 'free';
-      const statusBox = document.getElementById('ocrStatusNotice');
-      statusBox.classList.remove('hidden');
-
-      if (!apiKey) {
-        statusBox.className = "mt-3 p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 text-xs flex items-start gap-2.5 shadow-sm";
-        statusBox.innerHTML = `
-          <i class="ph-fill ph-warning-circle text-amber-600 text-lg flex-shrink-0"></i>
-          <div>
-            <div class="font-bold text-xs sm:text-sm">Chưa có API Key cho chế độ ${activeMode === 'payg' ? 'Pay-As-You-Go ⚡' : 'Miễn Phí (Free Tier)'}!</div>
-            <p class="mt-0.5 text-[11px]">Vui lòng bấm nút <strong>"Cấu hình 2 Key"</strong> trên góc để nhập hoặc đồng bộ mã khóa.</p>
-          </div>
-        `;
-        return;
-      }
-
-      setFloatingStatus('ocr', 'Đang đọc hiểu tài liệu GCN bằng AI...');
-
-      statusBox.className = "mt-3 p-3 bg-blue-50 border border-blue-300 rounded-xl text-blue-900 text-xs flex items-start gap-2.5 shadow-sm";
-      statusBox.innerHTML = `
-        <i class="ph-bold ph-spinner animate-spin text-blue-600 text-lg flex-shrink-0"></i>
-        <div>
-          <div class="font-bold text-xs sm:text-sm">Đang trích xuất Giấy chứng nhận bằng Gemini AI...</div>
-          <p class="mt-0.5 text-[11px]">Hệ thống đang bóc tách diện tích, số thửa và kích thước.</p>
-        </div>
-      `;
-
-      try {
-        const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-        if (!listResponse.ok) {
-          const errData = await listResponse.json();
-          throw new Error(errData.error?.message || "Mã API Key không hợp lệ hoặc bị chặn.");
-        }
-        const listData = await listResponse.json();
-        let validModels = (listData.models || []).filter(m => 
-          m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")
-        );
-
-        if (validModels.length === 0) {
-          throw new Error("Tài khoản của bạn không có model nào hỗ trợ tính năng generateContent.");
-        }
-
-        validModels.sort((a, b) => {
-          const getScore = name => {
-            if (name.includes("3.8-flash")) return 100;
-            if (name.includes("2.0-flash")) return 90;
-            if (name.includes("1.5-flash")) return 80;
-            if (name.includes("flash") && !name.includes("2.5")) return 70;
-            return 50;
-          };
-          return getScore(b.name) - getScore(a.name);
-        });
-
-        const promptText = `Bạn là chuyên gia thẩm định giá tài sản bảo đảm của ngân hàng Việt Nam. Đọc kỹ tất cả các trang/ảnh Giấy chứng nhận quyền sử dụng đất (Sổ đỏ / Sổ hồng) này và trả về kết quả dạng JSON với cấu trúc chính xác như sau:
-{
-  "lot": "Thửa đất số ... / Tờ bản đồ số ...",
-  "street": "Tên đường hoặc lối đi tiếp giáp",
-  "hamlet": "Thôn/Xóm/Khu phố",
-  "ward": "Xã/Phường",
-  "districtProvince": "Huyện/TX/TP, Tỉnh",
-  "owner": "Tên chủ sở hữu",
-  "area": 0.0,
-  "resArea": 0.0,
-  "agriArea": 0.0,
-  "frontage": 0.0,
-  "depth": 0.0,
-  "shape": "Nở hậu / Vuông vức",
-  "roadType": "hem_oto",
-  "roadWidth": 4.0,
-  "buildingType": "Nhà ở hoặc Đất trống",
-  "buildingArea": 0.0,
-  "buildingCost": 3.5,
-  "buildingQuality": 70,
-  "lat": 13.9845,
-  "lng": 109.0745
-}
-Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuyệt đối không viết thêm lời chào hay giải thích ngoài JSON.`;
-
-        const parts = [{ text: promptText }];
-        for (const file of uploadedFilesList) {
-          const base64Data = await fileToBase64(file);
-          const mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
-          parts.push({
-            inlineData: {
-              mimeType: mimeType,
-              data: base64Data
-            }
-          });
-        }
-
-        let parsedData = null;
-        let lastErrorMsg = "";
-        let usedModelName = "";
-
-        for (const model of validModels) {
-          try {
-            const generateUrl = `https://generativelanguage.googleapis.com/v1beta/${model.name}:generateContent?key=${apiKey}`;
-            const genResponse = await fetch(generateUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ contents: [{ parts: parts }] })
-            });
-
-            if (!genResponse.ok) {
-              const genErr = await genResponse.json();
-              lastErrorMsg = genErr.error?.message || genResponse.statusText;
-              continue;
-            }
-
-            const genData = await genResponse.json();
-            const rawOutput = genData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            
-            let cleanJsonStr = rawOutput.trim();
-            const firstBrace = cleanJsonStr.indexOf('{');
-            const lastBrace = cleanJsonStr.lastIndexOf('}');
-            if (firstBrace !== -1 && lastBrace !== -1) {
-              cleanJsonStr = cleanJsonStr.substring(firstBrace, lastBrace + 1);
-            }
-            parsedData = JSON.parse(cleanJsonStr);
-            usedModelName = model.name.replace('models/', '');
-            break;
-          } catch (e) {
-            lastErrorMsg = e.message;
-          }
-        }
-
-        if (parsedData) {
-          applyParsedData(parsedData);
-          statusBox.className = "mt-3 p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs flex items-start gap-2.5 shadow-sm";
-          statusBox.innerHTML = `
-            <i class="ph-fill ph-check-circle text-emerald-600 text-xl flex-shrink-0"></i>
-            <div>
-              <div class="font-bold text-xs sm:text-sm">Gemini AI (${usedModelName}) đã bóc tách xong hồ sơ!</div>
-              <p class="mt-0.5 text-[11px]">Thông tin thửa đất đã được điền tự động.</p>
-            </div>
-          `;
-          showToast("AI đã đọc xong toàn bộ ảnh tài sản!");
-        } else {
-          throw new Error(lastErrorMsg || "Không có model nào trong tài khoản đọc được ảnh.");
-        }
-
-      } catch (err) {
-        console.error("Lỗi trích xuất AI:", err);
-        setFloatingStatus('error', 'Lỗi trích xuất ảnh tài sản');
-        statusBox.className = "mt-3 p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-900 text-xs flex items-start gap-2.5 shadow-sm";
-        statusBox.innerHTML = `
-          <i class="ph-fill ph-x-circle text-rose-600 text-xl flex-shrink-0"></i>
-          <div>
-            <div class="font-bold text-xs sm:text-sm">Không thể hoàn thành trích xuất AI!</div>
-            <p class="mt-0.5 text-rose-800 text-[11px]">${err.message}</p>
-            <div class="mt-2 flex gap-2">
-              <button onclick="executeOCRWithRealAI()" class="bg-rose-700 hover:bg-rose-800 text-white font-bold px-3 py-1 rounded shadow text-xs">
-                Thử Lại
-              </button>
-            </div>
-          </div>
-        `;
-      }
-    }
-
-    function fileToBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => {
-          const res = reader.result;
-          const base64Str = res.split(',')[1];
-          resolve(base64Str);
-        };
-        reader.onerror = error => reject(error);
-      });
-    }
-
-    function normalizePriceToTy(inputVal, contextStr = "") {
-      if (inputVal === null || inputVal === undefined) return 1.5;
-
-      let s = (typeof inputVal === 'string' ? inputVal : String(inputVal)).trim().toLowerCase();
-      if (contextStr) {
-        s += " " + contextStr.toLowerCase();
-      }
-
-      s = s.replace(/(\d+),(\d+)/g, '$1.$2');
-
-      if (s.includes('tỷ') || s.includes('ty') || /\bt\b/.test(s)) {
-        const mTyXx = s.match(/(\d+)[\s\.\,\-]*(?:tỷ|ty|\bt\b)[\s\.\,\-]*(\d)[x\*]+/i);
-        if (mTyXx) {
-          return parseFloat(mTyXx[1] + "." + mTyXx[2] + "5");
-        }
-
-        const mTyOnlyXx = s.match(/(\d+)[\s\.\,\-]*(?:tỷ|ty|\bt\b)[\s\.\,\-]*[x\*]+/i);
-        if (mTyOnlyXx) {
-          return parseFloat(mTyOnlyXx[1]) + 0.35;
-        }
-        const mDotXTy = s.match(/(\d+)\.[x\*]+\s*(?:tỷ|ty|\bt\b)/i);
-        if (mDotXTy) {
-          return parseFloat(mDotXTy[1]) + 0.35;
-        }
-
-        const mTyTr = s.match(/(\d+(?:\.\d+)?)\s*(?:tỷ|ty|\bt\b)\s*(\d+)?/i);
-        if (mTyTr) {
-          let mainTy = parseFloat(mTyTr[1]);
-          if (mTyTr[2]) {
-            let sub = mTyTr[2];
-            if (sub.length === 1) mainTy += parseFloat("0." + sub);
-            else if (sub.length === 2) mainTy += parseFloat("0." + sub);
-            else if (sub.length === 3) mainTy += parseFloat("0." + sub);
-            else if (parseFloat(sub) >= 1000) mainTy += parseFloat(sub) / 1000000000;
-          }
-          return Math.round(mainTy * 1000) / 1000;
-        }
-      }
-
-      const mTrXx = s.match(/(\d)[x\*]{2}\s*(?:tr|triệu|trieu)?/i);
-      if (mTrXx) {
-        return parseFloat(mTrXx[1] + "50") / 1000.0;
-      }
-
-      const mTrOnly = s.match(/(\d+(?:\.\d+)?)\s*(?:tr|triệu|trieu)(?!\w)/i);
-      if (mTrOnly) {
-        return Math.round((parseFloat(mTrOnly[1]) / 1000.0) * 1000) / 1000;
-      }
-
-      const numMatches = s.match(/\d+(?:\.\d+)?/);
-      if (!numMatches) return 1.5;
-      let num = parseFloat(numMatches[0]);
-      if (isNaN(num) || num <= 0) return 1.5;
-
-      if (num >= 10000000) {
-        return Math.round((num / 1000000000) * 1000) / 1000;
-      }
-
-      if (num >= 50 && num < 10000) {
-        if (s.includes('tỷ') || s.includes('ty')) {
-          return num;
-        }
-        return Math.round((num / 1000.0) * 1000) / 1000;
-      }
-
-      return Math.round(num * 1000) / 1000;
-    }
-
-    // TỰ ĐỘNG TỔNG HỢP BĐS SO SÁNH & BÁO CÁO AI OVERVIEW BẰNG GEMINI
-    async function generateSmartCompsForArea(target) {
-      updateMultiChannelSearchLinks(target.ward, target.districtProvince);
-
-      const apiKey = getActiveApiKey();
-      const apiMode = localStorage.getItem('gemini_api_mode') || 'free';
-      const enableGrounding = localStorage.getItem('gemini_search_grounding') !== 'false';
-
-      const aiStatusBadge = document.getElementById('compsCountBadge');
-      if (aiStatusBadge) {
-        aiStatusBadge.innerText = enableGrounding ? "Đang quét TSSS bằng Google Search..." : "Đang phân tích thị trường bằng Gemini AI...";
-      }
-
-      if (!apiKey) {
-        showToast("Vui lòng cấu hình API Key để thực hiện khảo sát giá BĐS!");
-        return;
-      }
-
-      setFloatingStatus('survey', enableGrounding ? 'Google AI đang quét tin rao web thật...' : 'Gemini AI đang phân tích & tìm TSSS...');
-
-      try {
-        let validModels = [];
-        const cachedModel = localStorage.getItem('gemini_cached_model');
-        if (cachedModel && apiMode === 'payg') {
-          validModels = [{ name: cachedModel }];
-        } else {
-          const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-          if (!listResponse.ok) throw new Error("API Key không hợp lệ hoặc bị chặn");
-          const listData = await listResponse.json();
-          validModels = (listData.models || []).filter(m => 
-            m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")
-          );
-          validModels.sort((a, b) => {
-            const getScore = name => {
-              if (name.includes("3.8-flash")) return 100;
-              if (name.includes("2.0-flash")) return 90;
-              if (name.includes("1.5-flash")) return 80;
-              if (name.includes("flash") && !name.includes("2.5")) return 70;
-              return 50;
-            };
-            return getScore(b.name) - getScore(a.name);
-          });
-        }
-
-        const promptText = `Bạn là chuyên gia thẩm định giá tài sản bảo đảm của ngân hàng tại Việt Nam.
-Hãy tìm kiếm và khảo sát giá bất động sản thực tế cho khu vực sau:
-- Địa bàn: ${target.ward || ''}, ${target.districtProvince || ''} (Lưu ý: hỗ trợ cả tên hành chính mới và cũ trước/sau sáp nhập)
-- Tuyến đường / vị trí: ${target.street || ''}, ${target.hamlet || ''}
-- Tổng diện tích: ${target.area || 0} m2 (Đất ở: ${target.resArea || 0} m2)
-- Mặt tiền: ${target.frontage || 0}m, Chiều sâu: ${target.depth || 0}m, Hình thể: ${target.shape || ''}
-- Vị trí tiếp giáp: ${target.roadType || 'hem_oto'}, lộ giới: ${target.roadWidth || 4}m
-
-Yêu cầu thực hiện:
-1. Tra cứu các tin rao bán đất/nhà THẬT mới nhất đang giao dịch tại khu vực ${target.ward || ''}, ${target.districtProvince || ''} qua các nguồn (Facebook Groups BĐS, Batdongsan.com.vn, Chợ Tốt Nhà, Alonhadat, Thư Viện Nhà Đất).
-2. Lập danh sách 7 đến 8 tài sản so sánh (TSSS) gần đây tại cùng tuyến đường hoặc khu vực lân cận, tương đồng nhất với tài sản mục tiêu.
-3. QUY TẮC BẮT BUỘC VỀ GIÁ ("rawPrice"):
-   - Đơn vị tính BẮT BUỘC LÀ SỐ THỰC TỶ ĐỒNG (Ví dụ: 980 triệu ghi 0.98, 1 tỷ 250 ghi 1.25, 850 triệu ghi 0.85). Tuyệt đối KHÔNG ghi số tiền nguyên hàng trăm triệu hay hàng tỷ dạng 980000000 hay 980.
-   - Nếu tin rao không nêu giá cụ thể (như '1tỷxxx', '9xx triệu', '1.x tỷ', 'giá thoả thuận'), hãy dùng chuyên môn thẩm định giá để PHỎNG ĐOÁN một con số hợp lý nhất theo mặt bằng khu vực và trả về số thực theo TỶ ĐỒNG (Ví dụ: 1tỷxxx -> 1.35, 9xx tr -> 0.95).
-   - "link": Đường link bài đăng thực tế nếu tìm thấy từ tìm kiếm, hoặc link tìm kiếm sàn tương ứng.
-4. Viết 1 đoạn tóm tắt thị trường (aiSummary) và 3 khuyến nghị thẩm định cho tờ trình tín dụng.
-
-Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\`\`):
-{
-  "aiSummary": "Thông tin khảo sát bất động sản tại...",
-  "recommendations": [
-    "Khuyến nghị 1...",
-    "Khuyến nghị 2...",
-    "Khuyến nghị 3..."
-  ],
-  "comps": [
-    {
-      "id": 1,
-      "address": "Địa chỉ cụ thể tại khu vực...",
-      "roadType": "hem_oto",
-      "roadDesc": "Đường bê tông ô tô 4m...",
-      "area": 0.0,
-      "frontage": 0.0,
-      "depth": 0.0,
-      "rawPrice": 0.0,
-      "link": "https://...",
-      "sourceType": "facebook | batdongsan | chotot | alonhadat | thuviennhadat",
-      "sourceName": "Facebook BĐS Địa Phương",
-      "distanceMeters": 350
-    }
-  ]
-}`;
-
-        let successMarket = null;
-        let usedModelName = "";
-
-        for (const model of validModels) {
-          try {
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/${model.name}:generateContent?key=${apiKey}`;
-            const payload = {
-              contents: [{ parts: [{ text: promptText }] }]
-            };
-
-            if (enableGrounding) {
-              payload.tools = [{ "googleSearch": {} }];
-            }
-
-            let res = await fetch(endpoint, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
-            });
-
-            if (!res.ok && enableGrounding) {
-              console.warn(`Thử lại ${model.name} không kèm tools googleSearch...`);
-              delete payload.tools;
-              res = await fetch(endpoint, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-              });
-            }
-
-            if (res.ok) {
-              const resData = await res.json();
-              const candidate = resData.candidates?.[0];
-              const textOutput = candidate?.content?.parts?.[0]?.text || "";
-              const groundingMetadata = candidate?.groundingMetadata;
-              const webChunks = groundingMetadata?.groundingChunks || [];
-
-              let clean = textOutput.trim();
-              const b1 = clean.indexOf('{'), b2 = clean.lastIndexOf('}');
-              if (b1 !== -1 && b2 !== -1) {
-                clean = clean.substring(b1, b2 + 1);
-                successMarket = JSON.parse(clean);
-
-                if (webChunks.length > 0 && successMarket.comps) {
-                  let chunkIndex = 0;
-                  successMarket.comps.forEach(comp => {
-                    if ((!comp.link || comp.link.includes('google.com/search')) && webChunks[chunkIndex]) {
-                      const uri = webChunks[chunkIndex].web?.uri;
-                      if (uri) {
-                        comp.link = uri;
-                        chunkIndex++;
-                      }
-                    }
-                  });
-                }
-
-                usedModelName = model.name.replace('models/', '');
-                localStorage.setItem('gemini_cached_model', model.name);
-                break;
-              }
-            }
-          } catch(e) {
-            console.warn("Lỗi model market:", e);
-          }
-        }
-
-        if (successMarket && successMarket.comps && successMarket.comps.length > 0) {
-          applyMarketCompsData(successMarket);
-          const modeBadge = apiMode === 'payg' ? '⚡ PAYG' : 'Free Tier';
-          const searchBadge = enableGrounding ? ' + Google Search' : '';
-          setFloatingStatus('success', `Đã cập nhật TSSS & khảo giá (${modeBadge}${searchBadge})`);
-          showToast(`Đã tổng hợp ${successMarket.comps.length} BĐS so sánh!`);
-        } else {
-          throw new Error("Không lấy được dữ liệu thị trường từ AI");
-        }
-
-      } catch (err) {
-        console.warn("Lỗi khảo sát thị trường:", err);
-        setFloatingStatus('error', 'Lỗi kết nối khảo sát giá');
-        showToast("Không thể hoàn tất khảo sát thị trường: " + err.message);
-      }
-    }
-
-    function applyMarketCompsData(marketData) {
-      if (marketData.aiSummary) {
-        document.getElementById('aiSummaryP1').innerHTML = marketData.aiSummary;
-      }
-      if (marketData.recommendations && marketData.recommendations.length > 0) {
-        const tipsBox = document.getElementById('aiSummaryTips');
-        tipsBox.classList.remove('hidden');
-        document.getElementById('aiSummaryList').innerHTML = marketData.recommendations.map(r => `<li>${r}</li>`).join('');
-      }
-
-      if (marketData.lat && marketData.lng) {
-        targetCoords = { lat: marketData.lat, lng: marketData.lng };
-      }
-
-      const allMappedComps = (marketData.comps || []).map((c, i) => {
-        const normalizedPrice = normalizePriceToTy(c.rawPrice, c.address + " " + (c.roadDesc || ""));
-        return {
-          id: i + 1,
-          address: c.address,
-          roadType: c.roadType || "hem_oto",
-          roadDesc: c.roadDesc || "Đường ô tô",
-          area: parseFloat(c.area) || 100,
-          frontage: parseFloat(c.frontage) || 5,
-          depth: parseFloat(c.depth) || 20,
-          rawPrice: normalizedPrice,
-          link: c.link || `https://www.google.com/search?q=${encodeURIComponent(c.address + ' bán đất')}`,
-          sourceType: c.sourceType || "facebook",
-          sourceName: c.sourceName || "Tin rao BĐS",
-          distanceMeters: parseInt(c.distanceMeters) || (200 + i * 150),
-          lat: targetCoords.lat + (Math.random() - 0.5) * 0.007,
-          lng: targetCoords.lng + (Math.random() - 0.5) * 0.007
-        };
-      });
-
-      currentComps = allMappedComps.slice(0, 5);
-      backupCompsPool = allMappedComps.slice(5);
-
-      renderMapElements();
-      recalculateTargetValues();
-    }
-
-    function updateMultiChannelSearchLinks(ward, dist) {
-      const w = ward || "";
-      const d = dist || "";
-      const dorkingBox = document.getElementById('dorkingSyntaxBox');
-      const query = `site:facebook.com/groups ("${w || 'BĐS'}") ("bán đất" OR "bán nhà") "${d || ''}"`;
-      if (dorkingBox) dorkingBox.innerText = query;
-
-      const btnSearchGoogle = document.getElementById('btnSearchGoogle');
-      if (btnSearchGoogle) btnSearchGoogle.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-
-      const linkFb = document.getElementById('linkQuickFb');
-      if (linkFb) linkFb.href = `https://www.google.com/search?q=${encodeURIComponent('site:facebook.com/groups "' + w + '" "' + d + '" "bán đất"')}`;
-
-      const linkBds = document.getElementById('linkQuickBds');
-      if (linkBds) linkBds.href = `https://www.google.com/search?q=${encodeURIComponent('site:batdongsan.com.vn "' + w + '" "bán đất"')}`;
-
-      const linkChotot = document.getElementById('linkQuickChotot');
-      if (linkChotot) linkChotot.href = `https://www.google.com/search?q=${encodeURIComponent('site:chotot.com "' + w + '" "' + d + '" "bán đất"')}`;
-
-      const linkAlonhadat = document.getElementById('linkQuickAlonhadat');
-      if (linkAlonhadat) linkAlonhadat.href = `https://www.google.com/search?q=${encodeURIComponent('site:alonhadat.com.vn "' + w + '" "bán đất"')}`;
-    }
-
-    function triggerManualSurvey() {
-      const ward = document.getElementById('targetWard').value.trim();
-      const dist = document.getElementById('targetDistrictProvince').value.trim();
-      const area = parseFloat(document.getElementById('targetArea').value) || 0;
-
-      if (!ward && !dist) {
-        showToast("Vui lòng nhập tối thiểu Xã/Phường và Huyện/Tỉnh!");
-        document.getElementById('targetWard').focus();
-        return;
-      }
-
-      const target = {
-        lot: document.getElementById('targetLot').value.trim() || "Tài sản mục tiêu",
-        street: document.getElementById('targetStreet').value.trim() || "Tuyến đường chính",
-        hamlet: document.getElementById('targetHamlet').value.trim(),
-        ward: ward,
-        districtProvince: dist,
-        area: area || 100,
-        resArea: parseFloat(document.getElementById('targetResArea').value) || area || 100,
-        agriArea: parseFloat(document.getElementById('targetAgriArea').value) || 0,
-        frontage: parseFloat(document.getElementById('targetFrontage').value) || 5.0,
-        depth: parseFloat(document.getElementById('targetDepth').value) || 20.0,
-        roadType: document.getElementById('targetPosType').value,
-        roadWidth: parseFloat(document.getElementById('targetRoadWidth').value) || 4.0,
-        buildingType: document.getElementById('targetBuildingType').value.trim() || "Nhà ở hoặc Đất trống"
-      };
-
-      const btn = document.getElementById('btnManualSurvey');
-      btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang khảo sát giá...`;
-      btn.disabled = true;
-
-      document.getElementById('targetBadgeLot').innerText = target.lot;
-      document.getElementById('targetBadgeLot').className = "text-xs font-semibold px-2.5 py-1 rounded bg-slate-200 text-slate-700";
-      document.getElementById('targetBadgeType').innerText = `Đất ${target.area}m² (${target.ward || 'Khu vực'})`;
-      document.getElementById('targetBadgeType').className = "text-xs font-semibold px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
-
-      generateSmartCompsForArea(target).finally(() => {
-        btn.innerHTML = `<i class="ph-bold ph-magnifying-glass-plus text-base text-amber-300"></i> Khảo Sát Giá Thị Trường & Tìm TSSS`;
-        btn.disabled = false;
-      });
-    }
-
-    function applyParsedData(data) {
-      if (data.lot !== undefined) document.getElementById('targetLot').value = data.lot;
-      if (data.street) document.getElementById('targetStreet').value = data.street;
-      if (data.hamlet) document.getElementById('targetHamlet').value = data.hamlet;
-      if (data.ward) document.getElementById('targetWard').value = data.ward;
-      if (data.districtProvince) document.getElementById('targetDistrictProvince').value = data.districtProvince;
-      if (data.area) document.getElementById('targetArea').value = data.area;
-      if (data.resArea) document.getElementById('targetResArea').value = data.resArea;
-      if (data.agriArea !== undefined) document.getElementById('targetAgriArea').value = data.agriArea;
-      if (data.frontage) document.getElementById('targetFrontage').value = data.frontage;
-      if (data.depth) document.getElementById('targetDepth').value = data.depth;
-      if (data.roadType) document.getElementById('targetPosType').value = data.roadType;
-      if (data.roadWidth) document.getElementById('targetRoadWidth').value = data.roadWidth;
-      if (data.buildingType) document.getElementById('targetBuildingType').value = data.buildingType;
-      if (data.buildingArea) document.getElementById('targetBuildingArea').value = data.buildingArea;
-      if (data.buildingCost) document.getElementById('targetBuildingCost').value = data.buildingCost;
-      if (data.buildingQuality) document.getElementById('targetBuildingQuality').value = data.buildingQuality;
-
-      if (data.lat && data.lng) targetCoords = { lat: data.lat, lng: data.lng };
-
-      document.getElementById('targetBadgeLot').innerText = data.lot || "Tài sản mục tiêu";
-      document.getElementById('targetBadgeLot').className = "text-xs font-semibold px-2.5 py-1 rounded bg-slate-200 text-slate-700";
-      document.getElementById('targetBadgeType').innerText = `Đất ${data.area || 0}m² + ${data.buildingType || 'CTXD'}`;
-      document.getElementById('targetBadgeType').className = "text-xs font-semibold px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
-
-      renderMapElements();
-      recalculateTargetValues();
-
-      generateSmartCompsForArea(data);
-    }
-
     function resetAllData() {
       document.getElementById('targetLot').value = '';
       document.getElementById('targetStreet').value = '';
@@ -1810,7 +1535,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
 
       document.getElementById('targetBadgeLot').innerText = 'Chưa nạp tài sản';
       document.getElementById('targetBadgeLot').className = "text-xs font-semibold px-2.5 py-1 rounded bg-slate-200 text-slate-600";
-      document.getElementById('targetBadgeType').innerText = 'Đang chờ thông số';
+      document.getElementById('targetBadgeType').innerText = 'Chờ thông số';
       document.getElementById('targetBadgeType').className = "text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 text-slate-500 border border-slate-300";
 
       document.getElementById('ocrStatusNotice').classList.add('hidden');
@@ -1818,7 +1543,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       clearAllFiles();
 
       currentComps = [];
-      document.getElementById('aiSummaryP1').innerText = 'Hệ thống đang sẵn sàng. Vui lòng nhập địa chỉ xã/phường hoặc nạp Giấy chứng nhận quyền sử dụng đất để nhận định giá trị thị trường và gợi ý định giá tín dụng an toàn.';
+      document.getElementById('aiSummaryP1').innerText = 'Hệ thống đang sẵn sàng. Vui lòng nhập địa chỉ xã/phường hoặc nạp Giấy chứng nhận quyền sử dụng đất để nhận định giá trị thị trường và gợi ý định giá an toàn.';
       document.getElementById('aiSummaryTips').classList.add('hidden');
 
       renderMapElements();
@@ -1828,20 +1553,30 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
 
     function updateTargetOverview() {
       const lot = document.getElementById('targetLot').value.trim();
-      if (lot) {
-        document.getElementById('targetBadgeLot').innerText = lot;
-        document.getElementById('targetBadgeLot').className = "text-xs font-semibold px-2.5 py-1 rounded bg-slate-200 text-slate-700";
-      } else {
-        document.getElementById('targetBadgeLot').innerText = "Tài sản mục tiêu";
-      }
-
+      document.getElementById('targetBadgeLot').innerText = lot || "Tài sản mục tiêu";
       const ward = document.getElementById('targetWard').value.trim();
       const dist = document.getElementById('targetDistrictProvince').value.trim();
       if (ward || dist) {
         updateMultiChannelSearchLinks(ward, dist);
         document.getElementById('targetBadgeType').innerText = `${ward || ''} ${dist || ''}`.trim();
-        document.getElementById('targetBadgeType').className = "text-xs font-semibold px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
       }
+    }
+
+    function updateMultiChannelSearchLinks(ward, dist) {
+      const w = ward || "", d = dist || "";
+      const query = `site:facebook.com/groups ("${w || 'BĐS'}") ("bán đất" OR "bán nhà") "${d || ''}"`;
+      const dorkingBox = document.getElementById('dorkingSyntaxBox');
+      if (dorkingBox) dorkingBox.innerText = query;
+      const btnSearchGoogle = document.getElementById('btnSearchGoogle');
+      if (btnSearchGoogle) btnSearchGoogle.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+      const linkFb = document.getElementById('linkQuickFb');
+      if (linkFb) linkFb.href = `https://www.google.com/search?q=${encodeURIComponent('site:facebook.com/groups "' + w + '" "' + d + '" "bán đất"')}`;
+      const linkBds = document.getElementById('linkQuickBds');
+      if (linkBds) linkBds.href = `https://www.google.com/search?q=${encodeURIComponent('site:batdongsan.com.vn "' + w + '" "bán đất"')}`;
+      const linkChotot = document.getElementById('linkQuickChotot');
+      if (linkChotot) linkChotot.href = `https://www.google.com/search?q=${encodeURIComponent('site:chotot.com "' + w + '" "' + d + '" "bán đất"')}`;
+      const linkAlonhadat = document.getElementById('linkQuickAlonhadat');
+      if (linkAlonhadat) linkAlonhadat.href = `https://www.google.com/search?q=${encodeURIComponent('site:alonhadat.com.vn "' + w + '" "bán đất"')}`;
     }
 
     function getSourceBadge(sourceType, sourceName) {
@@ -1854,124 +1589,58 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       }
     }
 
-    function recalculateTargetValues() {
-      const area = parseFloat(document.getElementById('targetArea').value) || 0;
-      const bldArea = parseFloat(document.getElementById('targetBuildingArea').value) || 0;
-      const bldCost = parseFloat(document.getElementById('targetBuildingCost').value) || 0;
-      const bldQuality = parseFloat(document.getElementById('targetBuildingQuality').value) || 0;
-      const discountPercent = parseFloat(document.getElementById('discountRate').value) || 10;
-      const ltvRate = parseFloat(document.getElementById('ltvSelect').value) || 0.7;
+    function normalizePriceToTy(inputVal, contextStr = "") {
+      if (inputVal === null || inputVal === undefined) return 1.5;
+      let s = (typeof inputVal === 'string' ? inputVal : String(inputVal)).trim().toLowerCase();
+      if (contextStr) s += " " + contextStr.toLowerCase();
+      s = s.replace(/(\d+),(\d+)/g, '$1.$2');
 
-      const bldTotalValue = (bldArea * (bldCost * 1000000) * (bldQuality / 100)) / 1000000000;
-      document.getElementById('targetBuildingValueDisplay').innerText = `${bldTotalValue.toFixed(2)} Tỷ VNĐ`;
+      if (s.includes('tỷ') || s.includes('ty') || /\bt\b/.test(s)) {
+        const mTyXx = s.match(/(\d+)[\s\.\,\-]*(?:tỷ|ty|\bt\b)[\s\.\,\-]*(\d)[x\*]+/i);
+        if (mTyXx) return parseFloat(mTyXx[1] + "." + mTyXx[2] + "5");
+        const mTyOnlyXx = s.match(/(\d+)[\s\.\,\-]*(?:tỷ|ty|\bt\b)[\s\.\,\-]*[x\*]+/i);
+        if (mTyOnlyXx) return parseFloat(mTyOnlyXx[1]) + 0.35;
+        const mDotXTy = s.match(/(\d+)\.[x\*]+\s*(?:tỷ|ty|\bt\b)/i);
+        if (mDotXTy) return parseFloat(mDotXTy[1]) + 0.35;
 
-      let totalWeightedPrice = 0, totalWeight = 0;
-      const tbody = document.getElementById('comparisonTableBody');
-      const printTbody = document.getElementById('printCompareTbody');
-      tbody.innerHTML = '';
-      printTbody.innerHTML = '';
-
-      if (currentComps.length === 0) {
-        document.getElementById('compsCountBadge').innerText = "Chưa có tài sản so sánh";
-        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-slate-400"><i class="ph-bold ph-magnifying-glass text-2xl mb-1 block"></i>Chưa có tài sản so sánh. Nhập xã/phường hoặc nạp ảnh GCN để bắt đầu khảo sát.</td></tr>`;
-        document.getElementById('statAvgSurveyPrice').innerHTML = `-- <span class="text-xs font-normal text-slate-500">tr/m²</span>`;
-        document.getElementById('statProposedPrice').innerHTML = `-- <span class="text-xs font-normal text-emerald-700">tr/m²</span>`;
-        document.getElementById('statTotalAssetValue').innerHTML = `-- <span class="text-xs font-normal text-slate-500">Tỷ VNĐ</span>`;
-        document.getElementById('statAssetBreakdown').innerText = `Chưa có dữ liệu định giá`;
-        document.getElementById('statMaxLoanLimit').innerHTML = `-- <span class="text-xs font-normal text-slate-300">Tỷ VNĐ</span>`;
-        return;
+        const mTyTr = s.match(/(\d+(?:\.\d+)?)\s*(?:tỷ|ty|\bt\b)\s*(\d+)?/i);
+        if (mTyTr) {
+          let mainTy = parseFloat(mTyTr[1]);
+          if (mTyTr[2]) {
+            let sub = mTyTr[2];
+            if (sub.length === 1) mainTy += parseFloat("0." + sub);
+            else if (sub.length === 2) mainTy += parseFloat("0." + sub);
+            else if (sub.length === 3) mainTy += parseFloat("0." + sub);
+            else if (parseFloat(sub) >= 1000) mainTy += parseFloat(sub) / 1000000000;
+          }
+          return Math.round(mainTy * 1000) / 1000;
+        }
       }
 
-      document.getElementById('compsCountBadge').innerText = `Đã chọn lọc ${currentComps.length} tài sản so sánh lân cận`;
-      currentComps.forEach((comp, idx) => {
-        comp.rawPrice = normalizePriceToTy(comp.rawPrice, comp.address + " " + (comp.roadDesc || ""));
-        const rawUnitPrice = (comp.rawPrice * 1000) / comp.area;
-        const discountedUnitPrice = rawUnitPrice * (1 - discountPercent / 100);
-        let score = 85;
-        if (comp.roadType === document.getElementById('targetPosType').value) score += 10;
-        if (area > 0 && Math.abs(comp.area - area) < 40) score += 5;
-        score = Math.min(score, 98);
+      const mTrXx = s.match(/(\d)[x\*]{2}\s*(?:tr|triệu|trieu)?/i);
+      if (mTrXx) return parseFloat(mTrXx[1] + "50") / 1000.0;
+      const mTrOnly = s.match(/(\d+(?:\.\d+)?)\s*(?:tr|triệu|trieu)(?!\w)/i);
+      if (mTrOnly) return Math.round((parseFloat(mTrOnly[1]) / 1000.0) * 1000) / 1000;
 
-        const weight = score / 100;
-        totalWeightedPrice += discountedUnitPrice * weight;
-        totalWeight += weight;
+      const numMatches = s.match(/\d+(?:\.\d+)?/);
+      if (!numMatches) return 1.5;
+      let num = parseFloat(numMatches[0]);
+      if (isNaN(num) || num <= 0) return 1.5;
+      if (num >= 10000000) return Math.round((num / 1000000000) * 1000) / 1000;
+      if (num >= 50 && num < 10000) {
+        if (s.includes('tỷ') || s.includes('ty')) return num;
+        return Math.round((num / 1000.0) * 1000) / 1000;
+      }
+      return Math.round(num * 1000) / 1000;
+    }
 
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 transition " + (rawUnitPrice < 10 && rawUnitPrice > 0 && currentComps.length > 2 ? "bg-rose-50/40" : "");
-        tr.innerHTML = `
-          <td class="py-2.5 sm:py-3 px-2 text-center font-bold text-slate-700">#${idx + 1}</td>
-          <td class="py-2.5 sm:py-3 px-3">
-            <div class="font-medium text-slate-800 leading-snug">${comp.address}</div>
-            <div class="text-[11px] text-slate-500">${comp.roadDesc}</div>
-          </td>
-          <td class="py-2.5 sm:py-3 px-2 text-center font-semibold">${comp.area}</td>
-          <td class="py-2.5 sm:py-3 px-2 text-center text-slate-600">${comp.frontage}m × ${comp.depth}m</td>
-          <td class="py-2.5 sm:py-3 px-2.5 text-right font-bold text-slate-800 whitespace-nowrap">
-            ${comp.rawPrice.toFixed(2)} Tỷ 
-            <span class="text-[10px] text-slate-500 font-normal block">(${rawUnitPrice.toFixed(1)} tr/m²)</span>
-          </td>
-          <td class="py-2.5 sm:py-3 px-2.5 text-right font-bold text-emerald-700 whitespace-nowrap text-xs sm:text-sm">${discountedUnitPrice.toFixed(2)}</td>
-          <td class="py-2.5 sm:py-3 px-2 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-bold ${score >= 90 ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${score}%</span></td>
-          <td class="py-2.5 sm:py-3 px-2 text-center text-slate-500 whitespace-nowrap">~${comp.distanceMeters}m</td>
-          <td class="py-2.5 sm:py-3 px-2 text-center whitespace-nowrap">
-            <div class="flex flex-col items-center gap-1">
-              ${getSourceBadge(comp.sourceType, comp.sourceName)}
-              <a href="${comp.link}" target="_blank" class="inline-flex items-center gap-1 text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded border border-slate-300 font-medium"><i class="ph-bold ph-arrow-square-out"></i> Xem tin</a>
-            </div>
-          </td>
-          <td class="py-2.5 sm:py-3 px-2 text-center whitespace-nowrap">
-            <div class="flex flex-col items-center gap-1">
-              <button onclick="replaceCompWithNext(${idx})" class="w-full text-indigo-700 hover:text-white hover:bg-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-1 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 shadow-xs" title="Xóa & đổi TSSS khác">
-                <i class="ph-bold ph-arrows-clockwise"></i> Đổi TSSS
-              </button>
-              <button onclick="deleteSingleComp(${idx})" class="w-full text-rose-600 hover:text-white hover:bg-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded text-[10px] font-medium transition flex items-center justify-center gap-1" title="Xóa hẳn">
-                <i class="ph-bold ph-trash"></i> Xóa bỏ
-              </button>
-            </div>
-          </td>
-        `;
-        tbody.appendChild(tr);
-
-        const ptr = document.createElement('tr');
-        ptr.innerHTML = `
-          <td class="border border-slate-300 p-1.5 text-center font-bold">#${idx + 1}</td>
-          <td class="border border-slate-300 p-1.5"><b>${comp.address}</b><br><span class="text-[10px] text-slate-500">${comp.roadDesc}</span></td>
-          <td class="border border-slate-300 p-1.5 text-center">${comp.area}</td>
-          <td class="border border-slate-300 p-1.5 text-center">${comp.frontage}m × ${comp.depth}m</td>
-          <td class="border border-slate-300 p-1.5 text-right font-semibold">${comp.rawPrice.toFixed(2)} Tỷ</td>
-          <td class="border border-slate-300 p-1.5 text-right font-bold text-emerald-700">${discountedUnitPrice.toFixed(2)} tr/m²</td>
-          <td class="border border-slate-300 p-1.5 text-center font-bold">${score}%</td>
-          <td class="border border-slate-300 p-1.5 text-center font-medium">${comp.sourceName}</td>
-        `;
-        printTbody.appendChild(ptr);
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = error => reject(error);
       });
-
-      const avgDiscountedPrice = totalWeight > 0 ? (totalWeightedPrice / totalWeight) : 18.5;
-      const rawAvgPrice = avgDiscountedPrice / (1 - discountPercent / 100);
-      const totalLandValue = area > 0 ? (area * (avgDiscountedPrice * 1000000)) / 1000000000 : 0;
-      const grandTotalAsset = totalLandValue + bldTotalValue;
-      const maxLoan = grandTotalAsset * ltvRate;
-
-      document.getElementById('statAvgSurveyPrice').innerHTML = `${rawAvgPrice.toFixed(1)} <span class="text-[10px] sm:text-xs font-normal text-slate-500">tr/m²</span>`;
-      document.getElementById('statProposedPrice').innerHTML = `${avgDiscountedPrice.toFixed(2)} <span class="text-[10px] sm:text-xs font-normal text-emerald-700">tr/m²</span>`;
-      document.getElementById('statTotalAssetValue').innerHTML = `${grandTotalAsset.toFixed(2)} <span class="text-[10px] sm:text-xs font-normal text-slate-500">Tỷ</span>`;
-      document.getElementById('statAssetBreakdown').innerText = `Đất: ${totalLandValue.toFixed(2)}T | Nhà: ${bldTotalValue.toFixed(2)}T`;
-      document.getElementById('statMaxLoanLimit').innerHTML = `${maxLoan.toFixed(2)} <span class="text-[10px] sm:text-xs font-normal text-slate-300">Tỷ</span>`;
-
-      document.getElementById('pLotNumber').innerText = document.getElementById('targetLot').value || "Chưa có thông tin số thửa";
-      document.getElementById('pAddress').innerText = `${document.getElementById('targetStreet').value || ''}, ${document.getElementById('targetHamlet').value || ''}, ${document.getElementById('targetWard').value || ''}, ${document.getElementById('targetDistrictProvince').value || ''}`.replace(/^[\s,]+|[\s,]+$/g, '');
-      document.getElementById('pAreaStructure').innerText = area > 0 ? `${area} m² (Đất ở lâu dài)` : "--";
-      document.getElementById('pShape').innerText = `Mặt tiền ${document.getElementById('targetFrontage').value || '--'}m, Sâu ${document.getElementById('targetDepth').value || '--'}m`;
-      document.getElementById('pRoadWidth').innerText = `${document.getElementById('targetStreet').value || 'Đường tiếp giáp'} (Rộng ~${document.getElementById('targetRoadWidth').value || '--'}m)`;
-      document.getElementById('pBuilding').innerText = bldArea > 0 ? `${document.getElementById('targetBuildingType').value} (DT: ${bldArea} m², CLCL: ${bldQuality}%)` : "Không có / Đất trống";
-      
-      document.getElementById('pLandArea').innerText = `${area} m²`;
-      document.getElementById('pLandUnitPrice').innerText = `${avgDiscountedPrice.toFixed(2)} tr/m²`;
-      document.getElementById('pLandTotalVal').innerText = `${totalLandValue.toFixed(2)} Tỷ`;
-      document.getElementById('pBldArea').innerText = `${bldArea} m²`;
-      document.getElementById('pBldTotalVal').innerText = `${bldTotalValue.toFixed(2)} Tỷ`;
-      document.getElementById('pGrandTotalVal').innerText = `${grandTotalAsset.toFixed(2)} Tỷ VNĐ`;
-      document.getElementById('pMaxLoanVal').innerText = `${maxLoan.toFixed(2)} Tỷ VNĐ`;
     }
 
     async function pasteFromClipboard() {
@@ -1984,14 +1653,12 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
 
     function parseManualText() {
       const text = document.getElementById('manualRawText').value.trim();
-      if (!text) { showToast("Vui lòng nhập hoặc dán nội dung tin rao."); return; }
+      if (!text) { showToast("Vui lòng nhập nội dung tin rao."); return; }
 
       let area = 80, frontage = 4.5, depth = 18;
       const mArea = text.match(/(\d+[\.,]?\d*)\s*(m2|m²)/i);
       if (mArea) area = parseFloat(mArea[1].replace(',', '.'));
-
       let price = normalizePriceToTy(text, text);
-
       const mFront = text.match(/(ngang|mặt tiền|mt)\s*(\d+[\.,]?\d*)/i);
       if (mFront) frontage = parseFloat(mFront[2].replace(',', '.'));
       depth = Math.round((area / frontage) * 10) / 10;
