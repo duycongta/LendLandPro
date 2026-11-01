@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LendLand Pro - Khảo Giá & Định Giá Tài Sản Bảo Đảm</title>
   
-  <!-- CDN Thư viện giao diện chuẩn -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -41,19 +40,17 @@
         <div>
           <div class="font-bold text-base tracking-wide flex items-center gap-2">
             LendLand Pro
-            <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">v3.7 Production</span>
+            <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">v3.8 Stable</span>
           </div>
           <div class="text-xs text-slate-400">Hệ thống khảo sát giá BĐS & Định giá tài sản bảo đảm tín dụng ngân hàng</div>
         </div>
       </div>
       
       <div class="flex items-center gap-3">
-        <!-- NÚT LÀM MỚI (XÓA TRẮNG DỮ LIỆU) -->
         <button onclick="resetAllData()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs px-3 py-2 rounded-lg border border-slate-600 flex items-center gap-1.5 transition">
           <i class="ph-bold ph-arrow-counter-clockwise"></i>
           <span>Làm Mới (Xóa Trắng)</span>
         </button>
-        <!-- NÚT XUẤT FILE PDF -->
         <button onclick="handleExportPDF()" class="bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:shadow-lg flex items-center gap-2 text-sm transition-all border border-rose-500">
           <i class="ph-bold ph-file-pdf text-lg"></i>
           <span>Xuất File PDF</span>
@@ -65,7 +62,7 @@
   <!-- NỘI DUNG CHÍNH WEB APP -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-grow space-y-6 no-print">
 
-    <!-- KHỐI QUÉT VÀ NHẬN DIỆN GCN (HỖ TRỢ FILE PDF & NHIỀU ẢNH) -->
+    <!-- KHỐI QUÉT VÀ NHẬN DIỆN GCN -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
@@ -85,17 +82,21 @@
       </div>
 
       <div class="p-6">
-        <div id="dropZone" class="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-xl p-6 text-center transition bg-slate-50/50 cursor-pointer relative">
-          <input type="file" id="gcnFileInput" accept="application/pdf, image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleFileSelected(event)">
-          <div class="space-y-2 pointer-events-none">
-            <div class="w-12 h-12 mx-auto rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl">
-              <i class="ph-bold ph-upload-simple"></i>
-            </div>
-            <div class="font-semibold text-slate-700 text-sm">Nhấp để chọn tệp hoặc kéo thả tệp PDF / Ảnh chụp GCN vào đây</div>
-            <div class="text-xs text-slate-400">Hỗ trợ file scan PDF hoặc file ảnh JPG, PNG (chọn đồng thời trang 2, 3, 4).</div>
+        <!-- Vùng kéo thả & Nút chọn tệp chuẩn -->
+        <input type="file" id="gcnFileInput" accept="application/pdf, image/*" multiple class="hidden" onchange="handleFileSelected(event)">
+        
+        <div id="dropZone" onclick="triggerFileInput()" class="border-2 border-dashed border-slate-300 hover:border-indigo-500 hover:bg-indigo-50/20 rounded-xl p-8 text-center transition cursor-pointer bg-slate-50">
+          <div class="w-12 h-12 mx-auto rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl mb-3">
+            <i class="ph-bold ph-upload-simple"></i>
           </div>
+          <div class="font-semibold text-slate-800 text-sm mb-1">Nhấp vào đây để chọn tệp hoặc kéo thả tệp PDF / Ảnh GCN vào đây</div>
+          <div class="text-xs text-slate-500 mb-4">Hỗ trợ tệp PDF scan hoặc chọn cùng lúc nhiều ảnh (.JPG, .PNG) trang 2, 3, 4</div>
+          <button type="button" onclick="event.stopPropagation(); triggerFileInput();" class="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-xs font-semibold shadow-sm inline-flex items-center gap-1.5">
+            <i class="ph-bold ph-folder-open"></i> Chọn tệp từ máy tính
+          </button>
         </div>
 
+        <!-- Danh sách file đã chọn -->
         <div id="loadedFilesContainer" class="hidden mt-4 space-y-3">
           <div class="flex items-center justify-between text-xs font-semibold text-slate-600">
             <span id="filesCountBadge">Đã chọn 0 tệp</span>
@@ -110,6 +111,7 @@
           </div>
         </div>
 
+        <!-- DÒNG THÔNG BÁO XÁC NHẬN -->
         <div id="ocrSuccessNotice" class="hidden mt-4 p-3.5 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-800 text-sm flex items-start gap-2.5">
           <i class="ph-fill ph-check-circle text-emerald-600 text-xl flex-shrink-0 mt-0.5"></i>
           <div>
@@ -120,7 +122,7 @@
       </div>
     </div>
 
-    <!-- KHỐI 1: THÔNG TIN TÀI SẢN MỤC TIÊU CẦN ĐỊNH GIÁ (TRẠNG THÁI SẠCH BAN ĐẦU) -->
+    <!-- KHỐI 1: THÔNG TIN TÀI SẢN MỤC TIÊU CẦN ĐỊNH GIÁ -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
@@ -189,7 +191,7 @@
                 <option value="mat_tien">Mặt tiền chính</option>
                 <option value="hem_oto" selected>Đường/Hẻm ô tô (≥3.5m)</option>
                 <option value="hem_bagac">Hẻm ba gác (2.5 - 3m)</option>
-                <option value="hem_nho">Hẻm nhỏ (<2.5m)</option>
+                <option value="hem_nho">Hẻm nhỏ (&lt;2.5m)</option>
               </select>
               <input type="number" id="targetRoadWidth" value="" placeholder="Rộng đường" step="0.1" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium" onchange="recalculateTargetValues()">
             </div>
@@ -272,4 +274,169 @@
         <div>
           <div class="text-xs text-slate-500 font-medium">Đơn giá đất định giá đề xuất</div>
           <div id="statProposedPrice" class="text-2xl font-bold text-emerald-600 mt-1">-- <span class="text-xs font-normal text-emerald-700">tr/m²</span></div>
-          <div class="
+          <div class="text-[11px] text-amber-600 font-medium mt-0.5">-10% chiết khấu thanh khoản</div>
+        </div>
+        <div class="w-11 h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+          <i class="ph-bold ph-tag"></i>
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <div class="text-xs text-slate-500 font-medium">Tổng Giá Trị TSBD (Đất + Nhà)</div>
+          <div id="statTotalAssetValue" class="text-2xl font-bold text-slate-900 mt-1">-- <span class="text-xs font-normal text-slate-500">Tỷ VNĐ</span></div>
+          <div id="statAssetBreakdown" class="text-[11px] text-slate-500 mt-0.5">Chưa có dữ liệu định giá</div>
+        </div>
+        <div class="w-11 h-11 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+          <i class="ph-bold ph-bank"></i>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 text-white p-4 rounded-xl border border-slate-800 shadow-sm flex items-center justify-between">
+        <div>
+          <div class="text-xs text-slate-300 font-medium">Hạn mức cho vay (LTV 70%)</div>
+          <div id="statMaxLoanLimit" class="text-2xl font-bold text-emerald-400 mt-1">-- <span class="text-xs font-normal text-slate-300">Tỷ VNĐ</span></div>
+          <div class="text-[11px] text-emerald-200/80 mt-0.5">Dư nợ giải ngân tối đa an toàn</div>
+        </div>
+        <div class="w-11 h-11 rounded-lg bg-slate-800 text-emerald-400 flex items-center justify-center text-xl border border-slate-700">
+          <i class="ph-bold ph-money"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- KHỐI 3: BẢN ĐỒ GIS -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <i class="ph-bold ph-map-trifold text-blue-600 text-xl"></i>
+          <div>
+            <h3 class="font-bold text-slate-800 text-sm">Bản Đồ Định Vị GIS & Bán Kính Khảo Sát BĐS So Sánh</h3>
+            <span class="text-xs text-slate-500">Tọa độ tương đối theo địa danh, lớp vệ tinh Google Maps và khoảng cách cự ly</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="zoomToTarget()" class="text-xs bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded font-medium flex items-center gap-1 shadow-sm">
+            <i class="ph-bold ph-crosshair"></i> Zoom Thửa Đất (17x)
+          </button>
+          <button onclick="fitAllMarkersSafe()" class="text-xs bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded font-medium flex items-center gap-1 shadow-sm">
+            <i class="ph-bold ph-arrows-out"></i> Bao Quát
+          </button>
+          <div class="h-4 w-px bg-slate-300 mx-1"></div>
+          <button id="btnMapSat" onclick="setMapLayer('satellite')" class="text-xs bg-blue-600 text-white px-2.5 py-1.5 rounded font-medium shadow-sm">
+            🛰️ Vệ Tinh Google
+          </button>
+          <button id="btnMapOSM" onclick="setMapLayer('osm')" class="text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 px-2.5 py-1.5 rounded font-medium border border-slate-300">
+            🗺️ Bản Đồ Đường
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-xs text-amber-900 flex items-center gap-2">
+        <i class="ph-fill ph-warning-circle text-amber-600 text-base flex-shrink-0"></i>
+        <span><strong>Lưu ý nghiệp vụ:</strong> Tọa độ trên bản đồ mang tính chất <strong>tham khảo tương đối</strong> theo tên địa danh hành chính. Cán bộ tín dụng <strong>bắt buộc phải khảo sát thực địa trực tiếp</strong>, xác định mốc giới thực tế và kiểm tra quy hoạch tại địa phương.</span>
+      </div>
+
+      <div class="relative">
+        <div id="gisMap" class="w-full h-80 bg-slate-100 z-10"></div>
+        <div class="absolute bottom-3 right-3 z-20 bg-white/95 backdrop-blur px-3 py-2 rounded-lg shadow-md border border-slate-200 text-xs flex items-center gap-4">
+          <div class="flex items-center gap-1.5 font-medium text-slate-700">
+            <span class="w-3 h-3 rounded-full bg-rose-600 inline-block border border-white shadow"></span> Thửa đất mục tiêu
+          </div>
+          <div class="flex items-center gap-1.5 font-medium text-slate-700">
+            <span class="w-3 h-3 rounded-full bg-blue-600 inline-block border border-white shadow"></span> BĐS so sánh lân cận
+          </div>
+          <div class="flex items-center gap-1.5 font-medium text-slate-700">
+            <span class="w-3 h-3 rounded-full bg-blue-300/40 inline-block border border-blue-500"></span> Bán kính 1.000m
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KHỐI 4: THU THẬP TIN RAO -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="ph-bold ph-magnifying-glass text-indigo-600 text-xl"></i>
+          <div>
+            <h3 class="font-bold text-slate-800 text-sm">Thu Thập Tin Rao So Sánh BĐS Lân Cận</h3>
+            <span class="text-xs text-slate-500">Cào tin từ các hội nhóm Facebook địa phương và các sàn BĐS chính thống</span>
+          </div>
+        </div>
+        <button onclick="runAutoCrawler()" id="btnAutoCrawl" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-4 py-2 rounded-lg shadow flex items-center gap-1.5 transition">
+          <i class="ph-bold ph-arrows-clockwise"></i> Cào Thêm Tin Mới Nhất
+        </button>
+      </div>
+
+      <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs font-semibold text-slate-700">
+            <span>Dán nội dung tin nhắn Zalo / Link Facebook môi giới:</span>
+            <button onclick="pasteFromClipboard()" class="text-blue-600 hover:underline flex items-center gap-1">
+              <i class="ph-bold ph-clipboard"></i> Dán từ Clipboard
+            </button>
+          </div>
+          <textarea id="manualRawText" rows="3" placeholder="Ví dụ: Cần bán đất Thôn 2, DT 150m2 thổ cư, hẻm ô tô, giá 1 tỷ 200 tr có thương lượng. LH 0905..." class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500"></textarea>
+          <div class="flex justify-end">
+            <button onclick="parseManualText()" class="bg-slate-800 hover:bg-slate-900 text-white font-medium text-xs px-3 py-1.5 rounded-lg flex items-center gap-1">
+              <i class="ph-bold ph-plus-circle"></i> Trích Xuất & Thêm Vào Bảng
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs space-y-2">
+          <div class="font-bold text-slate-700 flex items-center gap-1.5">
+            <i class="ph-bold ph-bookmark-simple text-blue-600"></i> Cú pháp Google Dorking Tự Động
+          </div>
+          <p class="text-slate-500 text-[11px]">
+            Hệ thống tự động đồng bộ theo địa bàn khảo sát:
+          </p>
+          <div id="dorkingSyntaxBox" class="bg-white p-2 rounded border border-slate-200 font-mono text-[11px] text-blue-700 break-all select-all">
+            site:facebook.com/groups ("bán đất" OR "bán nhà")
+          </div>
+          <div class="flex gap-2 pt-1">
+            <a id="btnSearchGoogle" href="https://www.google.com/search?q=site:facebook.com/groups+(%22b%C3%A1n+%C4%91%E1%BA%A5t%22+OR+%22b%C3%A1n+nh%C3%A0%22)" target="_blank" class="text-[11px] bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 px-2.5 py-1 rounded flex items-center gap-1 shadow-sm font-medium">
+              <i class="ph-bold ph-google-logo"></i> Mở Tìm Kiếm Trực Tiếp
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KHỐI 5: GOOGLE AI OVERVIEW -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="p-4 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border-b border-blue-100 flex items-center gap-2">
+        <i class="ph-bold ph-sparkle text-indigo-600 text-lg"></i>
+        <h3 class="font-bold text-slate-800 text-sm">Google AI Overview - Nhận Định Thị Trường Khu Vực Khảo Sát</h3>
+      </div>
+      <div class="p-5 text-xs text-slate-700 leading-relaxed space-y-3">
+        <p id="aiSummaryP1">
+          Hệ thống đang sẵn sàng. Vui lòng nạp Giấy chứng nhận quyền sử dụng đất hoặc nhập thông tin địa chỉ tài sản mục tiêu để nhận định giá trị thị trường và gợi ý định giá tín dụng an toàn.
+        </p>
+        <div id="aiSummaryTips" class="hidden bg-blue-50/50 border-l-4 border-blue-500 p-3 rounded-r-lg space-y-1">
+          <div class="font-semibold text-slate-800">Khuyến nghị trọng tâm cho Tờ trình Tín dụng:</div>
+          <ul id="aiSummaryList" class="list-disc list-inside text-slate-600 space-y-0.5 text-[11px]"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- KHỐI 6: BẢNG SO SÁNH -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <i class="ph-bold ph-table text-slate-700 text-lg"></i>
+          <h3 class="font-bold text-slate-800 text-sm">Danh Mục Tài Sản So Sánh & Chấm Điểm Tương Đồng Chuẩn Tín Dụng</h3>
+        </div>
+        <span id="compsCountBadge" class="text-xs text-slate-500">Chưa có tài sản so sánh</span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 uppercase tracking-wider text-[11px]">
+            <tr>
+              <th class="py-3 px-3">STT</th>
+              <th class="py-3 px-3">Địa Chỉ & Vị Trí Tiếp Giáp</th>
+              <th class="py-3 px-3">Diện Tích (m²)</th>
+              <th class="py-3 px-3">Kích Thước</th>
+              <th class="py-3 px-3">Giá Rao Bán</th>
+              <th class="py-3 px-3">Sau CK 1
