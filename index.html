@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LendLand Pro v4.1 - Thẩm Định Giá BĐS Tín Dụng</title>
+  <title>LendLand Pro v4.2 - Thẩm Định Giá BĐS Tín Dụng</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -27,7 +27,7 @@
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col">
 
-  <!-- HEADER v4.1 -->
+  <!-- HEADER v4.2 -->
   <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md no-print border-b border-slate-700">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
@@ -37,7 +37,7 @@
         <div>
           <div class="font-bold text-base tracking-wide flex items-center gap-2">
             LendLand Pro
-            <span class="text-xs bg-emerald-500 text-slate-900 font-extrabold px-2 py-0.5 rounded shadow">v4.1 Live</span>
+            <span class="text-xs bg-emerald-500 text-slate-900 font-extrabold px-2 py-0.5 rounded shadow">v4.2 Live</span>
           </div>
           <div class="text-xs text-slate-400">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm ngân hàng</div>
         </div>
@@ -67,7 +67,7 @@
           <div class="p-2 bg-indigo-100 text-indigo-700 rounded-lg"><i class="ph-bold ph-scan text-xl"></i></div>
           <div>
             <h2 class="font-bold text-slate-800 text-base">Quét & Nhận Diện Giấy Chứng Nhận QSD Đất (PDF / Nhiều Ảnh)</h2>
-            <p class="text-xs text-slate-500">Tự động dùng Gemini AI bóc tách thông số pháp lý, diện tích, kích thước thửa đất</p>
+            <p class="text-xs text-slate-500">Tự động dò tìm Model Gemini phù hợp để bóc tách thông số pháp lý, diện tích, kích thước thửa đất</p>
           </div>
         </div>
         <button onclick="loadSampleTranThanhBa()" class="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 flex items-center gap-1.5 font-medium transition">
@@ -76,7 +76,6 @@
       </div>
 
       <div class="p-6">
-        <!-- VÙNG TẢI FILE CHUẨN HTML5 -->
         <input type="file" id="gcnFileInput" accept="image/*,application/pdf" multiple class="hidden" onchange="handleFileSelected(event)">
         
         <label for="gcnFileInput" class="block border-2 border-dashed border-indigo-300 hover:border-indigo-600 rounded-xl p-8 text-center transition bg-indigo-50/20 hover:bg-indigo-50/50 cursor-pointer">
@@ -104,7 +103,7 @@
           <div id="thumbnailsList" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3"></div>
         </div>
 
-        <!-- THÔNG BÁO XÁC NHẬN HOẶC LỖI -->
+        <!-- THÔNG BÁO TRẠNG THÁI OCR -->
         <div id="ocrStatusNotice" class="hidden mt-4 p-4 rounded-xl text-sm shadow-sm flex items-start gap-3"></div>
       </div>
     </div>
@@ -704,7 +703,6 @@
       } catch (e) { zoomToTarget(); }
     }
 
-    // XỬ LÝ CHỌN TỆP
     function handleFileSelected(event) {
       const files = event.target.files;
       if (!files || files.length === 0) return;
@@ -776,7 +774,7 @@
       document.getElementById('ocrStatusNotice').classList.add('hidden');
     }
 
-    // THUẬT TOÁN OCR CHÍNH XÁC: THỬ GEMINI-2.0-FLASH TRƯỚC, RỒI GEMINI-1.5-FLASH
+    // THUẬT TOÁN TỰ ĐỘNG DÒ TÌM MODEL QUA LISTMODELS (KHÔNG BAO GIỜ BỊ LỖI NOT FOUND)
     async function executeOCRWithRealAI() {
       if (uploadedFilesList.length === 0) return;
 
@@ -790,7 +788,7 @@
           <i class="ph-fill ph-warning-circle text-amber-600 text-xl flex-shrink-0"></i>
           <div>
             <div class="font-bold text-sm">Chưa phát hiện Gemini API Key!</div>
-            <p class="mt-0.5">Vui lòng bấm nút <strong>"Gemini API Key"</strong> ở góc trên bên phải để dán mã khóa AI Studio của bạn. Nếu chưa có, bạn có thể bấm <strong>"Nạp Dữ Liệu Mẫu"</strong> để trải nghiệm thử.</p>
+            <p class="mt-0.5">Vui lòng bấm nút <strong>"Gemini API Key"</strong> ở góc trên bên phải để dán mã khóa AI Studio của bạn.</p>
           </div>
         `;
         return;
@@ -800,17 +798,35 @@
       statusBox.innerHTML = `
         <i class="ph-bold ph-spinner animate-spin text-blue-600 text-xl flex-shrink-0"></i>
         <div>
-          <div class="font-bold text-sm">Đang phân tích tài liệu bằng Google Gemini AI...</div>
-          <p class="mt-0.5">Hệ thống đang gửi dữ liệu sang Google Cloud để bóc tách thông tin thửa đất, diện tích và tọa độ.</p>
+          <div class="font-bold text-sm">Đang kết nối Google AI Studio & Tự động dò tìm Model khả dụng...</div>
+          <p class="mt-0.5">Hệ thống đang chuẩn bị dữ liệu và gửi sang Gemini AI để trích xuất thông tin thửa đất.</p>
         </div>
       `;
 
       try {
-        const file = uploadedFilesList[0];
-        const base64Data = await fileToBase64(file);
-        const mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+        // 1. Tự động truy vấn danh sách Model mà API Key này được phép dùng
+        const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        if (!listResponse.ok) {
+          const errData = await listResponse.json();
+          throw new Error(errData.error?.message || "Mã API Key không hợp lệ hoặc bị chặn.");
+        }
+        const listData = await listResponse.json();
+        const availableModels = (listData.models || []).filter(m => 
+          m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")
+        );
 
-        const promptText = `Bạn là chuyên gia thẩm định giá tín dụng ngân hàng Việt Nam. Đọc kỹ tài liệu Giấy chứng nhận quyền sử dụng đất (Sổ đỏ / Sổ hồng) này và trả về kết quả dạng JSON với cấu trúc chính xác như sau:
+        if (availableModels.length === 0) {
+          throw new Error("Tài khoản của bạn không có model nào hỗ trợ tính năng generateContent.");
+        }
+
+        // Ưu tiên chọn model flash mới nhất
+        let selectedModel = availableModels.find(m => m.name.includes("2.5-flash") || m.name.includes("2.0-flash") || m.name.includes("1.5-flash"));
+        if (!selectedModel) selectedModel = availableModels[0];
+        
+        console.log("Model được chọn tự động:", selectedModel.name);
+
+        // 2. Đọc toàn bộ các file ảnh/PDF người dùng đã tải lên vào mảng parts
+        const promptText = `Bạn là chuyên gia thẩm định giá tín dụng ngân hàng Việt Nam. Đọc kỹ tất cả các trang/ảnh Giấy chứng nhận quyền sử dụng đất (Sổ đỏ / Sổ hồng) này và trả về kết quả dạng JSON với cấu trúc chính xác như sau:
 {
   "lot": "Thửa đất số ... / Tờ bản đồ số ...",
   "street": "Tên đường hoặc lối đi tiếp giáp",
@@ -833,83 +849,72 @@
   "lat": 13.9845,
   "lng": 109.0745
 }
-Chỉ trả về JSON thuần túy, tuyệt đối không thêm bất kỳ văn bản giải thích hay markdown code fence nào.`;
+Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuyệt đối không viết thêm lời chào hay giải thích ngoài JSON.`;
 
-        const requestBody = {
-          contents: [{
-            parts: [
-              { text: promptText },
-              { inlineData: { mimeType: mimeType, data: base64Data } }
-            ]
-          }]
-        };
-
-        // Danh sách các model chính thức theo thứ tự ưu tiên
-        const candidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
-        let successData = null;
-        let lastErrorMsg = "";
-
-        for (const model of candidateModels) {
-          try {
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-            const response = await fetch(endpoint, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(requestBody)
-            });
-
-            if (response.ok) {
-              const resJson = await response.json();
-              if (resJson.candidates && resJson.candidates[0].content) {
-                const textOutput = resJson.candidates[0].content.parts[0].text;
-                const cleanJsonStr = textOutput.replace(/```json/g, '').replace(/```/g, '').trim();
-                successData = JSON.parse(cleanJsonStr);
-                break;
-              }
-            } else {
-              const errBody = await response.json();
-              lastErrorMsg = errBody.error ? errBody.error.message : response.statusText;
+        const parts = [{ text: promptText }];
+        for (const file of uploadedFilesList) {
+          const base64Data = await fileToBase64(file);
+          const mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+          parts.push({
+            inlineData: {
+              mimeType: mimeType,
+              data: base64Data
             }
-          } catch (e) {
-            lastErrorMsg = e.message;
-          }
+          });
         }
 
-        if (successData) {
-          applyParsedData(successData);
-          statusBox.className = "mt-4 p-4 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs flex items-start gap-3 shadow-sm";
-          statusBox.innerHTML = `
-            <i class="ph-fill ph-check-circle text-emerald-600 text-2xl flex-shrink-0"></i>
-            <div>
-              <div class="font-bold text-sm">Gemini AI đã bóc tách dữ liệu thành công!</div>
-              <p class="mt-0.5">Thông tin đã được tự động điền vào các trường bên dưới. Vui lòng đối chiếu với bản gốc trước khi lập tờ trình.</p>
-            </div>
-          `;
-          showToast("Đã trích xuất dữ liệu thành công!");
-        } else {
-          // Báo lỗi chi tiết từ Google API và kích hoạt fallback thông minh
-          statusBox.className = "mt-4 p-4 bg-rose-50 border border-rose-300 rounded-xl text-rose-900 text-xs flex items-start gap-3 shadow-sm";
-          statusBox.innerHTML = `
-            <i class="ph-fill ph-x-circle text-rose-600 text-2xl flex-shrink-0"></i>
-            <div>
-              <div class="font-bold text-sm">Không thể kết nối Gemini API!</div>
-              <p class="mt-0.5 text-rose-800">Chi tiết: ${lastErrorMsg || "API Key không hợp lệ hoặc bị giới hạn quyền truy cập."}</p>
-              <div class="mt-2">
-                <button onclick="loadSampleTranThanhBa()" class="bg-rose-700 hover:bg-rose-800 text-white font-bold px-3 py-1.5 rounded shadow text-xs">
-                  Nạp Dữ Liệu Thực Tế Mẫu Ngay
-                </button>
-              </div>
-            </div>
-          `;
+        // 3. Gửi request đến model đã được Google xác nhận khả dụng
+        const generateUrl = `https://generativelanguage.googleapis.com/v1beta/${selectedModel.name}:generateContent?key=${apiKey}`;
+        const genResponse = await fetch(generateUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: parts }] })
+        });
+
+        if (!genResponse.ok) {
+          const genErr = await genResponse.json();
+          throw new Error(genErr.error?.message || "Lỗi xử lý hình ảnh từ Gemini AI.");
         }
+
+        const genData = await genResponse.json();
+        const rawOutput = genData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        
+        // Bóc tách JSON an toàn
+        let cleanJsonStr = rawOutput.trim();
+        const firstBrace = cleanJsonStr.indexOf('{');
+        const lastBrace = cleanJsonStr.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1) {
+          cleanJsonStr = cleanJsonStr.substring(firstBrace, lastBrace + 1);
+        }
+        const parsedData = JSON.parse(cleanJsonStr);
+
+        applyParsedData(parsedData);
+        statusBox.className = "mt-4 p-4 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs flex items-start gap-3 shadow-sm";
+        statusBox.innerHTML = `
+          <i class="ph-fill ph-check-circle text-emerald-600 text-2xl flex-shrink-0"></i>
+          <div>
+            <div class="font-bold text-sm">Gemini AI (${selectedModel.name.replace('models/', '')}) đã trích xuất thành công!</div>
+            <p class="mt-0.5">Thông tin pháp lý và sơ đồ đã được tự động điền vào biểu mẫu bên dưới. Vui lòng kiểm tra lại trước khi lập tờ trình.</p>
+          </div>
+        `;
+        showToast("AI đã đọc xong toàn bộ ảnh tài sản!");
 
       } catch (err) {
+        console.error("Lỗi trích xuất AI:", err);
         statusBox.className = "mt-4 p-4 bg-rose-50 border border-rose-300 rounded-xl text-rose-900 text-xs flex items-start gap-3 shadow-sm";
         statusBox.innerHTML = `
           <i class="ph-fill ph-x-circle text-rose-600 text-2xl flex-shrink-0"></i>
           <div>
-            <div class="font-bold text-sm">Lỗi xử lý tệp: ${err.message}</div>
-            <p class="mt-0.5">Vui lòng kiểm tra lại kết nối mạng hoặc thử lại với tệp ảnh khác.</p>
+            <div class="font-bold text-sm">Không thể hoàn thành trích xuất AI!</div>
+            <p class="mt-0.5 text-rose-800">Chi tiết lỗi: ${err.message}</p>
+            <div class="mt-2 flex gap-2">
+              <button onclick="executeOCRWithRealAI()" class="bg-rose-700 hover:bg-rose-800 text-white font-bold px-3 py-1.5 rounded shadow text-xs">
+                Thử Lại
+              </button>
+              <button onclick="loadSampleTranThanhBa()" class="bg-slate-700 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded shadow text-xs">
+                Nạp Dữ Liệu Mẫu
+              </button>
+            </div>
           </div>
         `;
       }
