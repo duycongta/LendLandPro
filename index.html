@@ -3,24 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LendLand Pro - Khảo Giá & Định Giá Tài Sản Bảo Đảm</title>
-  
+  <title>LendLand Pro - Định Giá Tài Sản Tín Dụng</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  </script>
-
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-    
     @media print {
       body { background-color: #fff !important; font-size: 11pt; color: #000 !important; }
-      .no-print, header, nav, #toastNotification, .leaflet-control-zoom, .leaflet-control-layers, #apiKeyModal { display: none !important; }
+      .no-print, header, nav, #toastNotification, .leaflet-control-zoom, .leaflet-control-layers { display: none !important; }
       #printArea { display: block !important; padding: 0 !important; }
       .print-page-break { page-break-after: always; }
       .shadow-sm, .shadow-md, .shadow-lg { box-shadow: none !important; border: 1px solid #cbd5e1 !important; }
@@ -29,8 +24,6 @@
   </style>
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col">
-
-  <!-- TOP HEADER LENDLAND PRO -->
   <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md no-print border-b border-slate-700">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
@@ -39,90 +32,61 @@
         </div>
         <div>
           <div class="font-bold text-base tracking-wide flex items-center gap-2">
-            LendLand Pro
-            <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">v3.9 Pro</span>
+            LendLand Pro <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">v3.9 Production</span>
           </div>
-          <div class="text-xs text-slate-400">Hệ thống khảo sát giá BĐS & Định giá tài sản bảo đảm tín dụng ngân hàng</div>
+          <div class="text-xs text-slate-400">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm ngân hàng</div>
         </div>
       </div>
-      
       <div class="flex items-center gap-2">
-        <button onclick="openApiKeyModal()" class="bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs px-3 py-2 rounded-lg border border-amber-500/40 flex items-center gap-1.5 transition">
-          <i class="ph-bold ph-key"></i>
-          <span id="apiKeyStatusText">Cài đặt Gemini AI</span>
+        <button onclick="openApiKeyModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-lg border border-slate-600 flex items-center gap-1.5 transition">
+          <i class="ph-bold ph-key"></i> <span id="apiKeyBtnText">Gemini API</span>
         </button>
-        <button onclick="resetAllData()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs px-3 py-2 rounded-lg border border-slate-600 flex items-center gap-1.5 transition">
-          <i class="ph-bold ph-arrow-counter-clockwise"></i>
-          <span>Làm Mới</span>
+        <button onclick="resetAllData()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-lg border border-slate-600 flex items-center gap-1.5 transition">
+          <i class="ph-bold ph-arrow-counter-clockwise"></i> <span>Làm Mới</span>
         </button>
-        <button onclick="handleExportPDF()" class="bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:shadow-lg flex items-center gap-2 text-sm transition-all border border-rose-500">
-          <i class="ph-bold ph-file-pdf text-lg"></i>
-          <span>Xuất File PDF</span>
+        <button onclick="handleExportPDF()" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-4 py-2 rounded-lg shadow text-xs flex items-center gap-1.5 transition">
+          <i class="ph-bold ph-file-pdf text-base"></i> <span>Xuất PDF</span>
         </button>
       </div>
     </div>
   </header>
 
-  <!-- NỘI DUNG CHÍNH -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-grow space-y-6 no-print">
-
-    <!-- KHỐI QUÉT & NHẬN DIỆN GCN -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
-          <div class="p-2 bg-indigo-100 text-indigo-700 rounded-lg">
-            <i class="ph-bold ph-scan text-xl"></i>
-          </div>
+          <div class="p-2 bg-indigo-100 text-indigo-700 rounded-lg"><i class="ph-bold ph-scan text-xl"></i></div>
           <div>
             <h2 class="font-bold text-slate-800 text-base">Quét & Nhận Diện Giấy Chứng Nhận QSD Đất (PDF / Nhiều Ảnh)</h2>
-            <p class="text-xs text-slate-500">Tải ảnh hoặc PDF lên - Hệ thống tự động đọc và điền dữ liệu ngay lập tức</p>
+            <p class="text-xs text-slate-500">Tải ảnh hoặc PDF lên để tự động bóc tách thông tin tài sản</p>
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <button onclick="loadSampleTranThanhBa()" class="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 flex items-center gap-1.5 font-medium transition">
-            <i class="ph-bold ph-flask"></i> Nạp GCN Mẫu (Trần Thanh Ba - Phù Cát)
-          </button>
-        </div>
+        <button onclick="loadSampleTranThanhBa()" class="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 flex items-center gap-1.5 font-medium transition">
+          <i class="ph-bold ph-flask"></i> Nạp Dữ Liệu Mẫu (Trần Thanh Ba - Phù Cát)
+        </button>
       </div>
-
       <div class="p-6">
-        <input type="file" id="gcnFileInput" accept="application/pdf, image/*" multiple class="hidden" onchange="handleFileSelected(event)">
-
-        <label for="gcnFileInput" class="block border-2 border-dashed border-slate-300 hover:border-indigo-500 hover:bg-indigo-50/20 rounded-xl p-8 text-center transition cursor-pointer bg-slate-50 select-none">
-          <div class="w-12 h-12 mx-auto rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl mb-3">
-            <i class="ph-bold ph-upload-simple"></i>
-          </div>
-          <div class="font-semibold text-slate-800 text-sm mb-1">Bấm vào đây để chọn tệp PDF hoặc ảnh chụp Sổ đỏ / Sổ hồng</div>
-          <div class="text-xs text-slate-500 mb-3">Hỗ trợ tệp PDF scan hoặc chọn cùng lúc nhiều ảnh (.JPG, .PNG) trang 2, 3, 4</div>
-          <span class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow inline-flex items-center gap-1.5 transition">
-            <i class="ph-bold ph-folder-open"></i> Chọn tệp từ máy / điện thoại
-          </span>
-        </label>
-
-        <!-- Trạng thái đang phân tích -->
-        <div id="ocrLoadingState" class="hidden mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center gap-3 text-indigo-800 text-xs font-medium">
-          <i class="ph-bold ph-spinner animate-spin text-xl text-indigo-600 flex-shrink-0"></i>
-          <div>
-            <div class="font-bold text-sm">Đang tải và xử lý hình ảnh / tệp PDF...</div>
-            <div class="text-slate-500 text-[11px] mt-0.5">Hệ thống đang trích xuất số thửa, tờ bản đồ, diện tích, sơ đồ cạnh tiếp giáp...</div>
+        <div class="relative border-2 border-dashed border-indigo-300 hover:border-indigo-600 rounded-xl p-8 text-center transition bg-indigo-50/20 hover:bg-indigo-50/40 cursor-pointer">
+          <input type="file" id="gcnFileInput" accept="application/pdf, image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30" onchange="handleFileSelected(event)">
+          <div class="pointer-events-none">
+            <div class="w-14 h-14 mx-auto rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-3xl mb-3 shadow-inner"><i class="ph-bold ph-cloud-arrow-up"></i></div>
+            <div class="font-bold text-slate-800 text-base mb-1">Bấm vào đây để chọn ảnh/PDF hoặc kéo thả file vào đây</div>
+            <div class="text-xs text-slate-500">Hỗ trợ file PDF scan hoặc chọn đồng thời nhiều ảnh (.JPG, .PNG) trang 2, 3, 4</div>
+            <div class="mt-3 inline-flex items-center gap-1.5 text-xs text-indigo-700 font-semibold bg-white px-3 py-1.5 rounded-lg border border-indigo-200 shadow-sm"><i class="ph-bold ph-file-plus"></i> Chọn tệp từ máy tính / điện thoại</div>
           </div>
         </div>
-
-        <!-- Danh sách file đã chọn -->
-        <div id="loadedFilesContainer" class="hidden mt-4 space-y-2">
+        <div id="loadedFilesContainer" class="hidden mt-4 space-y-3">
           <div class="flex items-center justify-between text-xs font-semibold text-slate-600">
             <span id="filesCountBadge">Đã chọn 0 tệp</span>
-            <button onclick="clearAllFiles()" class="text-rose-600 hover:underline">Xóa tệp</button>
+            <button onclick="clearAllFiles()" class="text-rose-600 hover:underline">Xóa danh sách tệp</button>
           </div>
           <div id="thumbnailsList" class="flex flex-wrap gap-2"></div>
         </div>
-
-        <!-- Thông báo đọc thành công -->
-        <div id="ocrSuccessNotice" class="hidden mt-4 p-3.5 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-800 text-sm flex items-start gap-2.5">
-          <i class="ph-fill ph-check-circle text-emerald-600 text-xl flex-shrink-0 mt-0.5"></i>
+        <div id="ocrSuccessNotice" class="hidden mt-4 p-4 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-800 text-sm flex items-start gap-3 shadow-sm">
+          <i class="ph-fill ph-check-circle text-emerald-600 text-2xl flex-shrink-0"></i>
           <div>
-            <span class="font-bold">Đã đọc file hình ảnh / PDF thành công!</span>
-            <p class="text-xs text-emerald-700 mt-0.5">Hệ thống đã tự động trích xuất các trường dữ liệu bên dưới. Cán bộ tín dụng <strong>vui lòng kiểm tra lại kỹ thông tin tài sản</strong> app đã đọc được trước khi thực hiện bước tiếp theo.</p>
+            <div class="font-bold text-emerald-900">Đã đọc và trích xuất dữ liệu thành công!</div>
+            <p class="text-xs text-emerald-700 mt-0.5">Dữ liệu đã được nạp tự động vào bảng bên dưới. Cán bộ tín dụng <strong>vui lòng kiểm tra lại kỹ thông tin tài sản</strong> app đã đọc được trước khi lập tờ trình.</p>
           </div>
         </div>
       </div>
@@ -132,128 +96,25 @@
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
-          <div class="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
-            <i class="ph-bold ph-map-pin text-xl"></i>
-          </div>
+          <div class="p-2 bg-emerald-100 text-emerald-700 rounded-lg"><i class="ph-bold ph-map-pin text-xl"></i></div>
           <div>
             <h2 class="font-bold text-slate-800 text-base">Thông Tin Chi Tiết Tài Sản Cần Khảo Sát Giá (Tài Sản Mục Tiêu)</h2>
-            <p class="text-xs text-slate-500">Tự động điền sau khi nạp ảnh/PDF hoặc có thể chỉnh sửa trực tiếp</p>
+            <p class="text-xs text-slate-500">Cơ sở dữ liệu trích lục pháp lý phục vụ so sánh và lập tờ trình</p>
           </div>
         </div>
         <div class="flex items-center gap-2">
           <span id="targetBadgeLot" class="text-xs font-semibold px-2.5 py-1 rounded bg-slate-200 text-slate-600">Chưa nạp tài sản</span>
-          <span id="targetBadgeType" class="text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 text-slate-500 border border-slate-300">Đang chờ nạp GCN</span>
+          <span id="targetBadgeType" class="text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 text-slate-500 border border-slate-300">Đang chờ GCN</span>
         </div>
       </div>
-
       <div class="p-6 space-y-5">
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4 text-xs font-medium">
-          <div>
-            <label class="block text-slate-500 mb-1">Thửa đất số / Tờ BĐ *</label>
-            <input type="text" id="targetLot" value="" placeholder="Ví dụ: Thửa 75 / Tờ 53" class="w-full font-semibold border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
-          </div>
-          <div>
-            <label class="block text-slate-500 mb-1">Tuyến đường / Lối đi *</label>
-            <input type="text" id="targetStreet" value="" placeholder="Ví dụ: Đường liên thôn 4m" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
-          </div>
-          <div>
-            <label class="block text-slate-500 mb-1">Thôn / Xóm / Khu phố *</label>
-            <input type="text" id="targetHamlet" value="" placeholder="Ví dụ: Thôn Hòa Dõng" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
-          </div>
-          <div>
-            <label class="block text-slate-500 mb-1">Xã / Phường *</label>
-            <input type="text" id="targetWard" value="" placeholder="Ví dụ: Xã Cát Tân" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
-          </div>
-          <div>
-            <label class="block text-slate-500 mb-1">Huyện / TX / TP - Tỉnh *</label>
-            <input type="text" id="targetDistrictProvince" value="" placeholder="Ví dụ: Huyện Phù Cát, Tỉnh Bình Định" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
-          </div>
+          <div><label class="block text-slate-500 mb-1">Thửa đất số / Tờ BĐ *</label><input type="text" id="targetLot" placeholder="Ví dụ: Thửa 75 / Tờ 53" class="w-full font-semibold border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()"></div>
+          <div><label class="block text-slate-500 mb-1">Tuyến đường / Lối đi *</label><input type="text" id="targetStreet" placeholder="Ví dụ: Đường liên thôn / Hẻm 4m" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()"></div>
+          <div><label class="block text-slate-500 mb-1">Thôn / Xóm / Khu phố *</label><input type="text" id="targetHamlet" placeholder="Ví dụ: Thôn Hòa Dõng" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()"></div>
+          <div><label class="block text-slate-500 mb-1">Xã / Phường *</label><input type="text" id="targetWard" placeholder="Ví dụ: Xã Cát Tân" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()"></div>
+          <div><label class="block text-slate-500 mb-1">Huyện / TX / TP - Tỉnh *</label><input type="text" id="targetDistrictProvince" placeholder="Ví dụ: Huyện Phù Cát, Tỉnh Bình Định" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()"></div>
         </div>
-
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 text-xs font-medium bg-slate-50 p-4 rounded-xl border border-slate-200">
-          <div>
-            <label class="block text-slate-500 mb-1">Tổng diện tích thửa (m²) *</label>
-            <input type="number" id="targetArea" value="" placeholder="0.0" step="0.1" class="w-full font-bold text-slate-900 border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 text-sm" onchange="recalculateTargetValues()">
-          </div>
-          <div>
-            <label class="block text-slate-500 mb-1">Diện tích đất ở (ODT/ONT) (m²)</label>
-            <input type="number" id="targetResArea" value="" placeholder="0.0" step="0.1" class="w-full text-emerald-700 font-semibold border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 text-sm" onchange="recalculateTargetValues()">
-          </div>
-          <div>
-            <label class="block text-slate-500 mb-1">Diện tích đất Vườn/CLN/Khác (m²)</label>
-            <input type="number" id="targetAgriArea" value="" placeholder="0.0" step="0.1" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 text-sm" onchange="recalculateTargetValues()">
-          </div>
-          <div>
-            <label class="block text-slate-500 mb-1">Mặt tiền tiếp giáp × Sâu (m)</label>
-            <div class="grid grid-cols-2 gap-2">
-              <input type="number" id="targetFrontage" value="" placeholder="MT (m)" step="0.01" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium" onchange="recalculateTargetValues()">
-              <input type="number" id="targetDepth" value="" placeholder="Sâu (m)" step="0.01" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium" onchange="recalculateTargetValues()">
-            </div>
-          </div>
-          <div>
-            <label class="block text-slate-500 mb-1">Vị trí & Lộ giới đường (m)</label>
-            <div class="grid grid-cols-2 gap-2">
-              <select id="targetPosType" class="border border-slate-300 rounded-lg p-2.5 text-xs bg-white" onchange="recalculateTargetValues()">
-                <option value="mat_tien">Mặt tiền chính</option>
-                <option value="hem_oto" selected>Đường/Hẻm ô tô (≥3.5m)</option>
-                <option value="hem_bagac">Hẻm ba gác (2.5 - 3m)</option>
-                <option value="hem_nho">Hẻm nhỏ (&lt;2.5m)</option>
-              </select>
-              <input type="number" id="targetRoadWidth" value="" placeholder="Rộng đường" step="0.1" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium" onchange="recalculateTargetValues()">
-            </div>
-          </div>
-        </div>
-
-        <!-- KHỐI ĐỊNH GIÁ CTXD -->
-        <div class="border border-amber-200 bg-amber-50/40 rounded-xl p-4">
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-2">
-              <i class="ph-bold ph-house-line text-amber-700 text-lg"></i>
-              <span class="font-bold text-slate-800 text-xs uppercase tracking-wide">Thông Tin & Định Giá Công Trình Xây Dựng (CTXD) Trên Đất</span>
-            </div>
-            <span class="text-xs text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 font-medium">Suất vốn đầu tư xây dựng</span>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 text-xs">
-            <div>
-              <label class="block text-slate-600 mb-1">Loại công trình</label>
-              <input type="text" id="targetBuildingType" value="" placeholder="Ví dụ: Nhà ở cấp 4" class="w-full border border-slate-300 rounded-lg p-2 bg-white" oninput="recalculateTargetValues()">
-            </div>
-            <div>
-              <label class="block text-slate-600 mb-1">Diện tích sàn XD (m²)</label>
-              <input type="number" id="targetBuildingArea" value="" placeholder="0.0" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white font-semibold" onchange="recalculateTargetValues()">
-            </div>
-            <div>
-              <label class="block text-slate-600 mb-1">Đơn giá XD mới (tr/m²)</label>
-              <input type="number" id="targetBuildingCost" value="3.5" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 bg-white" onchange="recalculateTargetValues()">
-            </div>
-            <div>
-              <label class="block text-slate-600 mb-1">Tỷ lệ CLCL (%)</label>
-              <input type="number" id="targetBuildingQuality" value="70" step="5" class="w-full border border-slate-300 rounded-lg p-2 bg-white" onchange="recalculateTargetValues()">
-            </div>
-            <div>
-              <label class="block text-slate-600 mb-1">Ước tính giá trị CTXD</label>
-              <div id="targetBuildingValueDisplay" class="p-2 bg-amber-100/80 border border-amber-300 rounded-lg font-bold text-amber-900 text-sm">
-                0.00 Tỷ VNĐ
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- THAM SỐ CHIẾT KHẤU & LTV -->
-        <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
-          <div class="flex flex-wrap items-center gap-4 text-xs font-semibold">
-            <div class="flex items-center gap-2">
-              <span class="text-slate-600">Chiết khấu thương lượng:</span>
-              <input type="number" id="discountRate" value="10" min="0" max="30" class="w-16 border border-slate-300 rounded p-1 text-center font-bold" onchange="recalculateTargetValues()"> %
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-slate-600">Tỷ lệ cho vay tối đa (LTV):</span>
-              <select id="ltvSelect" class="border border-slate-300 rounded p-1 text-xs bg-white font-bold text-blue-700" onchange="recalculateTargetValues()">
-                <option value="0.70" selected>70% (Chuẩn an toàn Tín dụng)</option>
-                <option value="0.75">75% (Khách hàng ưu tiên)</option>
-                <option value="0.80">80% (Khung tối đa quy định)</option>
-              </select>
-            </div>
-          </div>
-          <button onclick="
+          <div><label class="block text-slate-500 mb-1">Tổng diện tích thửa (m²) *</label><input type="number" id="targetArea" placeholder="0.0" step="0.1" class="w-full font-bold text-slate-900 border border-slate-300 rounded-lg p-2.5 text-sm" onchange="recalculateTargetValues()"></div>
+          <div><label class="block text-slate-500 mb-1">Diện tích đất ở (ODT/ONT) (m²)</label><input type="number" id="targetResArea" placeholder="0.0" step="0.1" class="w-full text-emerald-700 font-semibold border
