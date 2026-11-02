@@ -32,43 +32,85 @@
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col relative select-none sm:select-auto">
 
-  <!-- MÀN HÌNH KHÓA MÃ PIN BẢO MẬT (LUÔN KHÓA KHI MỞ TRANG) -->
+  <!-- MÀN HÌNH KHÓA MÃ PIN TỐI GIẢN & THÔNG MINH (SMART PIN GATE) -->
   <div id="lockScreenOverlay" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-sm w-full p-6 sm:p-7 shadow-2xl border border-slate-100 text-center space-y-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center space-y-4">
       <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center text-3xl shadow-lg">
         <i class="ph-bold ph-shield-check"></i>
       </div>
-      <div>
-        <h2 class="font-bold text-slate-900 text-lg">LendLand Pro</h2>
-        <div class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider mt-0.5">Xác Thực Bảo Mật Tín Dụng</div>
-        <p class="text-xs text-slate-500 mt-1">Nhập mã PIN để mở khóa và tự động nạp 2 API Key</p>
-      </div>
 
-      <!-- Ô NHẬP MÃ PIN -->
-      <div class="space-y-2">
-        <div class="relative">
-          <input type="password" id="pinInput" maxlength="12" placeholder="Nhập mã PIN" class="w-full text-center text-lg tracking-[0.3em] font-bold border-2 border-slate-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition" onkeydown="if(event.key==='Enter') unlockAppWithPin()">
-          <button type="button" onclick="togglePinVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
-            <i id="btnPinEye" class="ph-bold ph-eye text-lg"></i>
+      <!-- VIEW 1: DÀNH CHO THIẾT BỊ ĐÃ KẾT NỐI (CHỈ CẦN NHẬP PIN) -->
+      <div id="lockPinView" class="space-y-4">
+        <div>
+          <h2 class="font-bold text-slate-900 text-lg">LendLand Pro</h2>
+          <div class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider mt-0.5">Xác Thực Bảo Mật Tín Dụng</div>
+          <p class="text-xs text-slate-500 mt-1">Nhập mã PIN để mở khóa và làm việc</p>
+        </div>
+
+        <div class="space-y-2">
+          <div class="relative">
+            <input type="password" id="pinInput" maxlength="12" placeholder="Nhập mã PIN (6 số)" class="w-full text-center text-lg tracking-[0.3em] font-bold border-2 border-slate-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-slate-50 focus:bg-white" onkeydown="if(event.key==='Enter') unlockAppWithPin()">
+            <button type="button" onclick="togglePinVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+              <i id="btnPinEye" class="ph-bold ph-eye text-lg"></i>
+            </button>
+          </div>
+          <div id="pinErrorMsg" class="hidden text-[11px] text-rose-600 font-semibold text-center"></div>
+        </div>
+
+        <button onclick="unlockAppWithPin()" id="btnUnlockPin" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm active:scale-95">
+          <i class="ph-bold ph-lock-key-open"></i> Mở Khóa Ứng Dụng
+        </button>
+
+        <div class="pt-2 border-t border-slate-100 flex justify-center">
+          <button onclick="switchLockToNoVaultView()" type="button" class="text-slate-400 hover:text-indigo-600 text-xs flex items-center gap-1 transition">
+            <i class="ph-bold ph-arrows-left-right"></i> Đổi Két Cloud / Liên kết lại
           </button>
         </div>
-        <div id="pinErrorMsg" class="hidden text-[11px] text-rose-600 font-semibold text-center"></div>
       </div>
 
-      <button onclick="unlockAppWithPin()" id="btnUnlockPin" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm active:scale-95">
-        <i class="ph-bold ph-lock-key-open"></i> Mở Khóa Ứng Dụng
-      </button>
+      <!-- VIEW 2: DÀNH CHO THIẾT BỊ MỚI (CHƯA CÓ KÉT) - SIÊU ĐƠN GIẢN & TIỆN LỢI -->
+      <div id="lockNoVaultView" class="hidden space-y-4">
+        <div>
+          <h2 class="font-bold text-slate-900 text-lg">Liên Kết Thiết Bị Mới</h2>
+          <div class="text-[11px] font-semibold text-indigo-600 uppercase tracking-wider mt-0.5">Đồng Bộ Két Cloud 1-Chạm</div>
+          <p class="text-xs text-slate-500 mt-1">Chọn 1 trong 2 cách nhanh nhất để liên kết máy này:</p>
+        </div>
 
-      <!-- 2 PHƯƠNG THỨC: NẠP TỪ CLOUD HOẶC NẠP QR -->
-      <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-        <button onclick="openApiKeyModal()" class="text-indigo-600 hover:underline font-semibold flex items-center gap-1">
-          <i class="ph-bold ph-gear"></i> Cấu hình Két Cloud
+        <div class="space-y-2.5">
+          <!-- CÁCH 1: QUÉT TRỰC TIẾP QUA CAMERA -->
+          <button onclick="startLockCameraScan()" type="button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-95">
+            <i class="ph-bold ph-camera text-lg"></i> 1. Mở Camera Quét Mã QR
+          </button>
+
+          <!-- CÁCH 2: NẠP FILE ẢNH QR -->
+          <label class="w-full bg-white hover:bg-slate-50 border-2 border-slate-300 hover:border-slate-400 text-slate-700 font-bold py-2.5 px-4 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer">
+            <i class="ph-bold ph-image text-lg text-emerald-600"></i> 2. Chọn File Ảnh QR Đã Lưu
+            <input type="file" accept="image/*" class="hidden" onchange="handleQRFileSelected(event)">
+          </label>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+          <button onclick="openApiKeyModal()" type="button" class="hover:text-indigo-600 transition flex items-center gap-1">
+            <i class="ph-bold ph-gear"></i> Cấu hình thủ công
+          </button>
+          <button onclick="switchLockToPinView()" type="button" id="btnBackToPin" class="hidden hover:text-emerald-600 transition flex items-center gap-1">
+            <i class="ph-bold ph-arrow-left"></i> Quay lại ô PIN
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW 3: KHUNG QUÉT CAMERA TRỰC TIẾP TRÊN MÀN HÌNH KHÓA -->
+      <div id="lockCameraBox" class="hidden space-y-3">
+        <div class="relative rounded-2xl overflow-hidden bg-black aspect-square max-w-[260px] mx-auto border-2 border-indigo-500 shadow-inner">
+          <video id="lockCameraVideo" class="w-full h-full object-cover"></video>
+          <div class="absolute inset-0 border-2 border-dashed border-white/60 m-8 rounded-xl pointer-events-none animate-pulse"></div>
+        </div>
+        <p class="text-[11px] text-slate-500 font-medium">Hướng camera về mã QR trên máy cũ để quét</p>
+        <button onclick="stopLockCameraScan()" type="button" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-xl text-xs transition">
+          Hủy Quét Camera
         </button>
-        <label class="text-emerald-700 hover:underline font-semibold flex items-center gap-1 cursor-pointer">
-          <i class="ph-bold ph-qr-code"></i> Nạp từ Ảnh QR
-          <input type="file" accept="image/*" class="hidden" onchange="handleQRFileSelected(event)">
-        </label>
       </div>
+
     </div>
   </div>
 
@@ -505,7 +547,7 @@
       </div>
       
       <p class="text-[11px] sm:text-xs text-slate-500 leading-relaxed">
-        Key được lưu trữ bảo mật trên Két Cloud riêng của bạn. Đổi PIN đồng nghĩa thu hồi quyền truy cập của mọi người dùng khác ngay lập tức.
+        Key được lưu trữ bảo mật trên Két Cloud riêng của bạn. Đổi PIN đồng nghĩa thu hồi quyền truy cập của mọi người dùng khác ngay lập tức[cite: 7].
       </p>
 
       <div class="space-y-3 text-xs">
@@ -548,7 +590,7 @@
             <i class="ph-bold ph-globe-hemisphere-east text-indigo-600 text-lg flex-shrink-0"></i>
             <div>
               <span class="font-bold text-slate-800 block text-xs">Google Search Grounding (Neo Tìm Kiếm)</span>
-              <span class="text-[10px] text-slate-500 block">AI quét web trực tiếp để lấy link bài đăng thật.</span>
+              <span class="text-[10px] text-slate-500 block">AI quét web trực tiếp để lấy link bài đăng thật[cite: 7].</span>
             </div>
           </div>
           <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-2">
@@ -560,7 +602,7 @@
         <!-- KHỐI KẾT NỐI KÉT CLOUD (JSONBIN.IO) & ĐẶT MÃ PIN -->
         <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2.5">
           <div class="font-bold text-slate-800 flex items-center justify-between">
-            <span class="flex items-center gap-1.5 text-xs"><i class="ph-bold ph-cloud-check text-indigo-600 text-base"></i> Cấu Hình Két Cloud JSONBin.io & Mã PIN</span>
+            <span class="flex items-center gap-1.5 text-xs"><i class="ph-bold ph-cloud-check text-indigo-600 text-base"></i> Cấu Hình Két Cloud JSONBin.io & Mã PIN[cite: 7]</span>
           </div>
 
           <div class="grid grid-cols-2 gap-2">
@@ -581,43 +623,49 @@
 
           <div class="flex gap-2 pt-1">
             <button onclick="saveAndSyncToCloud()" id="btnSyncCloud" type="button" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
-              <i class="ph-bold ph-lock-key"></i> 🔒 Khóa Két & Đẩy Lên Cloud
+              <i class="ph-bold ph-lock-key"></i> 🔒 Khóa Két & Đẩy Lên Cloud[cite: 7]
             </button>
             <label class="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-semibold py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-1 shadow-sm cursor-pointer truncate">
-              <i class="ph-bold ph-qr-code"></i> Nạp QR Két
+              <i class="ph-bold ph-qr-code"></i> Nạp QR Két[cite: 7]
               <input type="file" accept="image/*" class="hidden" onchange="handleQRFileSelected(event)">
             </label>
           </div>
 
-          <!-- Khung hiển thị QR code kết nối Két Cloud -->
-          <div id="qrDisplayBox" class="hidden flex flex-col items-center justify-center p-3 bg-white rounded-xl border border-indigo-200 space-y-2 mt-2">
+          <!-- Khung hiển thị QR code & Nút Sao Chép Link Gửi Zalo -->
+          <div id="qrDisplayBox" class="hidden flex flex-col items-center justify-center p-3 bg-white rounded-xl border border-indigo-200 space-y-2.5 mt-2">
             <div id="qrcodeCanvas" class="p-2 bg-white rounded-lg border shadow-sm"></div>
-            <div class="text-[10px] text-slate-500 text-center font-medium">Mã QR này CHỈ chứa địa chỉ két Cloud, KHÔNG chứa Key hay PIN</div>
-            <button onclick="downloadQRCodeImage()" type="button" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-1.5 shadow-sm">
-              <i class="ph-bold ph-download-simple"></i> Tải Ảnh QR Đóng Khung Về Máy
-            </button>
+            <div class="text-[10px] text-slate-500 text-center font-medium">Mã QR này CHỈ chứa địa chỉ két Cloud, KHÔNG chứa Key hay PIN[cite: 7]</div>
+            
+            <div class="flex flex-wrap gap-2 justify-center">
+              <button onclick="downloadQRCodeImage()" type="button" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-lg flex items-center gap-1.5 shadow-sm">
+                <i class="ph-bold ph-download-simple"></i> Tải Ảnh QR Đóng Khung
+              </button>
+              <button onclick="copySyncLink()" type="button" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-lg flex items-center gap-1.5 shadow-sm">
+                <i class="ph-bold ph-link-simple"></i> Sao Chép Link Gửi Zalo
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- MỤC ĐỔI MÃ PIN KÉT CLOUD (BĂM MẬT KHẨU ADMIN SHA-256) -->
         <div class="border border-rose-200 rounded-xl p-3 bg-rose-50/50 space-y-2.5">
           <div class="font-bold text-rose-800 text-xs flex items-center justify-between">
-            <span class="flex items-center gap-1"><i class="ph-bold ph-shield-warning text-base"></i> Đổi PIN Két Cloud (Thu Hồi Quyền Truy Cập)</span>
-            <span class="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold border border-rose-200">Yêu cầu Admin</span>
+            <span class="flex items-center gap-1"><i class="ph-bold ph-shield-warning text-base"></i> Đổi PIN Két Cloud (Thu Hồi Quyền Truy Cập)[cite: 7]</span>
+            <span class="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold border border-rose-200">Yêu cầu Admin[cite: 7]</span>
           </div>
           <p class="text-[10px] text-slate-500 leading-tight">
-            Chỉ người có <strong>Mật khẩu Quản trị Admin</strong> mới được phép đổi PIN. Khi đổi thành công, mọi thiết bị khác dùng PIN cũ sẽ lập tức bị chặn 100%.
+            Chỉ người có <strong>Mật khẩu Quản trị Admin</strong> mới được phép đổi PIN[cite: 7]. Khi đổi thành công, mọi thiết bị khác dùng PIN cũ sẽ lập tức bị chặn 100%[cite: 7].
           </p>
           <div class="space-y-2">
             <div>
               <div class="flex items-center justify-between text-[11px] mb-1">
-                <span class="font-semibold text-slate-700">Mật khẩu Quản trị Admin:</span>
-                <span class="text-[10px] text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded font-mono font-bold">Hint: D********8</span>
+                <span class="font-semibold text-slate-700">Mật khẩu Quản trị Admin:[cite: 7]</span>
+                <span class="text-[10px] text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded font-mono font-bold">Hint: D********8[cite: 7]</span>
               </div>
               <input type="password" id="adminPasswordInput" placeholder="Nhập mật khẩu Admin để cấp quyền" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white focus:ring-2 focus:ring-rose-500 outline-none">
             </div>
             <div>
-              <span class="block text-[11px] font-semibold text-slate-700 mb-1">Mã PIN Két Cloud mới (6 số):</span>
+              <span class="block text-[11px] font-semibold text-slate-700 mb-1">Mã PIN Két Cloud mới (6 số):[cite: 7]</span>
               <input type="password" id="newPinForChange" placeholder="Ví dụ: 654321" maxlength="12" class="w-full border border-rose-300 rounded-lg p-2 text-xs bg-white text-center font-bold tracking-widest focus:ring-2 focus:ring-rose-500 outline-none">
             </div>
           </div>
@@ -756,8 +804,9 @@
     let uploadedFilesList = [];
     let map = null, targetMarker = null, compMarkers = [], radiusCircle = null, satLayer = null, osmLayer = null;
 
-    // KHỞI ĐỘNG ỨNG DỤNG & KIỂM TRA MÃ PIN KHÓA (LUÔN BẮT BUỘC NHẬP PIN MỖI PHIÊN)
+    // KHỞI ĐỘNG ỨNG DỤNG: TỰ ĐỘNG NHẬN LINK ĐỒNG BỘ & HIỂN THỊ MÀN HÌNH KHÓA TỐI GIẢN
     window.addEventListener('DOMContentLoaded', () => {
+      checkUrlSyncParams();
       initLeafletMap();
       recalculateTargetValues();
       checkAuthLockStatus();
@@ -767,8 +816,146 @@
     function checkAuthLockStatus() {
       const lockOverlay = document.getElementById('lockScreenOverlay');
       lockOverlay.classList.remove('hidden');
-      document.getElementById('pinInput').value = '';
+      updateLockScreenUI();
+    }
+
+    function updateLockScreenUI() {
+      const binId = localStorage.getItem('llp_vault_bin');
+      const masterKey = localStorage.getItem('llp_vault_key');
+      const pinView = document.getElementById('lockPinView');
+      const noVaultView = document.getElementById('lockNoVaultView');
+      const camBox = document.getElementById('lockCameraBox');
+      const btnBack = document.getElementById('btnBackToPin');
+
+      if (camBox) camBox.classList.add('hidden');
+
+      if (binId && masterKey) {
+        if (pinView) pinView.classList.remove('hidden');
+        if (noVaultView) noVaultView.classList.add('hidden');
+        if (btnBack) btnBack.classList.remove('hidden');
+        setTimeout(() => {
+          const p = document.getElementById('pinInput');
+          if (p) { p.value = ''; p.focus(); }
+        }, 150);
+      } else {
+        if (pinView) pinView.classList.add('hidden');
+        if (noVaultView) noVaultView.classList.remove('hidden');
+        if (btnBack) btnBack.classList.add('hidden');
+      }
+    }
+
+    function switchLockToNoVaultView() {
+      document.getElementById('lockPinView').classList.add('hidden');
+      document.getElementById('lockNoVaultView').classList.remove('hidden');
+      document.getElementById('btnBackToPin').classList.remove('hidden');
+    }
+
+    function switchLockToPinView() {
+      document.getElementById('lockNoVaultView').classList.add('hidden');
+      document.getElementById('lockPinView').classList.remove('hidden');
       document.getElementById('pinInput').focus();
+    }
+
+    // NHẬN DIỆN LINK ĐỒNG BỘ 1-CHẠM TỪ ZALO / TELEGRAM
+    function checkUrlSyncParams() {
+      const hash = window.location.hash || "";
+      if (hash.includes("vault=")) {
+        try {
+          const token = hash.split("vault=")[1];
+          const data = JSON.parse(atob(decodeURIComponent(token)));
+          if (data.bid && data.mk) {
+            localStorage.setItem('llp_vault_bin', data.bid);
+            localStorage.setItem('llp_vault_key', data.mk);
+            history.replaceState(null, null, window.location.pathname);
+            showToast("Đã liên kết Két Cloud từ Link thành công!");
+          }
+        } catch(e) {
+          console.warn("Lỗi đọc link đồng bộ:", e);
+        }
+      }
+    }
+
+    // TẠO & SAO CHÉP LINK ĐỒNG BỘ GỬI SANG THIẾT BỊ MỚI
+    function copySyncLink() {
+      const binId = localStorage.getItem('llp_vault_bin') || document.getElementById('vaultBinIdInput').value.trim();
+      const masterKey = localStorage.getItem('llp_vault_key') || document.getElementById('vaultMasterKeyInput').value.trim();
+      if (!binId || !masterKey) {
+        showToast("Chưa có thông tin Két Cloud để tạo link!");
+        return;
+      }
+      const token = btoa(JSON.stringify({ bid: binId, mk: masterKey }));
+      const baseUrl = window.location.origin + window.location.pathname;
+      const link = `${baseUrl}#vault=${token}`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(() => {
+          showToast("Đã sao chép link đồng bộ! Bạn có thể dán gửi qua Zalo.");
+        }).catch(() => {
+          prompt("Sao chép link đồng bộ dưới đây để gửi sang máy khác:", link);
+        });
+      } else {
+        prompt("Sao chép link đồng bộ dưới đây để gửi sang máy khác:", link);
+      }
+    }
+
+    // CAMERA QUÉT QR TRỰC TIẾP TRÊN MÀN HÌNH KHÓA
+    let lockCamStream = null;
+    let lockCamAnimId = null;
+
+    function startLockCameraScan() {
+      const box = document.getElementById('lockCameraBox');
+      const video = document.getElementById('lockCameraVideo');
+      if (!box || !video) return;
+
+      box.classList.remove('hidden');
+      document.getElementById('lockNoVaultView').classList.add('hidden');
+      document.getElementById('lockPinView').classList.add('hidden');
+
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(stream => {
+          lockCamStream = stream;
+          video.srcObject = stream;
+          video.setAttribute("playsinline", true);
+          video.play();
+          lockCamAnimId = requestAnimationFrame(scanLockCameraFrame);
+        })
+        .catch(err => {
+          showToast("Không mở được camera: Vui lòng cấp quyền hoặc dùng 'Chọn File Ảnh QR'!");
+          stopLockCameraScan();
+        });
+    }
+
+    function stopLockCameraScan() {
+      if (lockCamStream) {
+        lockCamStream.getTracks().forEach(t => t.stop());
+        lockCamStream = null;
+      }
+      if (lockCamAnimId) {
+        cancelAnimationFrame(lockCamAnimId);
+        lockCamAnimId = null;
+      }
+      const box = document.getElementById('lockCameraBox');
+      if (box) box.classList.add('hidden');
+      updateLockScreenUI();
+    }
+
+    function scanLockCameraFrame() {
+      const video = document.getElementById('lockCameraVideo');
+      if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
+        const canvas = document.getElementById('qrScannerCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imgData.data, imgData.width, imgData.height);
+
+        if (code && code.data) {
+          stopLockCameraScan();
+          applyQRCloudData(code.data);
+          return;
+        }
+      }
+      lockCamAnimId = requestAnimationFrame(scanLockCameraFrame);
     }
 
     function togglePinVisibility() {
@@ -810,12 +997,11 @@
           successUnlock();
           return;
         }
-        errBox.innerText = "Chưa có Két Cloud! Hãy bấm 'Cấu hình Két Cloud' bên dưới để thiết lập hoặc 'Nạp từ Ảnh QR'.";
-        errBox.classList.remove('hidden');
+        updateLockScreenUI();
         return;
       }
 
-      btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang xác thực Két Cloud...`;
+      btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang mở khóa...`;
       btn.disabled = true;
 
       try {
@@ -1010,6 +1196,7 @@
         document.getElementById('qrDisplayBox').classList.remove('hidden');
 
         checkSavedApiKey();
+        updateLockScreenUI();
         showToast("Đã khóa két AES-256 & đẩy lên Cloud thành công!");
       } catch (e) {
         showToast("Lỗi: " + e.message);
@@ -1229,9 +1416,9 @@
             document.getElementById('vaultBinIdInput').value = vaultConfig.bid;
             document.getElementById('vaultMasterKeyInput').value = vaultConfig.mk;
             closeApiKeyModal();
-            document.getElementById('lockScreenOverlay').classList.remove('hidden');
-            document.getElementById('pinInput').focus();
-            showToast("Đã nạp Két Cloud từ QR! Vui lòng nhập mã PIN để mở khóa.");
+            stopLockCameraScan();
+            updateLockScreenUI();
+            showToast("Đã liên kết Két Cloud thành công! Hãy nhập mã PIN để mở khóa.");
             return;
           }
         }
@@ -1319,172 +1506,78 @@
       }
     }
 
-    // === GIAO DIỆN VẬN HÀNH BẢN ĐỒ & TIỆN ÍCH ===
-    function setFloatingStatus(state, message) {
-      const bar = document.getElementById('floatingStatusBar');
-      const icon = document.getElementById('floatingStatusIcon');
-      const text = document.getElementById('floatingStatusText');
-      if (!bar) return;
+    // === TÍNH TOÁN BẢNG SO SÁNH & GỌI AI ===
+    async function replaceCompWithNext(index) {
+      if (index < 0 || index >= currentComps.length) return;
+      showToast(`Đang thay thế TSSS #${index + 1}...`);
 
-      if (state === 'hide') {
-        bar.classList.add('hidden');
+      if (backupCompsPool.length > 0) {
+        const nextComp = backupCompsPool.shift();
+        currentComps.splice(index, 1, nextComp);
+        renderMapElements();
+        recalculateTargetValues();
+        showToast(`Đã thay thế #${index + 1} & cập nhật lại đơn giá!`);
         return;
       }
 
-      bar.classList.remove('hidden');
-      text.innerText = message;
-
-      if (state === 'ocr') {
-        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-blue-900/90 text-white border-blue-500 max-w-[92vw] truncate";
-        icon.innerHTML = `<i class="ph-bold ph-spinner animate-spin text-blue-300 text-base"></i>`;
-      } else if (state === 'survey') {
-        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-indigo-900/90 text-white border-indigo-400 max-w-[92vw] truncate";
-        icon.innerHTML = `<i class="ph-bold ph-globe-hemisphere-east animate-pulse text-amber-300 text-base"></i>`;
-      } else if (state === 'success') {
-        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-emerald-900/95 text-white border-emerald-400 max-w-[92vw] truncate";
-        icon.innerHTML = `<i class="ph-fill ph-check-circle text-emerald-400 text-base"></i>`;
-        setTimeout(() => { bar.classList.add('hidden'); }, 3000);
-      } else if (state === 'error') {
-        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-rose-900/95 text-white border-rose-400 max-w-[92vw] truncate";
-        icon.innerHTML = `<i class="ph-fill ph-x-circle text-rose-400 text-base"></i>`;
-        setTimeout(() => { bar.classList.add('hidden'); }, 4000);
-      }
-    }
-
-    function initLeafletMap() {
-      try {
-        map = L.map('gisMap', { zoomControl: true, attributionControl: false }).setView([targetCoords.lat, targetCoords.lng], 14);
-        satLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20 });
-        osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
-        satLayer.addTo(map);
-        setTimeout(() => { map.invalidateSize(); renderMapElements(); }, 350);
-      } catch (e) {}
-    }
-
-    function setMapLayer(type) {
-      if (!map) return;
-      const btnSat = document.getElementById('btnMapSat');
-      const btnOSM = document.getElementById('btnMapOSM');
-      if (type === 'satellite') {
-        if (map.hasLayer(osmLayer)) map.removeLayer(osmLayer);
-        satLayer.addTo(map);
-        btnSat.className = "text-[11px] bg-blue-600 text-white px-2 py-1 rounded font-medium shadow-sm";
-        btnOSM.className = "text-[11px] bg-slate-100 text-slate-700 hover:bg-slate-200 px-2 py-1 rounded font-medium border border-slate-300";
-      } else {
-        if (map.hasLayer(satLayer)) map.removeLayer(satLayer);
-        osmLayer.addTo(map);
-        btnOSM.className = "text-[11px] bg-blue-600 text-white px-2 py-1 rounded font-medium shadow-sm";
-        btnSat.className = "text-[11px] bg-slate-100 text-slate-700 hover:bg-slate-200 px-2 py-1 rounded font-medium border border-slate-300";
-      }
-    }
-
-    function renderMapElements() {
-      if (!map) return;
-      if (targetMarker) map.removeLayer(targetMarker);
-      if (radiusCircle) map.removeLayer(radiusCircle);
-      compMarkers.forEach(m => map.removeLayer(m));
-      compMarkers = [];
-
-      const area = parseFloat(document.getElementById('targetArea').value) || 0;
-      if (area > 0) {
-        const targetIcon = L.divIcon({
-          className: 'custom-pin-target',
-          html: `<div style="background-color:#e11d48; width:30px; height:30px; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; box-shadow:0 3px 8px rgba(0,0,0,0.4);"><i class="ph-bold ph-house"></i></div>`,
-          iconSize: [30, 30], iconAnchor: [15, 15]
-        });
-        targetMarker = L.marker([targetCoords.lat, targetCoords.lng], { icon: targetIcon }).addTo(map);
-        radiusCircle = L.circle([targetCoords.lat, targetCoords.lng], {
-          radius: 1000, color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.1, weight: 1.5, dashArray: '4, 4'
-        }).addTo(map);
+      const otherComps = currentComps.filter((_, i) => i !== index);
+      let avgValidUnitPrice = 20.0;
+      if (otherComps.length > 0) {
+        const sumPrice = otherComps.reduce((acc, c) => acc + ((c.rawPrice * 1000) / c.area), 0);
+        avgValidUnitPrice = sumPrice / otherComps.length;
       }
 
-      currentComps.forEach((comp, idx) => {
-        const compIcon = L.divIcon({
-          className: 'custom-pin-comp',
-          html: `<div style="background-color:#2563eb; width:26px; height:26px; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; font-size:11px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">${idx + 1}</div>`,
-          iconSize: [26, 26], iconAnchor: [13, 13]
-        });
-        const m = L.marker([comp.lat, comp.lng], { icon: compIcon }).addTo(map);
-        compMarkers.push(m);
-      });
+      const targetArea = parseFloat(document.getElementById('targetArea').value) || 80;
+      const targetWard = document.getElementById('targetWard').value.trim() || "Khu vực";
+      const targetStreet = document.getElementById('targetStreet').value.trim() || "Tuyến đường chính";
+
+      const repArea = Math.round((targetArea * (0.85 + Math.random() * 0.3)) * 10) / 10;
+      const repFrontage = Math.round((4.0 + Math.random() * 1.5) * 10) / 10;
+      const repDepth = Math.round((repArea / repFrontage) * 10) / 10;
+      const repPrice = Math.round(((repArea * avgValidUnitPrice * (0.95 + Math.random() * 0.1)) / 1000) * 100) / 100;
+
+      const channels = [
+        { type: "batdongsan", name: "Batdongsan.com.vn", link: "https://batdongsan.com.vn" },
+        { type: "chotot", name: "Chợ Tốt Nhà", link: "https://chotot.com" },
+        { type: "facebook", name: "Facebook BĐS Địa Phương", link: "https://facebook.com/groups" },
+        { type: "alonhadat", name: "Alonhadat.com.vn", link: "https://alonhadat.com.vn" },
+        { type: "thuviennhadat", name: "Thư Viện Nhà Đất", link: "https://thuviennhadat.vn" }
+      ];
+      const ch = channels[Math.floor(Math.random() * channels.length)];
+
+      const nextComp = {
+        id: currentComps.length + 1,
+        address: `Đoạn gần ${targetStreet}, ${targetWard} (Tin thay thế)`,
+        roadType: document.getElementById('targetPosType').value || "hem_oto",
+        roadDesc: "Đường bê tông / nhựa ô tô lưu thông tốt",
+        area: repArea,
+        frontage: repFrontage,
+        depth: repDepth,
+        rawPrice: repPrice,
+        link: ch.link,
+        sourceType: ch.type,
+        sourceName: ch.name,
+        distanceMeters: Math.floor(Math.random() * 300 + 100),
+        lat: targetCoords.lat + (Math.random() - 0.5) * 0.005,
+        lng: targetCoords.lng + (Math.random() - 0.5) * 0.005
+      };
+
+      currentComps.splice(index, 1, nextComp);
+      renderMapElements();
+      recalculateTargetValues();
+      showToast(`Đã thay thế #${index + 1} & cập nhật đơn giá bình quân!`);
     }
 
-    function zoomToTarget() { if (map) map.setView([targetCoords.lat, targetCoords.lng], 17, { animate: true }); }
-
-    function fitAllMarkersSafe() {
-      if (!map) return;
-      const pts = [];
-      const area = parseFloat(document.getElementById('targetArea').value) || 0;
-      if (area > 0) pts.push([targetCoords.lat, targetCoords.lng]);
-      currentComps.forEach(c => pts.push([c.lat, c.lng]));
-      if (pts.length > 0) {
-        const bounds = L.latLngBounds(pts);
-        if (bounds.isValid()) map.fitBounds(bounds, { padding: [25, 25], maxZoom: 16 });
-      }
-    }
-
-    function handleFileSelected(event) {
-      const files = event.target.files;
-      if (!files || files.length === 0) return;
-      for (let i = 0; i < files.length; i++) uploadedFilesList.push(files[i]);
-      event.target.value = '';
-      renderUploadedFiles();
-      executeOCRWithRealAI();
-    }
-
-    function renderUploadedFiles() {
-      const container = document.getElementById('loadedFilesContainer');
-      const list = document.getElementById('thumbnailsList');
-      const countBadge = document.getElementById('filesCountBadge');
-
-      if (uploadedFilesList.length === 0) {
-        container.classList.add('hidden');
-        list.innerHTML = '';
+    function deleteSingleComp(index) {
+      if (index < 0 || index >= currentComps.length) return;
+      if (currentComps.length <= 1) {
+        showToast("Cần giữ lại tối thiểu 1 tài sản so sánh!");
         return;
       }
-
-      container.classList.remove('hidden');
-      countBadge.innerText = `Đã nạp ${uploadedFilesList.length} tệp tài liệu GCN`;
-      list.innerHTML = '';
-
-      uploadedFilesList.forEach((file, index) => {
-        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-        const item = document.createElement('div');
-        item.className = "relative group bg-slate-100 rounded-lg border border-slate-300 overflow-hidden shadow-sm flex flex-col items-center justify-center p-1";
-
-        if (isPdf) {
-          item.innerHTML = `
-            <div class="w-full h-20 bg-rose-50 text-rose-600 flex flex-col items-center justify-center rounded">
-              <i class="ph-bold ph-file-pdf text-2xl mb-0.5"></i>
-              <span class="text-[9px] font-bold uppercase">PDF</span>
-            </div>
-            <div class="w-full px-1 py-0.5 text-[10px] truncate text-slate-700 text-center font-medium">${file.name}</div>
-            <button onclick="removeFile(${index})" class="absolute top-1 right-1 w-4 h-4 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] shadow hover:bg-rose-700"><i class="ph-bold ph-x"></i></button>
-          `;
-        } else {
-          const imgUrl = URL.createObjectURL(file);
-          item.innerHTML = `
-            <img src="${imgUrl}" alt="${file.name}" class="w-full h-20 object-cover rounded bg-white">
-            <div class="w-full px-1 py-0.5 text-[10px] truncate text-slate-700 text-center font-medium">${file.name}</div>
-            <button onclick="removeFile(${index})" class="absolute top-1 right-1 w-4 h-4 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] shadow hover:bg-rose-700"><i class="ph-bold ph-x"></i></button>
-          `;
-        }
-        list.appendChild(item);
-      });
-    }
-
-    function removeFile(index) {
-      uploadedFilesList.splice(index, 1);
-      renderUploadedFiles();
-    }
-
-    function clearAllFiles() {
-      uploadedFilesList = [];
-      renderUploadedFiles();
-      const input = document.getElementById('gcnFileInput');
-      if (input) input.value = '';
-      document.getElementById('ocrStatusNotice').classList.add('hidden');
-      setFloatingStatus('hide');
+      currentComps.splice(index, 1);
+      renderMapElements();
+      recalculateTargetValues();
+      showToast(`Đã xóa TSSS #${index + 1} & cập nhật lại đơn giá!`);
     }
 
     // === HÀM ĐỌC ẢNH & FILE PDF BẰNG GEMINI AI (PHỤC HỒI) ===
@@ -1501,7 +1594,7 @@
           <i class="ph-fill ph-warning-circle text-amber-600 text-lg flex-shrink-0"></i>
           <div>
             <div class="font-bold text-xs sm:text-sm">Chưa có API Key khả dụng!</div>
-            <p class="mt-0.5 text-[11px]">Vui lòng bấm nút <strong>"Cấu hình 2 Key"</strong> trên góc để mở khóa hoặc thiết lập Két Cloud.</p>
+            <p class="mt-0.5 text-[11px]">Vui lòng bấm nút <strong>"Cấu hình 2 Key"</strong> trên góc để mở khóa hoặc thiết lập Két Cloud[cite: 7].</p>
           </div>
         `;
         return;
@@ -1625,7 +1718,6 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
       }
     }
 
-    // === HÀM ĐIỀN DỮ LIỆU ĐÃ TRÍCH XUẤT VÀO GIAO DIỆN ===
     function applyParsedData(data) {
       if (data.lot !== undefined) document.getElementById('targetLot').value = data.lot;
       if (data.street) document.getElementById('targetStreet').value = data.street;
@@ -1656,7 +1748,6 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
       generateSmartCompsForArea(data);
     }
 
-    // === HÀM KHẢO SÁT THỊ TRƯỜNG & TẠO TSSS BẰNG GEMINI AI ===
     async function generateSmartCompsForArea(target) {
       updateMultiChannelSearchLinks(target.ward, target.districtProvince);
 
@@ -1849,7 +1940,6 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       recalculateTargetValues();
     }
 
-    // === HÀM TÍNH TOÁN BẢNG ĐỊNH GIÁ & ĐƠN GIÁ BÌNH QUÂN ===
     function recalculateTargetValues() {
       const area = parseFloat(document.getElementById('targetArea').value) || 0;
       const bldArea = parseFloat(document.getElementById('targetBuildingArea').value) || 0;
@@ -1917,10 +2007,10 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
           </td>
           <td class="py-3 px-2 text-center">
             <div class="flex flex-col items-center gap-1">
-              <button onclick="replaceCompWithNext(${idx})" class="w-full text-indigo-700 hover:text-white hover:bg-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-1 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 shadow-xs" title="Xóa & đổi TSSS khác">
+              <button onclick="replaceCompWithNext(${idx})" class="w-full text-indigo-700 hover:text-white hover:bg-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-1 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 shadow-xs" title="Xóa & đổi TSSS khác">
                 <i class="ph-bold ph-arrows-clockwise"></i> Đổi TSSS
               </button>
-              <button onclick="deleteSingleComp(${idx})" class="w-full text-rose-600 hover:text-white hover:bg-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded text-[10px] font-medium transition flex items-center justify-center gap-1" title="Xóa hẳn">
+              <button onclick="deleteSingleComp(${idx})" class="w-full text-rose-600 hover:text-white hover:bg-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded text-[10px] font-medium transition flex items-center justify-center gap-1" title="Xóa hẳn">
                 <i class="ph-bold ph-trash"></i> Xóa bỏ
               </button>
             </div>
@@ -1970,7 +2060,6 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       document.getElementById('pMaxLoanVal').innerText = `${maxLoan.toFixed(2)} Tỷ VNĐ`;
     }
 
-    // === HÀM KHẢO SÁT THỦ CÔNG & ĐỔI TSSS ===
     function triggerManualSurvey() {
       const ward = document.getElementById('targetWard').value.trim();
       const dist = document.getElementById('targetDistrictProvince').value.trim();
@@ -2013,80 +2102,6 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       });
     }
 
-    async function replaceCompWithNext(index) {
-      if (index < 0 || index >= currentComps.length) return;
-      showToast(`Đang thay thế TSSS #${index + 1}...`);
-
-      if (backupCompsPool.length > 0) {
-        const nextComp = backupCompsPool.shift();
-        currentComps.splice(index, 1, nextComp);
-        renderMapElements();
-        recalculateTargetValues();
-        showToast(`Đã thay thế #${index + 1} & cập nhật lại đơn giá!`);
-        return;
-      }
-
-      const otherComps = currentComps.filter((_, i) => i !== index);
-      let avgValidUnitPrice = 20.0;
-      if (otherComps.length > 0) {
-        const sumPrice = otherComps.reduce((acc, c) => acc + ((c.rawPrice * 1000) / c.area), 0);
-        avgValidUnitPrice = sumPrice / otherComps.length;
-      }
-
-      const targetArea = parseFloat(document.getElementById('targetArea').value) || 80;
-      const targetWard = document.getElementById('targetWard').value.trim() || "Khu vực";
-      const targetStreet = document.getElementById('targetStreet').value.trim() || "Tuyến đường chính";
-
-      const repArea = Math.round((targetArea * (0.85 + Math.random() * 0.3)) * 10) / 10;
-      const repFrontage = Math.round((4.0 + Math.random() * 1.5) * 10) / 10;
-      const repDepth = Math.round((repArea / repFrontage) * 10) / 10;
-      const repPrice = Math.round(((repArea * avgValidUnitPrice * (0.95 + Math.random() * 0.1)) / 1000) * 100) / 100;
-
-      const channels = [
-        { type: "batdongsan", name: "Batdongsan.com.vn", link: "https://batdongsan.com.vn" },
-        { type: "chotot", name: "Chợ Tốt Nhà", link: "https://chotot.com" },
-        { type: "facebook", name: "Facebook BĐS Địa Phương", link: "https://facebook.com/groups" },
-        { type: "alonhadat", name: "Alonhadat.com.vn", link: "https://alonhadat.com.vn" },
-        { type: "thuviennhadat", name: "Thư Viện Nhà Đất", link: "https://thuviennhadat.vn" }
-      ];
-      const ch = channels[Math.floor(Math.random() * channels.length)];
-
-      const nextComp = {
-        id: currentComps.length + 1,
-        address: `Đoạn gần ${targetStreet}, ${targetWard} (Tin thay thế)`,
-        roadType: document.getElementById('targetPosType').value || "hem_oto",
-        roadDesc: "Đường bê tông / nhựa ô tô lưu thông tốt",
-        area: repArea,
-        frontage: repFrontage,
-        depth: repDepth,
-        rawPrice: repPrice,
-        link: ch.link,
-        sourceType: ch.type,
-        sourceName: ch.name,
-        distanceMeters: Math.floor(Math.random() * 300 + 100),
-        lat: targetCoords.lat + (Math.random() - 0.5) * 0.005,
-        lng: targetCoords.lng + (Math.random() - 0.5) * 0.005
-      };
-
-      currentComps.splice(index, 1, nextComp);
-      renderMapElements();
-      recalculateTargetValues();
-      showToast(`Đã thay thế #${index + 1} & cập nhật đơn giá bình quân!`);
-    }
-
-    function deleteSingleComp(index) {
-      if (index < 0 || index >= currentComps.length) return;
-      if (currentComps.length <= 1) {
-        showToast("Cần giữ lại tối thiểu 1 tài sản so sánh!");
-        return;
-      }
-      currentComps.splice(index, 1);
-      renderMapElements();
-      recalculateTargetValues();
-      showToast(`Đã xóa TSSS #${index + 1} & cập nhật lại đơn giá!`);
-    }
-
-    // === CÁC HÀM TIỆN ÍCH DỮ LIỆU ===
     function fileToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
