@@ -12,10 +12,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   
-  <!-- THƯ VIỆN MẬT MÃ AES-256, SHA-256 & QR CODE -->
+  <!-- THƯ VIỆN MẬT MÃ AES-256 & SHA-256 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -32,86 +30,38 @@
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col relative select-none sm:select-auto">
 
-  <!-- MÀN HÌNH KHÓA MÃ PIN TỐI GIẢN (SMART PIN GATE - CHỈ 1 Ô PIN) -->
+  <!-- MÀN HÌNH KHÓA TỐI GIẢN 1 Ô PIN DUY NHẤT -->
   <div id="lockScreenOverlay" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center space-y-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 sm:p-7 shadow-2xl border border-slate-100 text-center space-y-5">
       <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center text-3xl shadow-lg">
         <i class="ph-bold ph-shield-check"></i>
       </div>
 
-      <!-- VIEW 1: ĐĂNG NHẬP DUY NHẤT 1 Ô PIN (TỰ ĐỘNG ĐỌC KÉT CLOUD / LOCAL) -->
-      <div id="lockPinView" class="space-y-4">
-        <div>
-          <h2 class="font-bold text-slate-900 text-lg">LendLand Pro</h2>
-          <div class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider mt-0.5">Xác Thực Bảo Mật Tín Dụng</div>
-          <p class="text-xs text-slate-500 mt-1">Nhập mã PIN để mở khóa và làm việc</p>
-        </div>
-
-        <div class="space-y-2">
-          <div class="relative">
-            <input type="password" id="pinInput" maxlength="12" placeholder="Nhập mã PIN (6 số)" class="w-full text-center text-lg tracking-[0.3em] font-bold border-2 border-slate-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-slate-50 focus:bg-white" onkeydown="if(event.key==='Enter') unlockAppWithPin()">
-            <button type="button" onclick="togglePinVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
-              <i id="btnPinEye" class="ph-bold ph-eye text-lg"></i>
-            </button>
-          </div>
-          <div id="pinErrorMsg" class="hidden text-[11px] text-rose-600 font-semibold text-center"></div>
-        </div>
-
-        <button onclick="unlockAppWithPin()" id="btnUnlockPin" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm active:scale-95">
-          <i class="ph-bold ph-lock-key-open"></i> Mở Khóa Ứng Dụng
-        </button>
-
-        <div class="pt-2 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
-          <button onclick="switchLockToNoVaultView()" type="button" class="hover:text-indigo-600 transition flex items-center gap-1">
-            <i class="ph-bold ph-arrows-left-right"></i> Đổi Két / Đồng bộ QR
-          </button>
-          <button onclick="openApiKeyModal()" type="button" class="hover:text-emerald-600 transition flex items-center gap-1">
-            <i class="ph-bold ph-gear"></i> Cấu hình
-          </button>
-        </div>
+      <div class="space-y-1">
+        <h2 class="font-bold text-slate-900 text-xl tracking-tight">LendLand Pro</h2>
+        <div class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Xác Thực Bảo Mật Tín Dụng</div>
+        <p class="text-xs text-slate-500 pt-1">Nhập mã PIN để tự động đồng bộ dữ liệu & làm việc</p>
       </div>
 
-      <!-- VIEW 2: DÀNH CHO THIẾT BỊ MỚI (CHƯA CÓ KÉT) - QUÉT QR HOẶC NHẬP FILE -->
-      <div id="lockNoVaultView" class="hidden space-y-4">
-        <div>
-          <h2 class="font-bold text-slate-900 text-lg">Liên Kết Thiết Bị Mới</h2>
-          <div class="text-[11px] font-semibold text-indigo-600 uppercase tracking-wider mt-0.5">Đồng Bộ Két Cloud 1-Chạm</div>
-          <p class="text-xs text-slate-500 mt-1">Chọn 1 trong 2 cách để nạp cấu hình Két Cloud:</p>
-        </div>
-
-        <div class="space-y-2.5">
-          <button onclick="startLockCameraScan()" type="button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-95">
-            <i class="ph-bold ph-camera text-lg"></i> 1. Mở Camera Quét Mã QR
-          </button>
-
-          <label class="w-full bg-white hover:bg-slate-50 border-2 border-slate-300 hover:border-slate-400 text-slate-700 font-bold py-2.5 px-4 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer">
-            <i class="ph-bold ph-image text-lg text-emerald-600"></i> 2. Chọn File Ảnh QR Đã Lưu
-            <input type="file" accept="image/*" class="hidden" onchange="handleQRFileSelected(event)">
-          </label>
-        </div>
-
-        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-          <button onclick="openApiKeyModal()" type="button" class="hover:text-indigo-600 transition flex items-center gap-1">
-            <i class="ph-bold ph-gear"></i> Cấu hình thủ công
-          </button>
-          <button onclick="switchLockToPinView()" type="button" id="btnBackToPin" class="hover:text-emerald-600 transition flex items-center gap-1">
-            <i class="ph-bold ph-arrow-left"></i> Về ô PIN
+      <div class="space-y-2 text-left">
+        <div class="relative">
+          <input type="password" id="pinInput" maxlength="12" placeholder="Nhập mã PIN (6 số)" class="w-full text-center text-lg tracking-[0.3em] font-bold border-2 border-slate-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-slate-50 focus:bg-white" onkeydown="if(event.key==='Enter') unlockAppWithPin()">
+          <button type="button" onclick="togglePinVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+            <i id="btnPinEye" class="ph-bold ph-eye text-lg"></i>
           </button>
         </div>
+        <div id="pinErrorMsg" class="hidden text-[11px] text-rose-600 font-semibold text-center leading-tight"></div>
       </div>
 
-      <!-- VIEW 3: KHUNG QUÉT CAMERA TRỰC TIẾP TRÊN MÀN HÌNH KHÓA -->
-      <div id="lockCameraBox" class="hidden space-y-3">
-        <div class="relative rounded-2xl overflow-hidden bg-black aspect-square max-w-[260px] mx-auto border-2 border-indigo-500 shadow-inner">
-          <video id="lockCameraVideo" class="w-full h-full object-cover"></video>
-          <div class="absolute inset-0 border-2 border-dashed border-white/60 m-8 rounded-xl pointer-events-none animate-pulse"></div>
-        </div>
-        <p class="text-[11px] text-slate-500 font-medium">Hướng camera về mã QR trên máy cũ để quét</p>
-        <button onclick="stopLockCameraScan()" type="button" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-xl text-xs transition">
-          Hủy Quét Camera
+      <button onclick="unlockAppWithPin()" id="btnUnlockPin" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm active:scale-95">
+        <i class="ph-bold ph-lock-key-open text-base"></i> Mở Khóa Ứng Dụng
+      </button>
+
+      <div class="pt-2 border-t border-slate-100 flex justify-center text-xs text-slate-400">
+        <button onclick="openApiKeyModal()" type="button" class="hover:text-emerald-600 transition flex items-center gap-1.5 py-1">
+          <i class="ph-bold ph-gear"></i> Quản trị Két Cloud & Admin
         </button>
       </div>
-
     </div>
   </div>
 
@@ -121,7 +71,7 @@
     <span id="floatingStatusText" class="truncate">Đang xử lý dữ liệu...</span>
   </div>
 
-  <!-- HEADER v5.8 -->
+  <!-- HEADER -->
   <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md no-print border-b border-slate-700">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-2.5 sm:space-x-3 overflow-hidden">
@@ -492,7 +442,7 @@
       </div>
     </div>
 
-    <!-- KHỐI 6: BẢNG SO SÁNH (GIỮ NGUYÊN FORM CHUẨN) -->
+    <!-- KHỐI 6: BẢNG SO SÁNH -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center gap-1.5 sm:gap-2">
@@ -537,19 +487,15 @@
     </div>
   </main>
 
-  <!-- MODAL CẤU HÌNH KÉT CLOUD (JSONBIN.IO) & TẠO/NẠP QR BẢO MẬT -->
+  <!-- MODAL CẤU HÌNH & QUẢN TRỊ ADMIN -->
   <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-3.5 my-auto max-h-[95vh] overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto max-h-[95vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b pb-2.5">
         <h3 class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
-          <i class="ph-bold ph-vault text-indigo-600 text-lg"></i> Két Cloud JSONBin.io & Quản Lý 2 Key
+          <i class="ph-bold ph-vault text-indigo-600 text-lg"></i> Quản Trị Két Cloud & API Key
         </h3>
         <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-slate-600"><i class="ph-bold ph-x text-lg"></i></button>
       </div>
-      
-      <p class="text-[11px] sm:text-xs text-slate-500 leading-relaxed">
-        Key được lưu trữ bảo mật trên Két Cloud riêng của bạn. Đổi PIN đồng nghĩa thu hồi quyền truy cập của mọi người dùng khác ngay lập tức.
-      </p>
 
       <div class="space-y-3 text-xs">
         <!-- Ô 1: KHÓA FREE TIER -->
@@ -580,7 +526,7 @@
         <div class="flex justify-between items-center bg-slate-100 p-2 rounded-lg">
           <span class="text-[11px] text-slate-600 font-semibold">Kiểm tra kết nối 2 Key:</span>
           <button onclick="testBothApiKeys()" id="btnTestKeys" type="button" class="text-xs bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 font-bold py-1 px-3 rounded shadow-xs flex items-center gap-1">
-            <i class="ph-bold ph-activity text-indigo-600"></i> Thử Kết Nối Ngay
+            <i class="ph-bold ph-activity text-indigo-600"></i> Thử Kết Nối
           </button>
         </div>
         <div id="keyTestResultNotice" class="hidden text-[11px] p-2.5 rounded-lg border font-medium"></div>
@@ -591,7 +537,7 @@
             <i class="ph-bold ph-globe-hemisphere-east text-indigo-600 text-lg flex-shrink-0"></i>
             <div>
               <span class="font-bold text-slate-800 block text-xs">Google Search Grounding (Neo Tìm Kiếm)</span>
-              <span class="text-[10px] text-slate-500 block">AI quét web trực tiếp để lấy link bài đăng thật.</span>
+              <span class="text-[10px] text-slate-500 block">AI quét web trực tiếp để lấy bài đăng thật</span>
             </div>
           </div>
           <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-2">
@@ -600,75 +546,44 @@
           </label>
         </div>
 
-        <!-- KHỐI KẾT NỐI KÉT CLOUD (JSONBIN.IO) & ĐẶT MÃ PIN -->
-        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2.5">
-          <div class="font-bold text-slate-800 flex items-center justify-between">
-            <span class="flex items-center gap-1.5 text-xs"><i class="ph-bold ph-cloud-check text-indigo-600 text-base"></i> Cấu Hình Két Cloud JSONBin.io & Mã PIN</span>
+        <!-- CẤU HÌNH KÉT CLOUD NÂNG CAO (NẾU MUỐN THAY ĐỔI BIN MẶC ĐỊNH) -->
+        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
+          <div class="font-bold text-slate-800 text-xs flex items-center gap-1">
+            <i class="ph-bold ph-cloud text-indigo-600"></i> Cấu Hình JSONBin.io (Mặc định tự động điền)
           </div>
-
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[10px] text-slate-500 mb-0.5 font-semibold">Bin ID:</label>
-              <input type="text" id="vaultBinIdInput" placeholder="Ví dụ: 672..." class="w-full border border-slate-300 rounded-lg p-2 font-mono text-[11px] bg-white">
+              <input type="text" id="vaultBinIdInput" placeholder="Mặc định sẵn" class="w-full border border-slate-300 rounded-lg p-2 font-mono text-[11px] bg-white">
             </div>
             <div>
               <label class="block text-[10px] text-slate-500 mb-0.5 font-semibold">Master Key:</label>
-              <input type="password" id="vaultMasterKeyInput" placeholder="$2a$10$..." class="w-full border border-slate-300 rounded-lg p-2 font-mono text-[11px] bg-white">
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-[10px] text-emerald-800 mb-0.5 font-bold">Mã PIN Khóa / Mở Khóa Két (6 số):[cite: 2]</label>
-            <input type="password" id="vaultPinInput" placeholder="Ví dụ: 888999" maxlength="12" class="w-full border-2 border-emerald-400 rounded-lg p-2 font-mono text-center font-bold text-sm bg-emerald-50/20">[cite: 2]
-          </div>
-
-          <div class="flex gap-2 pt-1">
-            <button onclick="saveAndSyncToCloud()" id="btnSyncCloud" type="button" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
-              <i class="ph-bold ph-lock-key"></i> 🔒 Khóa Két & Đẩy Lên Cloud[cite: 2]
-            </button>
-            <label class="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-semibold py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-1 shadow-sm cursor-pointer truncate">
-              <i class="ph-bold ph-qr-code"></i> Nạp QR Két[cite: 2]
-              <input type="file" accept="image/*" class="hidden" onchange="handleQRFileSelected(event)">
-            </label>
-          </div>
-
-          <!-- Khung hiển thị QR code & Nút Sao Chép Link Gửi Zalo -->
-          <div id="qrDisplayBox" class="hidden flex flex-col items-center justify-center p-3 bg-white rounded-xl border border-indigo-200 space-y-2.5 mt-2">
-            <div id="qrcodeCanvas" class="p-2 bg-white rounded-lg border shadow-sm"></div>
-            <div class="text-[10px] text-slate-500 text-center font-medium">Mã QR này CHỈ chứa địa chỉ két Cloud, KHÔNG chứa Key hay PIN</div>
-            
-            <div class="flex flex-wrap gap-2 justify-center">
-              <button onclick="downloadQRCodeImage()" type="button" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-lg flex items-center gap-1.5 shadow-sm">
-                <i class="ph-bold ph-download-simple"></i> Tải Ảnh QR Đóng Khung
-              </button>
-              <button onclick="copySyncLink()" type="button" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-lg flex items-center gap-1.5 shadow-sm">
-                <i class="ph-bold ph-link-simple"></i> Sao Chép Link Gửi Zalo
-              </button>
+              <input type="password" id="vaultMasterKeyInput" placeholder="Mặc định sẵn" class="w-full border border-slate-300 rounded-lg p-2 font-mono text-[11px] bg-white">
             </div>
           </div>
         </div>
 
-        <!-- MỤC ĐỔI MÃ PIN KÉT CLOUD (PHÂN QUYỀN ADMIN SHA-256) -->
+        <!-- MỤC ĐỔI MÃ PIN KÉT CLOUD - CHỈ ADMIN SHA-256 MỚI CÓ QUYỀN -->
         <div class="border border-rose-200 rounded-xl p-3 bg-rose-50/50 space-y-2.5">
           <div class="font-bold text-rose-800 text-xs flex items-center justify-between">
-            <span class="flex items-center gap-1"><i class="ph-bold ph-shield-warning text-base"></i> Đổi PIN Két Cloud (Thu Hồi Quyền Truy Cập)</span>
-            <span class="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold border border-rose-200">Yêu cầu Admin</span>
+            <span class="flex items-center gap-1"><i class="ph-bold ph-shield-warning text-base"></i> Đổi Mã PIN App & Thu Hồi Quyền PIN Cũ</span>
+            <span class="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold border border-rose-200">Admin Only</span>
           </div>
           <p class="text-[10px] text-slate-500 leading-tight">
-            Chỉ Admin được cấp phép mới được quyền đổi PIN Két. Khi đổi thành công, mọi thiết bị khác dùng PIN cũ sẽ lập tức bị chặn.
+            Khi đổi PIN thành công, toàn bộ dữ liệu Cloud sẽ được mã hóa lại bằng PIN mới. Các thiết bị đăng nhập bằng PIN cũ sẽ bị ngắt kết nối ngay lập tức.
           </p>
           <div class="space-y-2">
             <div>
-              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Mật khẩu Quản trị Admin:</label>
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Mật khẩu Admin:</label>
               <input type="password" id="adminPasswordInput" placeholder="••••••••" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white focus:ring-2 focus:ring-rose-500 outline-none">
             </div>
             <div>
-              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Mã PIN Két Cloud mới (6 số):</label>
-              <input type="password" id="newPinForChange" placeholder="Ví dụ: 654321" maxlength="12" class="w-full border border-rose-300 rounded-lg p-2 text-xs bg-white text-center font-bold tracking-widest focus:ring-2 focus:ring-rose-500 outline-none">
+              <label class="block text-[11px] font-semibold text-slate-700 mb-1">Mã PIN ứng dụng mới (6 số):</label>
+              <input type="password" id="newPinForChange" placeholder="Ví dụ: 888999" maxlength="12" class="w-full border border-rose-300 rounded-lg p-2 text-xs bg-white text-center font-bold tracking-widest focus:ring-2 focus:ring-rose-500 outline-none">
             </div>
           </div>
-          <button onclick="changeVaultPinOnCloud()" type="button" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-lg text-xs shadow-sm transition active:scale-95 flex items-center justify-center gap-1.5">
-            <i class="ph-bold ph-key"></i> Xác Thực Admin & Đổi PIN Lên Cloud
+          <button onclick="changeVaultPinOnCloud()" type="button" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-lg text-xs shadow-sm transition active:scale-95 flex items-center justify-center gap-1.5">
+            <i class="ph-bold ph-key"></i> Xác Thực Admin & Đổi Mã PIN Toàn Hệ Thống
           </button>
         </div>
       </div>
@@ -793,9 +708,14 @@
     <span id="toastMessage">Thông báo</span>
   </div>
 
-  <canvas id="qrScannerCanvas" class="hidden"></canvas>
-
   <script>
+    // =========================================================================
+    // CẤU HÌNH KÉT CLOUD MẶC ĐỊNH CHO MÁY MỚI (CHỈ CẦN LINK APP & PIN)
+    // Thay thế 2 chuỗi bên dưới bằng Bin ID và Master Key của bạn trên JSONBin.io:
+    // =========================================================================
+    const DEFAULT_VAULT_BIN_ID = "6ae74af9ffd5d160539d4725"; 
+    const DEFAULT_VAULT_MASTER_KEY = "$2a$10$m.YwZIgsCSr6uPD3aT3Moeho7Ol/brNHN1H7tsfoEmQjD1sXw/gRi";
+
     let backupCompsPool = [];
     let currentComps = [];
     let targetCoords = { lat: 13.9845, lng: 109.0745 };
@@ -804,13 +724,19 @@
 
     // KHỞI ĐỘNG ỨNG DỤNG
     window.addEventListener('DOMContentLoaded', () => {
-      checkUrlSyncParams();
       initLeafletMap();
       recalculateTargetValues();
       checkAuthLockStatus();
     });
 
-    // === QUẢN LÝ PHIÊN (sessionStorage) & MÀN HÌNH KHÓA TỐI GIẢN 1 Ô PIN ===
+    // LẤY BIN ID & MASTER KEY (Ưu tiên đã lưu trên máy, nếu chưa có thì dùng mặc định)
+    function getCloudVaultCredentials() {
+      const binId = localStorage.getItem('llp_vault_bin') || DEFAULT_VAULT_BIN_ID;
+      const masterKey = localStorage.getItem('llp_vault_key') || DEFAULT_VAULT_MASTER_KEY;
+      return { binId, masterKey };
+    }
+
+    // === QUẢN LÝ PHIÊN (sessionStorage) & MÀN HÌNH KHÓA TỐI GIẢN ===
     function checkAuthLockStatus() {
       const lockOverlay = document.getElementById('lockScreenOverlay');
       const isSessionUnlocked = sessionStorage.getItem('llp_session_unlocked') === 'true';
@@ -820,135 +746,11 @@
         checkSavedApiKey();
       } else {
         lockOverlay.classList.remove('hidden');
-        updateLockScreenUI();
+        setTimeout(() => {
+          const p = document.getElementById('pinInput');
+          if (p) { p.value = ''; p.focus(); }
+        }, 150);
       }
-    }
-
-    function updateLockScreenUI() {
-      const pinView = document.getElementById('lockPinView');
-      const noVaultView = document.getElementById('lockNoVaultView');
-      const camBox = document.getElementById('lockCameraBox');
-
-      if (camBox) camBox.classList.add('hidden');
-      if (pinView) pinView.classList.remove('hidden');
-      if (noVaultView) noVaultView.classList.add('hidden');
-
-      setTimeout(() => {
-        const p = document.getElementById('pinInput');
-        if (p) { p.value = ''; p.focus(); }
-      }, 150);
-    }
-
-    function switchLockToNoVaultView() {
-      document.getElementById('lockPinView').classList.add('hidden');
-      document.getElementById('lockNoVaultView').classList.remove('hidden');
-    }
-
-    function switchLockToPinView() {
-      document.getElementById('lockNoVaultView').classList.add('hidden');
-      document.getElementById('lockPinView').classList.remove('hidden');
-      document.getElementById('pinInput').focus();
-    }
-
-    // NHẬN DIỆN LINK ĐỒNG BỘ 1-CHẠM TỪ ZALO / TỰ ĐỘNG LƯU BIN & MASTER KEY
-    function checkUrlSyncParams() {
-      const hash = window.location.hash || "";
-      if (hash.includes("vault=")) {
-        try {
-          const token = hash.split("vault=")[1];
-          const data = JSON.parse(atob(decodeURIComponent(token)));
-          if (data.bid && data.mk) {
-            localStorage.setItem('llp_vault_bin', data.bid);
-            localStorage.setItem('llp_vault_key', data.mk);
-            history.replaceState(null, null, window.location.pathname);
-            showToast("Đã liên kết Két Cloud từ Link! Vui lòng nhập mã PIN để mở khóa.");
-          }
-        } catch(e) {
-          console.warn("Lỗi đọc link đồng bộ:", e);
-        }
-      }
-    }
-
-    function copySyncLink() {
-      const binId = localStorage.getItem('llp_vault_bin') || document.getElementById('vaultBinIdInput').value.trim();
-      const masterKey = localStorage.getItem('llp_vault_key') || document.getElementById('vaultMasterKeyInput').value.trim();
-      if (!binId || !masterKey) {
-        showToast("Chưa có thông tin Két Cloud để tạo link!");
-        return;
-      }
-      const token = btoa(JSON.stringify({ bid: binId, mk: masterKey }));
-      const baseUrl = window.location.origin + window.location.pathname;
-      const link = `${baseUrl}#vault=${token}`;
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(link).then(() => {
-          showToast("Đã sao chép link đồng bộ! Bạn có thể dán gửi qua Zalo.");
-        }).catch(() => {
-          prompt("Sao chép link đồng bộ dưới đây để gửi sang máy khác:", link);
-        });
-      } else {
-        prompt("Sao chép link đồng bộ dưới đây để gửi sang máy khác:", link);
-      }
-    }
-
-    // CAMERA QUÉT QR TRÊN MÀN HÌNH KHÓA
-    let lockCamStream = null;
-    let lockCamAnimId = null;
-
-    function startLockCameraScan() {
-      const box = document.getElementById('lockCameraBox');
-      const video = document.getElementById('lockCameraVideo');
-      if (!box || !video) return;
-
-      box.classList.remove('hidden');
-      document.getElementById('lockNoVaultView').classList.add('hidden');
-      document.getElementById('lockPinView').classList.add('hidden');
-
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-        .then(stream => {
-          lockCamStream = stream;
-          video.srcObject = stream;
-          video.setAttribute("playsinline", true);
-          video.play();
-          lockCamAnimId = requestAnimationFrame(scanLockCameraFrame);
-        })
-        .catch(err => {
-          showToast("Không mở được camera: Vui lòng cấp quyền hoặc dùng 'Chọn File Ảnh QR'!");
-          stopLockCameraScan();
-        });
-    }
-
-    function stopLockCameraScan() {
-      if (lockCamStream) {
-        lockCamStream.getTracks().forEach(t => t.stop());
-        lockCamStream = null;
-      }
-      if (lockCamAnimId) {
-        cancelAnimationFrame(lockCamAnimId);
-        lockCamAnimId = null;
-      }
-      const box = document.getElementById('lockCameraBox');
-      if (box) box.classList.add('hidden');
-      updateLockScreenUI();
-    }
-
-    function scanLockCameraFrame() {
-      const video = document.getElementById('lockCameraVideo');
-      if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
-        const canvas = document.getElementById('qrScannerCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imgData.data, imgData.width, imgData.height);
-
-        if (code && code.data) {
-          stopLockCameraScan();
-          applyQRCloudData(code.data);
-          return;
-        }
-      }
-      lockCamAnimId = requestAnimationFrame(scanLockCameraFrame);
     }
 
     function togglePinVisibility() {
@@ -983,21 +785,21 @@
         return;
       }
 
-      const binId = localStorage.getItem('llp_vault_bin') || document.getElementById('vaultBinIdInput')?.value.trim();
-      const masterKey = localStorage.getItem('llp_vault_key') || document.getElementById('vaultMasterKeyInput')?.value.trim();
+      const { binId, masterKey } = getCloudVaultCredentials();
 
-      if (!binId || !masterKey) {
+      if (!binId || !masterKey || masterKey.includes("YourMasterKey")) {
+        // Dự phòng nếu mở offline và đã có key trên máy
         const fallbackKey = localStorage.getItem('gemini_api_key');
         if (fallbackKey) {
           successUnlock();
           return;
         }
-        errBox.innerText = "Chưa kết nối Két Cloud. Bấm 'Đổi Két / Đồng bộ QR' để liên kết!";
+        errBox.innerText = "Chưa cấu hình JSONBin. Vui lòng bấm 'Quản trị Két Cloud & Admin' bên dưới để cấu hình!";
         errBox.classList.remove('hidden');
         return;
       }
 
-      btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang mở khóa...`;
+      btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang kết nối Két Cloud...`;
       btn.disabled = true;
 
       try {
@@ -1005,13 +807,13 @@
           headers: { 'X-Master-Key': masterKey }
         });
 
-        if (!response.ok) throw new Error("Không thể kết nối Két Cloud. Kiểm tra lại Bin ID hoặc Master Key!");
+        if (!response.ok) throw new Error("Không thể kết nối Két Cloud. Kiểm tra kết nối mạng!");
         const data = await response.json();
         const record = data.record;
 
         let vaultData = null;
 
-        // Trường hợp 1: Dữ liệu mã hóa AES-256 trong trường vault
+        // Giải mã gói dữ liệu AES-256 từ Két Cloud bằng PIN người dùng nhập
         if (record && record.vault) {
           try {
             const bytes = CryptoJS.AES.decrypt(record.vault, pin);
@@ -1022,7 +824,7 @@
           } catch(e) {}
         }
 
-        // Trường hợp 2: Dữ liệu kiểm tra theo active_pin
+        // Tương thích dự phòng nếu Cloud lưu active_pin
         if (!vaultData && record && (record.active_pin || record.pin)) {
           const cloudPin = record.active_pin || record.pin;
           if (String(cloudPin).trim() === pin) {
@@ -1034,7 +836,7 @@
           throw new Error("Mã PIN không đúng hoặc đã bị đổi bởi Admin!");
         }
 
-        // Tự động nạp 2 API Key vào hệ thống
+        // Nạp tự động 2 API Key & Mode vào LocalStorage
         if (vaultData.kf || vaultData.free) {
           localStorage.setItem('gemini_api_key_free', vaultData.kf || vaultData.free);
         }
@@ -1072,7 +874,76 @@
       showToast("Mở khóa thành công & đã đồng bộ 2 API Key!");
     }
 
-    // KIỂM TRA ĐỘ KHẢ DỤNG 2 KEY
+    // ĐỔI MÃ PIN KÉT CLOUD (CHỈ ADMIN SHA-256 MỚI ĐƯỢC PHÉP ĐỔI)
+    async function changeVaultPinOnCloud() {
+      const adminPass = document.getElementById('adminPasswordInput').value.trim();
+      const newPin = document.getElementById('newPinForChange').value.trim();
+      const { binId, masterKey } = getCloudVaultCredentials();
+
+      if (!adminPass) {
+        showToast("Vui lòng nhập Mật khẩu Quản trị Admin!");
+        document.getElementById('adminPasswordInput').focus();
+        return;
+      }
+
+      // Hash SHA-256 của mật khẩu: Duy@101908
+      const ADMIN_HASH_SHA256 = "8c41460395b3b7548684d0b001a1f1b6218148b59d9c2cb28d6c141703ce589d";
+      const inputHash = CryptoJS.SHA256(adminPass).toString();
+
+      if (inputHash !== ADMIN_HASH_SHA256) {
+        showToast("❌ Sai Mật khẩu Admin! Bạn không có quyền đổi mã PIN.");
+        return;
+      }
+
+      if (!newPin || newPin.length < 4) {
+        showToast("Mã PIN mới phải có tối thiểu 4 số/ký tự!");
+        document.getElementById('newPinForChange').focus();
+        return;
+      }
+
+      try {
+        showToast("Đang xác thực quyền Admin & mã hóa lại Két Cloud...");
+        const getRes = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+          headers: { 'X-Master-Key': masterKey }
+        });
+        if (!getRes.ok) throw new Error("Không thể kết nối Két Cloud để đọc dữ liệu!");
+        const data = await getRes.json();
+        const record = data.record;
+
+        let kf = localStorage.getItem('gemini_api_key_free') || document.getElementById('geminiApiKeyFreeInput').value.trim();
+        let kp = localStorage.getItem('gemini_api_key_payg') || document.getElementById('geminiApiKeyPaygInput').value.trim();
+        let m = localStorage.getItem('gemini_api_mode') || "free";
+        let g = localStorage.getItem('gemini_search_grounding') !== 'false';
+
+        // Đóng gói và mã hóa AES-256 lại bằng PIN MỚI
+        const payload = { kf, kp, m, g };
+        const newCipher = CryptoJS.AES.encrypt(JSON.stringify(payload), newPin).toString();
+
+        const putRes = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': masterKey
+          },
+          body: JSON.stringify({ 
+            vault: newCipher, 
+            active_pin: newPin,
+            updatedAt: new Date().toISOString() 
+          })
+        });
+
+        if (!putRes.ok) throw new Error("Không thể cập nhật PIN mới lên Cloud!");
+
+        document.getElementById('adminPasswordInput').value = '';
+        document.getElementById('newPinForChange').value = '';
+
+        showToast("ĐÃ ĐỔI PIN THÀNH CÔNG! Toàn bộ máy dùng PIN cũ đã bị thu hồi quyền truy cập.");
+      } catch (err) {
+        showToast("Lỗi: " + err.message);
+      }
+    }
+
+    // KIỂM TRA ĐỘ KHẢ DỤNG CỦA 2 KEY
     async function testBothApiKeys() {
       const kf = document.getElementById('geminiApiKeyFreeInput').value.trim();
       const kp = document.getElementById('geminiApiKeyPaygInput').value.trim();
@@ -1121,310 +992,11 @@
         <div>2. <strong>Gói Trả Phí (Pay-As-You-Go):</strong> ${paygStatus}</div>
       `;
 
-      btn.innerHTML = `<i class="ph-bold ph-activity text-indigo-600"></i> Thử Kết Nối Ngay`;
+      btn.innerHTML = `<i class="ph-bold ph-activity text-indigo-600"></i> Thử Kết Nối`;
       btn.disabled = false;
     }
 
-    // LƯU CẤU HÌNH & ĐẨY LÊN KÉT CLOUD JSONBIN
-    async function saveAndSyncToCloud() {
-      const binId = document.getElementById('vaultBinIdInput').value.trim();
-      const masterKey = document.getElementById('vaultMasterKeyInput').value.trim();
-      const pin = document.getElementById('vaultPinInput').value.trim();
-      const kf = document.getElementById('geminiApiKeyFreeInput').value.trim();
-      const kp = document.getElementById('geminiApiKeyPaygInput').value.trim();
-      const mode = document.getElementById('radioModePayg').checked ? 'payg' : 'free';
-      const grounding = document.getElementById('chkSearchGrounding').checked;
-
-      if (!binId || !masterKey) {
-        showToast("Vui lòng nhập Bin ID và Master Key từ JSONBin.io!");
-        return;
-      }
-      if (!pin || pin.length < 4) {
-        showToast("Mã PIN bảo vệ phải có tối thiểu 4 ký tự/số!");
-        return;
-      }
-      if (!kf && !kp) {
-        showToast("Vui lòng điền ít nhất 1 API Key!");
-        return;
-      }
-
-      const btn = document.getElementById('btnSyncCloud');
-      btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang mã hóa & đẩy Cloud...`;
-      btn.disabled = true;
-
-      try {
-        const payload = { kf, kp, m: mode, g: grounding };
-        const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(payload), pin).toString();
-
-        const putRes = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Master-Key': masterKey
-          },
-          body: JSON.stringify({ 
-            vault: ciphertext, 
-            active_pin: pin,
-            updatedAt: new Date().toISOString() 
-          })
-        });
-
-        if (!putRes.ok) throw new Error("Lỗi đẩy lên JSONBin. Kiểm tra lại Master Key!");
-
-        localStorage.setItem('llp_vault_bin', binId);
-        localStorage.setItem('llp_vault_key', masterKey);
-        localStorage.setItem('gemini_api_mode', mode);
-        localStorage.setItem('gemini_search_grounding', grounding ? 'true' : 'false');
-        if (kf) localStorage.setItem('gemini_api_key_free', kf);
-        if (kp) localStorage.setItem('gemini_api_key_payg', kp);
-        localStorage.setItem('gemini_api_key', mode === 'payg' ? kp : kf);
-
-        const qrData = "LLPVAULT:" + btoa(JSON.stringify({ bid: binId, mk: masterKey }));
-        const qrContainer = document.getElementById('qrcodeCanvas');
-        qrContainer.innerHTML = '';
-        new QRCode(qrContainer, {
-          text: qrData,
-          width: 200,
-          height: 200,
-          colorDark: "#0f172a",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.M
-        });
-        document.getElementById('qrDisplayBox').classList.remove('hidden');
-
-        checkSavedApiKey();
-        updateLockScreenUI();
-        showToast("Đã khóa két AES-256 & đẩy lên Cloud thành công!");
-      } catch (e) {
-        showToast("Lỗi: " + e.message);
-      } finally {
-        btn.innerHTML = `<i class="ph-bold ph-lock-key"></i> 🔒 Khóa Két & Đẩy Lên Cloud`;
-        btn.disabled = false;
-      }
-    }
-
-    // THU HỒI QUYỀN TRUY CẬP: ĐỔI MÃ PIN KÉT CLOUD (PHÂN QUYỀN ADMIN SHA-256 CỦA DUY@101908)
-    async function changeVaultPinOnCloud() {
-      const adminPass = document.getElementById('adminPasswordInput').value.trim();
-      const newPin = document.getElementById('newPinForChange').value.trim();
-      const binId = localStorage.getItem('llp_vault_bin') || document.getElementById('vaultBinIdInput').value.trim();
-      const masterKey = localStorage.getItem('llp_vault_key') || document.getElementById('vaultMasterKeyInput').value.trim();
-
-      if (!adminPass) {
-        showToast("Vui lòng nhập Mật khẩu Quản trị Admin!");
-        document.getElementById('adminPasswordInput').focus();
-        return;
-      }
-
-      // SHA-256 của Duy@101908
-      const ADMIN_HASH_SHA256 = "8c41460395b3b7548684d0b001a1f1b6218148b59d9c2cb28d6c141703ce589d";
-      const inputHash = CryptoJS.SHA256(adminPass).toString();
-
-      if (inputHash !== ADMIN_HASH_SHA256) {
-        showToast("❌ Sai Mật khẩu Quản trị Admin! Không có quyền đổi PIN Két.");
-        return;
-      }
-
-      if (!newPin || newPin.length < 4) {
-        showToast("Mã PIN mới phải có tối thiểu 4 số/ký tự!");
-        document.getElementById('newPinForChange').focus();
-        return;
-      }
-
-      if (!binId || !masterKey) {
-        showToast("Chưa có thông tin Két Cloud (Bin ID/Master Key)!");
-        return;
-      }
-
-      try {
-        showToast("Đang xác thực quyền Admin & mã hóa lại Két Cloud...");
-        const getRes = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-          headers: { 'X-Master-Key': masterKey }
-        });
-        if (!getRes.ok) throw new Error("Không thể kết nối Két Cloud!");
-        const data = await getRes.json();
-        const record = data.record;
-
-        let kf = localStorage.getItem('gemini_api_key_free') || "";
-        let kp = localStorage.getItem('gemini_api_key_payg') || "";
-        let m = localStorage.getItem('gemini_api_mode') || "free";
-        let g = localStorage.getItem('gemini_search_grounding') !== 'false';
-
-        if (record && record.vault) {
-          const oldPin = document.getElementById('vaultPinInput').value.trim() || record.active_pin;
-          if (oldPin) {
-            try {
-              const bytes = CryptoJS.AES.decrypt(record.vault, oldPin);
-              const dec = bytes.toString(CryptoJS.enc.Utf8);
-              if (dec) {
-                const p = JSON.parse(dec);
-                if (p.kf) kf = p.kf;
-                if (p.kp) kp = p.kp;
-                if (p.m) m = p.m;
-                if (p.g !== undefined) g = p.g;
-              }
-            } catch(e) {}
-          }
-        }
-
-        const payload = { kf, kp, m, g };
-        const newCipher = CryptoJS.AES.encrypt(JSON.stringify(payload), newPin).toString();
-
-        const putRes = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Master-Key': masterKey
-          },
-          body: JSON.stringify({ 
-            vault: newCipher, 
-            active_pin: newPin,
-            updatedAt: new Date().toISOString() 
-          })
-        });
-        if (!putRes.ok) throw new Error("Không thể cập nhật PIN mới lên Cloud!");
-
-        document.getElementById('adminPasswordInput').value = '';
-        document.getElementById('newPinForChange').value = '';
-        document.getElementById('vaultPinInput').value = newPin;
-
-        showToast("ĐÃ ĐỔI PIN THÀNH CÔNG! Toàn bộ máy dùng PIN cũ đã bị thu hồi quyền.");
-      } catch (err) {
-        showToast("Lỗi: " + err.message);
-      }
-    }
-
-    function downloadQRCodeImage() {
-      const qrImg = document.querySelector('#qrcodeCanvas img');
-      if (!qrImg || !qrImg.src) {
-        showToast("Vui lòng bấm 'Khóa Két & Đẩy Lên Cloud' để tạo mã QR trước!");
-        return;
-      }
-
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const width = 640;
-      const height = 820;
-      canvas.width = width;
-      canvas.height = height;
-
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, width, height);
-
-      ctx.strokeStyle = "#0f172a";
-      ctx.lineWidth = 4;
-      ctx.strokeRect(16, 16, width - 32, height - 32);
-
-      ctx.strokeStyle = "#10b981";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(24, 24, width - 48, height - 48);
-
-      ctx.fillStyle = "#0f172a";
-      ctx.fillRect(28, 28, width - 56, 100);
-
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 32px 'Inter', sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("LENDLAND PRO", width / 2, 70);
-
-      ctx.fillStyle = "#34d399";
-      ctx.font = "600 16px 'Inter', sans-serif";
-      ctx.fillText("BẢO MẬT & ĐỒNG BỘ KÉT CLOUD", width / 2, 102);
-
-      const qrSize = 380;
-      const qrX = (width - qrSize) / 2;
-      const qrY = 160;
-
-      ctx.fillStyle = "#f8fafc";
-      ctx.fillRect(qrX - 16, qrY - 16, qrSize + 32, qrSize + 32);
-      ctx.strokeStyle = "#cbd5e1";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(qrX - 16, qrY - 16, qrSize + 32, qrSize + 32);
-
-      const qrImageObj = new Image();
-      qrImageObj.onload = () => {
-        ctx.drawImage(qrImageObj, qrX, qrY, qrSize, qrSize);
-
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 20px 'Inter', sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("API Key for Google AI - LendLand Pro", width / 2, 630);
-
-        ctx.fillStyle = "#059669";
-        ctx.font = "bold 18px 'Inter', sans-serif";
-        ctx.fillText("by duycongta@gmail.com", width / 2, 665);
-
-        ctx.fillStyle = "#64748b";
-        ctx.font = "normal 14px 'Inter', sans-serif";
-        ctx.fillText("Quét hoặc nạp ảnh QR này vào app LendLand Pro để kết nối", width / 2, 715);
-        ctx.fillText("Két Cloud bảo mật chuẩn AES-256", width / 2, 740);
-
-        ctx.fillStyle = "#94a3b8";
-        ctx.font = "italic 12px 'Inter', sans-serif";
-        ctx.fillText("Ngày cấp mã: " + new Date().toLocaleDateString('vi-VN'), width / 2, 775);
-
-        const link = document.createElement('a');
-        link.download = `LendLandPro_Secure_QR_${new Date().toISOString().slice(0,10)}.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-        showToast("Đã tải ảnh mã QR về máy!");
-      };
-      qrImageObj.src = qrImg.src;
-    }
-
-    function handleQRFileSelected(event) {
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = e => {
-        const image = new Image();
-        image.onload = () => {
-          const canvas = document.getElementById('qrScannerCanvas');
-          const ctx = canvas.getContext('2d');
-          canvas.width = image.width;
-          canvas.height = image.height;
-          ctx.drawImage(image, 0, 0, image.width, image.height);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-          if (code && code.data) {
-            applyQRCloudData(code.data);
-          } else {
-            showToast("Không tìm thấy mã QR trong ảnh. Vui lòng chọn ảnh rõ nét hơn!");
-          }
-        };
-        image.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-      event.target.value = '';
-    }
-
-    function applyQRCloudData(qrRawString) {
-      try {
-        let raw = qrRawString.trim();
-        if (raw.startsWith("LLPVAULT:")) {
-          raw = raw.replace("LLPVAULT:", "");
-          const vaultConfig = JSON.parse(atob(raw));
-          if (vaultConfig.bid && vaultConfig.mk) {
-            localStorage.setItem('llp_vault_bin', vaultConfig.bid);
-            localStorage.setItem('llp_vault_key', vaultConfig.mk);
-            if (document.getElementById('vaultBinIdInput')) document.getElementById('vaultBinIdInput').value = vaultConfig.bid;
-            if (document.getElementById('vaultMasterKeyInput')) document.getElementById('vaultMasterKeyInput').value = vaultConfig.mk;
-            closeApiKeyModal();
-            stopLockCameraScan();
-            updateLockScreenUI();
-            showToast("Đã liên kết Két Cloud thành công! Hãy nhập mã PIN để mở khóa.");
-            return;
-          }
-        }
-        showToast("Mã QR không đúng định dạng của LendLand Pro!");
-      } catch (e) {
-        showToast("Không thể đọc mã QR này!");
-      }
-    }
-
-    // === GIAO DIỆN CẤU HÌNH API MODAL ===
+    // GIAO DIỆN CẤU HÌNH API MODAL
     function openApiKeyModal() {
       document.getElementById('apiKeyModal').classList.remove('hidden');
       const mode = localStorage.getItem('gemini_api_mode') || 'free';
@@ -1433,8 +1005,10 @@
 
       document.getElementById('geminiApiKeyFreeInput').value = keyFree;
       document.getElementById('geminiApiKeyPaygInput').value = keyPayg;
-      document.getElementById('vaultBinIdInput').value = localStorage.getItem('llp_vault_bin') || '';
-      document.getElementById('vaultMasterKeyInput').value = localStorage.getItem('llp_vault_key') || '';
+
+      const { binId, masterKey } = getCloudVaultCredentials();
+      document.getElementById('vaultBinIdInput').value = binId;
+      document.getElementById('vaultMasterKeyInput').value = masterKey;
 
       if (mode === 'payg') document.getElementById('radioModePayg').checked = true;
       else document.getElementById('radioModeFree').checked = true;
@@ -1612,7 +1186,7 @@
       badge.innerText = `Đã nạp ${files.length} tệp tài liệu`;
       thumbs.innerHTML = '';
 
-      files.forEach((f, idx) => {
+      files.forEach((f) => {
         const item = document.createElement('div');
         item.className = "relative rounded-lg overflow-hidden border border-slate-200 bg-slate-50 p-2 text-center text-[10px] truncate shadow-xs";
         item.innerHTML = `
@@ -1632,7 +1206,7 @@
       document.getElementById('loadedFilesContainer').classList.add('hidden');
     }
 
-    // === HÀM ĐỌC ẢNH & FILE PDF BẰNG GEMINI AI ===
+    // HÀM ĐỌC ẢNH & FILE PDF BẰNG GEMINI AI
     async function executeOCRWithRealAI() {
       if (uploadedFilesList.length === 0) return;
 
@@ -1646,7 +1220,7 @@
           <i class="ph-fill ph-warning-circle text-amber-600 text-lg flex-shrink-0"></i>
           <div>
             <div class="font-bold text-xs sm:text-sm">Chưa có API Key khả dụng!</div>
-            <p class="mt-0.5 text-[11px]">Vui lòng bấm nút <strong>"Cấu hình 2 Key"</strong> trên góc để mở khóa hoặc thiết lập Két Cloud.</p>
+            <p class="mt-0.5 text-[11px]">Vui lòng nhập mã PIN hợp lệ để mở khóa và đồng bộ Key từ Két Cloud.</p>
           </div>
         `;
         return;
