@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>LendLand Pro v6.2 - Thẩm Định Giá BĐS Tín Dụng</title>
+  <title>LendLand Pro v6.3 - Thẩm Định Giá BĐS Tín Dụng</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -23,6 +23,27 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+    
+    /* ĐỊNH DẠNG KHU VỰC IN & XUẤT BÁO CÁO A4 */
+    .report-paper {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      background: #ffffff;
+      color: #0f172a;
+      box-sizing: border-box;
+    }
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .report-table th, .report-table td {
+      border: 1px solid #cbd5e1;
+      padding: 6px 8px;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    
     @media print {
       body { background-color: #fff !important; font-size: 11pt; color: #000 !important; }
       .no-print, header, nav, #toastNotification, #floatingStatusBar, #lockScreenOverlay, #pdfPreviewModal, .leaflet-control-zoom, .leaflet-control-layers { display: none !important; }
@@ -43,7 +64,7 @@
 
       <div class="space-y-1">
         <h2 class="font-bold text-slate-900 text-xl tracking-tight">LendLand Pro</h2>
-        <div class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Xác Thực Bảo Mật Tín Dụng (v6.2)</div>
+        <div class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Xác Thực Bảo Mật Tín Dụng (v6.3)</div>
         <p class="text-xs text-slate-500 pt-1">Nhập mã PIN để tự động kết nối Két Cloud & làm việc</p>
       </div>
 
@@ -98,18 +119,18 @@
             <i class="ph-bold ph-file-pdf"></i>
           </div>
           <div>
-            <h3 class="font-bold text-slate-900 text-sm sm:text-base">Xem Trước Báo Cáo Thẩm Định (v6.2 Live)</h3>
+            <h3 class="font-bold text-slate-900 text-sm sm:text-base">Xem Trước Báo Cáo Thẩm Định (v6.3 Live)</h3>
             <p class="text-[11px] text-slate-500">Kiểm tra thông tin tài sản, nhận định thị trường và cơ cấu định giá trước khi tải</p>
           </div>
         </div>
         <button onclick="closePdfPreview()" type="button" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer"><i class="ph-bold ph-x text-lg"></i></button>
       </div>
 
-      <!-- VÙNG HIỂN THỊ NỘI DUNG XEM TRƯỚC -->
-      <div id="pdfPreviewContainer" class="flex-grow overflow-y-auto border border-slate-200 rounded-xl p-3 sm:p-5 bg-slate-50 shadow-inner"></div>
+      <!-- VÙNG HIỂN THỊ NỘI DUNG XEM TRƯỚC (BẢN CLONE CHUẨN TỶ LỆ) -->
+      <div id="pdfPreviewContainer" class="flex-grow overflow-y-auto border border-slate-200 rounded-xl p-3 sm:p-5 bg-slate-100 shadow-inner"></div>
 
       <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-200 mt-3 flex-shrink-0">
-        <span class="text-[11px] text-slate-500 italic">* File PDF sẽ lưu nguyên vẹn định dạng A4 chuẩn hồ sơ tín dụng.</span>
+        <span class="text-[11px] text-slate-500 italic">* File PDF xuất ra sẽ giữ nguyên bố cục trang in khổ A4 chuẩn hồ sơ tín dụng ngân hàng.</span>
         <div class="flex items-center gap-2 ml-auto">
           <button onclick="closePdfPreview()" type="button" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition border border-slate-300 cursor-pointer">
             Hủy / Đóng
@@ -128,7 +149,7 @@
     <span id="floatingStatusText" class="truncate">Đang xử lý dữ liệu...</span>
   </div>
 
-  <!-- HEADER v6.2 LIVE -->
+  <!-- HEADER v6.3 LIVE -->
   <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md no-print border-b border-slate-700">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 min-h-[4rem] flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center space-x-2.5 overflow-hidden min-w-[210px] flex-1 sm:flex-initial">
@@ -138,7 +159,7 @@
         <div class="truncate">
           <div class="font-bold text-sm sm:text-base tracking-wide flex items-center gap-1.5 flex-wrap">
             <span class="whitespace-nowrap">LendLand Pro</span>
-            <span class="text-[10px] sm:text-xs bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow whitespace-nowrap">v6.2 Live</span>
+            <span class="text-[10px] sm:text-xs bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow whitespace-nowrap">v6.3 Live</span>
             <span class="text-[10px] text-slate-400 font-normal hidden md:inline">by duycongta@gmail.com</span>
           </div>
           <div class="text-[11px] text-slate-300 truncate">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm</div>
@@ -223,26 +244,30 @@
       </div>
 
       <div class="p-4 sm:p-6 space-y-4 sm:space-y-5">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 text-xs font-medium">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 text-xs font-medium">
           <div>
-            <label class="block text-slate-500 mb-1">Thửa đất / Tờ BĐ <span class="text-[10px] text-slate-400 font-normal">(Có thể để trống)</span></label>
-            <input type="text" id="targetLot" placeholder="Để trống nếu chưa có sổ" class="w-full font-semibold border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
+            <label class="block text-slate-500 mb-1">Chủ sở hữu theo GCN</label>
+            <input type="text" id="targetOwnerNameInput" placeholder="Ví dụ: Nguyễn Văn A" class="w-full font-semibold border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
+          </div>
+          <div>
+            <label class="block text-slate-500 mb-1">Thửa đất / Tờ BĐ</label>
+            <input type="text" id="targetLot" placeholder="Thửa 123 / Tờ 45" class="w-full font-semibold border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
           </div>
           <div>
             <label class="block text-slate-500 mb-1">Tuyến đường / Số nhà / Lối đi</label>
-            <input type="text" id="targetStreet" placeholder="Ví dụ: 124 Hùng Vương / Hẻm 3m" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
+            <input type="text" id="targetStreet" placeholder="124 Hùng Vương / Hẻm 3m" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
           </div>
           <div>
-            <label class="block text-slate-500 mb-1">Thôn / Xóm / Khu phố <span class="text-[10px] text-slate-400 font-normal">(Không bắt buộc)</span></label>
-            <input type="text" id="targetHamlet" placeholder="Ví dụ: Tổ 4, Khu vực 7" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
+            <label class="block text-slate-500 mb-1">Thôn / Xóm / Khu phố</label>
+            <input type="text" id="targetHamlet" placeholder="Tổ 4, Khu vực 7" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" oninput="updateTargetOverview()">
           </div>
           <div>
             <label class="block text-emerald-800 font-bold mb-1">Xã / Phường *</label>
-            <input type="text" id="targetWard" placeholder="Ví dụ: Phường Trần Quang Diệu" class="w-full font-semibold border-2 border-emerald-400 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30" oninput="updateTargetOverview()">
+            <input type="text" id="targetWard" placeholder="Phường Trần Quang Diệu" class="w-full font-semibold border-2 border-emerald-400 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30" oninput="updateTargetOverview()">
           </div>
-          <div class="sm:col-span-2 lg:col-span-1">
+          <div>
             <label class="block text-emerald-800 font-bold mb-1">Huyện/TP & Tỉnh *</label>
-            <input type="text" id="targetDistrictProvince" placeholder="Ví dụ: TP Quy Nhơn, Bình Định" class="w-full font-semibold border-2 border-emerald-400 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30" oninput="updateTargetOverview()">
+            <input type="text" id="targetDistrictProvince" placeholder="TP Quy Nhơn, Bình Định" class="w-full font-semibold border-2 border-emerald-400 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30" oninput="updateTargetOverview()">
           </div>
         </div>
 
@@ -583,13 +608,12 @@
     <div class="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto max-h-[95vh] overflow-y-auto border border-slate-100">
       <div class="flex items-center justify-between border-b pb-2.5">
         <h3 class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
-          <i class="ph-bold ph-vault text-indigo-600 text-lg"></i> Quản Trị Két Cloud & Phân Quyền Admin (v6.2)
+          <i class="ph-bold ph-vault text-indigo-600 text-lg"></i> Quản Trị Két Cloud & Phân Quyền Admin (v6.3)
         </h3>
         <button onclick="closeApiKeyModal()" type="button" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"><i class="ph-bold ph-x text-lg"></i></button>
       </div>
 
       <div class="space-y-3 text-xs">
-        <!-- Ô 1: KHÓA FREE TIER -->
         <div id="boxModeFree" onclick="selectApiModeDirect('free')" class="border-2 border-indigo-500 rounded-xl p-2.5 sm:p-3 bg-indigo-50/40 cursor-pointer transition shadow-xs">
           <div class="flex items-center justify-between mb-1">
             <label class="flex items-center gap-2 font-bold text-slate-800 cursor-pointer pointer-events-none">
@@ -601,7 +625,6 @@
           <input type="password" id="geminiApiKeyFreeInput" onclick="event.stopPropagation()" placeholder="AIzaSy... (Khóa miễn phí từ AI Studio)" class="w-full border border-slate-300 rounded-lg p-2 sm:p-2.5 focus:ring-2 focus:ring-indigo-500 font-mono text-xs bg-white" oninput="updateKeyBadgeUI()">
         </div>
 
-        <!-- Ô 2: KHÓA PAY-AS-YOU-GO -->
         <div id="boxModePayg" onclick="selectApiModeDirect('payg')" class="border border-slate-200 rounded-xl p-2.5 sm:p-3 bg-slate-50 cursor-pointer transition">
           <div class="flex items-center justify-between mb-1">
             <label class="flex items-center gap-2 font-bold text-emerald-800 cursor-pointer pointer-events-none">
@@ -613,7 +636,6 @@
           <input type="password" id="geminiApiKeyPaygInput" onclick="event.stopPropagation()" placeholder="AIzaSy... (Khóa từ Project đã liên kết thẻ)" class="w-full border border-slate-300 rounded-lg p-2 sm:p-2.5 focus:ring-2 focus:ring-emerald-500 font-mono text-xs bg-white" oninput="updateKeyBadgeUI()">
         </div>
 
-        <!-- NÚT LƯU TRỰC TIẾP TẠI TRÌNH DUYỆT -->
         <div class="flex justify-between items-center bg-slate-100 p-2.5 rounded-xl">
           <span class="text-[11px] text-slate-600 font-semibold">Lưu API Key trực tiếp vào máy:</span>
           <button onclick="saveApiKeysLocally()" type="button" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded-lg shadow-xs flex items-center gap-1 cursor-pointer">
@@ -621,7 +643,6 @@
           </button>
         </div>
 
-        <!-- GOOGLE SEARCH GROUNDING -->
         <div class="border border-indigo-100 rounded-xl p-2.5 bg-indigo-50/40 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <i class="ph-bold ph-globe-hemisphere-east text-indigo-600 text-lg flex-shrink-0"></i>
@@ -636,7 +657,6 @@
           </label>
         </div>
 
-        <!-- CẤU HÌNH KÉT CLOUD NÂNG CAO -->
         <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
           <div class="font-bold text-slate-800 text-xs flex items-center gap-1">
             <i class="ph-bold ph-cloud text-indigo-600"></i> Cấu Hình JSONBin.io
@@ -653,7 +673,6 @@
           </div>
         </div>
 
-        <!-- MỤC ĐỔI MÃ PIN KÉT CLOUD -->
         <div class="border border-rose-200 rounded-xl p-3 bg-rose-50/50 space-y-2.5">
           <div class="font-bold text-rose-800 text-xs flex items-center justify-between">
             <span class="flex items-center gap-1"><i class="ph-bold ph-shield-warning text-base"></i> Đổi Mã PIN App & Thu Hồi Quyền PIN Cũ</span>
@@ -684,138 +703,140 @@
     </div>
   </div>
 
-  <!-- BIỂU MẪU IN / LƯU PDF A4 (ĐÃ CÓ NGÀY ĐĂNG TIN VÀ PHÂN RÃ LOẠI ĐẤT) -->
-  <div id="printArea" class="max-w-4xl mx-auto p-8 bg-white text-slate-900 hidden">
-    <div class="border-b-2 border-slate-800 pb-3 mb-4">
-      <div class="flex justify-between items-center text-xs text-slate-500 mb-1.5">
-        <div class="font-bold text-slate-800 text-sm tracking-wide flex items-center gap-2">
-          <span>LENDLAND PRO</span>
-          <span class="text-slate-400 font-normal">|</span>
-          <span class="font-semibold text-slate-600">BÁO CÁO KHẢO SÁT THỊ TRƯỜNG BẤT ĐỘNG SẢN (v6.2)</span>
+  <!-- BIỂU MẪU GỐC BÁO CÁO A4 (ĐƯỢC BẢO TOÀN TRONG THẺ NÀY ĐỂ SYNC VÀ IN) -->
+  <div id="printArea" class="hidden">
+    <div class="report-paper p-6 sm:p-8">
+      <div class="border-b-2 border-slate-800 pb-3 mb-4">
+        <div class="flex justify-between items-center text-xs text-slate-500 mb-1.5">
+          <div class="font-bold text-slate-800 text-sm tracking-wide flex items-center gap-2">
+            <span>LENDLAND PRO</span>
+            <span class="text-slate-400 font-normal">|</span>
+            <span class="font-semibold text-slate-600">BÁO CÁO KHẢO SÁT THỊ TRƯỜNG BẤT ĐỘNG SẢN (v6.3)</span>
+          </div>
+          <div id="printCurrentDate" class="font-medium text-slate-600">Ngày ... tháng ... năm ...</div>
         </div>
-        <div id="printCurrentDate" class="font-medium text-slate-600">Ngày ... tháng ... năm ...</div>
-      </div>
-      
-      <div class="text-center mt-3">
-        <h1 class="text-base font-extrabold uppercase tracking-wider text-slate-900">BẢNG TỔNG HỢP KHẢO SÁT GIÁ & THẨM ĐỊNH SƠ BỘ TÀI SẢN</h1>
-        <div class="text-[11px] italic text-slate-500 mt-0.5">(Tài liệu thông tin tham khảo nội bộ phục vụ khảo sát giá trị thị trường)</div>
-      </div>
-    </div>
-
-    <!-- MỤC I: HIỆN TRẠNG TÀI SẢN -->
-    <div class="mb-4 text-xs">
-      <div class="font-bold uppercase text-slate-800 border-b border-slate-300 pb-1 mb-2 flex items-center gap-1.5">
-        <span>I. THÔNG TIN HIỆN TRẠNG TÀI SẢN MỤC TIÊU</span>
-      </div>
-      <table class="w-full border-collapse border border-slate-300 text-xs mb-2">
-        <tr>
-          <td class="border border-slate-300 p-2 font-semibold bg-slate-50 w-1/4">Thửa đất số / Tờ bản đồ:</td>
-          <td class="border border-slate-300 p-2 w-1/4" id="pLotNumber">--</td>
-          <td class="border border-slate-300 p-2 font-semibold bg-slate-50 w-1/4">Chủ sở hữu theo GCN:</td>
-          <td class="border border-slate-300 p-2 w-1/4 font-semibold" id="pOwnerName">--</td>
-        </tr>
-        <tr>
-          <td class="border border-slate-300 p-2 font-semibold bg-slate-50">Địa chỉ tài sản:</td>
-          <td class="border border-slate-300 p-2" colspan="3" id="pAddress">--</td>
-        </tr>
-        <tr>
-          <td class="border border-slate-300 p-2 font-semibold bg-slate-50">Cơ cấu diện tích đất:</td>
-          <td class="border border-slate-300 p-2" id="pAreaStructure">--</td>
-          <td class="border border-slate-300 p-2 font-semibold bg-slate-50">Kích thước hình thể:</td>
-          <td class="border border-slate-300 p-2" id="pShape">--</td>
-        </tr>
-        <tr>
-          <td class="border border-slate-300 p-2 font-semibold bg-slate-50">Vị trí tiếp giáp / Lộ giới:</td>
-          <td class="border border-slate-300 p-2" id="pRoadWidth">--</td>
-          <td class="border border-slate-300 p-2 font-semibold bg-slate-50">Công trình trên đất (CTXD):</td>
-          <td class="border border-slate-300 p-2" id="pBuilding">--</td>
-        </tr>
-      </table>
-    </div>
-
-    <!-- MỤC II: GOOGLE AI OVERVIEW & KHUYẾN NGHỊ THẨM ĐỊNH -->
-    <div class="mb-4 text-xs">
-      <div class="font-bold uppercase text-slate-800 border-b border-slate-300 pb-1 mb-2 flex items-center gap-1.5">
-        <span>II. NHẬN ĐỊNH THỊ TRƯỜNG KHU VỰC KHẢO SÁT & KHUYẾN NGHỊ TÍN DỤNG</span>
-      </div>
-      <div class="border border-slate-300 rounded-lg p-3 bg-slate-50/60 text-slate-700 space-y-2 leading-relaxed">
-        <div id="pAiSummaryContent" class="text-[11px] text-justify">
-          Chưa có nhận định thị trường.
-        </div>
-        <div id="pAiRecommendationsBox" class="border-t border-slate-200 pt-2 space-y-1">
-          <div class="font-bold text-slate-800 text-[11px]">Khuyến nghị thẩm định tín dụng đề xuất:</div>
-          <ul id="pAiRecommendationsList" class="list-disc list-inside text-[11px] text-slate-600 space-y-1"></ul>
+        
+        <div class="text-center mt-3">
+          <h1 class="text-base font-extrabold uppercase tracking-wider text-slate-900">BẢNG TỔNG HỢP KHẢO SÁT GIÁ & THẨM ĐỊNH SƠ BỘ TÀI SẢN</h1>
+          <div class="text-[11px] italic text-slate-500 mt-0.5">(Tài liệu thông tin tham khảo nội bộ phục vụ khảo sát giá trị thị trường)</div>
         </div>
       </div>
-    </div>
 
-    <!-- MỤC III: TÀI SẢN SO SÁNH (CÓ CỘT NGÀY ĐĂNG) -->
-    <div class="mb-4 text-xs">
-      <div class="font-bold uppercase text-slate-800 border-b border-slate-300 pb-1 mb-2">
-        III. CƠ SỞ DỮ LIỆU ĐỊNH GIÁ SO SÁNH (PHƯƠNG PHÁP SO SÁNH TRỰC TIẾP)
-      </div>
-      <table class="w-full border-collapse border border-slate-300 text-[11px] mb-2">
-        <thead class="bg-slate-100 font-semibold text-center">
+      <!-- MỤC I: HIỆN TRẠNG TÀI SẢN -->
+      <div class="mb-4 text-xs">
+        <div class="font-bold uppercase text-slate-800 border-b border-slate-300 pb-1 mb-2 flex items-center gap-1.5">
+          <span>I. THÔNG TIN HIỆN TRẠNG TÀI SẢN MỤC TIÊU</span>
+        </div>
+        <table class="report-table mb-2">
           <tr>
-            <th class="border border-slate-300 p-1.5">STT</th>
-            <th class="border border-slate-300 p-1.5 text-left">Đặc Điểm Tài Sản So Sánh</th>
-            <th class="border border-slate-300 p-1.5">Ngày Đăng</th>
-            <th class="border border-slate-300 p-1.5">DT (m²)</th>
-            <th class="border border-slate-300 p-1.5">Mặt Tiền</th>
-            <th class="border border-slate-300 p-1.5">Giá Rao Bán</th>
-            <th class="border border-slate-300 p-1.5">Giá Sau CK 10%</th>
-            <th class="border border-slate-300 p-1.5">Tương Đồng</th>
-            <th class="border border-slate-300 p-1.5">Nguồn Tin Rao</th>
+            <td class="font-semibold bg-slate-50 w-1/4">Thửa đất số / Tờ bản đồ:</td>
+            <td class="w-1/4" id="pLotNumber">--</td>
+            <td class="font-semibold bg-slate-50 w-1/4">Chủ sở hữu theo GCN:</td>
+            <td class="w-1/4 font-semibold text-slate-900" id="pOwnerName">--</td>
           </tr>
-        </thead>
-        <tbody id="printCompareTbody"></tbody>
-      </table>
-    </div>
-
-    <!-- MỤC IV: KẾT QUẢ ĐỊNH GIÁ PHÂN RÃ CHI TIẾT THEO LOẠI ĐẤT & HẠN MỨC VAY -->
-    <div class="mb-4 text-xs">
-      <div class="font-bold uppercase text-slate-800 border-b border-slate-300 pb-1 mb-2">
-        IV. KẾT QUẢ ĐỊNH GIÁ SƠ BỘ & HẠN MỨC CHO VAY THAM KHẢO
+          <tr>
+            <td class="font-semibold bg-slate-50">Địa chỉ tài sản:</td>
+            <td colspan="3" id="pAddress">--</td>
+          </tr>
+          <tr>
+            <td class="font-semibold bg-slate-50">Cơ cấu diện tích đất:</td>
+            <td id="pAreaStructure">--</td>
+            <td class="font-semibold bg-slate-50">Kích thước hình thể:</td>
+            <td id="pShape">--</td>
+          </tr>
+          <tr>
+            <td class="font-semibold bg-slate-50">Vị trí tiếp giáp / Lộ giới:</td>
+            <td id="pRoadWidth">--</td>
+            <td class="font-semibold bg-slate-50">Công trình trên đất (CTXD):</td>
+            <td id="pBuilding">--</td>
+          </tr>
+        </table>
       </div>
-      <table class="w-full border-collapse border border-slate-300 text-xs">
-        <tr class="bg-slate-50 font-semibold">
-          <td class="border border-slate-300 p-2">Hạng Mục Định Giá</td>
-          <td class="border border-slate-300 p-2 text-center">Khối Lượng</td>
-          <td class="border border-slate-300 p-2 text-right">Đơn Giá Đề Xuất</td>
-          <td class="border border-slate-300 p-2 text-right">Thành Tiền (Tỷ VNĐ)</td>
-        </tr>
-        <tr>
-          <td class="border border-slate-300 p-2 font-medium">1. Quyền sử dụng đất ở (ONT/ODT)</td>
-          <td class="border border-slate-300 p-2 text-center" id="pLandArea">0 m²</td>
-          <td class="border border-slate-300 p-2 text-right" id="pLandUnitPrice">0.00 tr/m²</td>
-          <td class="border border-slate-300 p-2 text-right font-semibold text-emerald-800" id="pLandTotalVal">0.00 Tỷ</td>
-        </tr>
-        <tr>
-          <td class="border border-slate-300 p-2 font-medium">2. Quyền sử dụng đất nông nghiệp / Vườn (CLN)</td>
-          <td class="border border-slate-300 p-2 text-center" id="pAgriArea">0 m²</td>
-          <td class="border border-slate-300 p-2 text-right" id="pAgriUnitPrice">0.00 tr/m²</td>
-          <td class="border border-slate-300 p-2 text-right font-semibold text-amber-800" id="pAgriTotalVal">0.00 Tỷ</td>
-        </tr>
-        <tr>
-          <td class="border border-slate-300 p-2 font-medium">3. Công trình xây dựng gắn liền</td>
-          <td class="border border-slate-300 p-2 text-center" id="pBldArea">0 m²</td>
-          <td class="border border-slate-300 p-2 text-right" id="pBldUnitPrice">--</td>
-          <td class="border border-slate-300 p-2 text-right font-semibold" id="pBldTotalVal">0.00 Tỷ</td>
-        </tr>
-        <tr class="bg-emerald-50/70 font-bold text-slate-900">
-          <td class="border border-slate-300 p-2 uppercase" colspan="3">TỔNG GIÁ TRỊ TÀI SẢN ƯỚC TÍNH (1 + 2 + 3):</td>
-          <td class="border border-slate-300 p-2 text-right text-emerald-800 text-sm" id="pGrandTotalVal">0.00 Tỷ VNĐ</td>
-        </tr>
-        <tr class="bg-blue-50/70 font-bold text-slate-900">
-          <td class="border border-slate-300 p-2 uppercase" colspan="3">HẠN MỨC CHO VAY TỐI ĐA THAM KHẢO (LTV 70%):</td>
-          <td class="border border-slate-300 p-2 text-right text-blue-900 text-sm" id="pMaxLoanVal">0.00 Tỷ VNĐ</td>
-        </tr>
-      </table>
-    </div>
 
-    <div class="mt-4 pt-2.5 border-t border-slate-300 text-[10px] text-slate-500 italic space-y-1">
-      <div>* <strong>Lưu ý nghiệp vụ:</strong> Báo cáo này được lập tự động dựa trên dữ liệu khảo sát thị trường đa kênh tại thời điểm tra cứu và chỉ mang tính chất tham khảo sơ bộ phục vụ thẩm định tín dụng.</div>
-      <div>* Kết quả định giá chính thức cần căn cứ vào biên bản kiểm tra thực địa, hồ sơ pháp lý hoàn chỉnh và được phê duyệt theo đúng thẩm quyền quy định.</div>
+      <!-- MỤC II: GOOGLE AI OVERVIEW & KHUYẾN NGHỊ THẨM ĐỊNH -->
+      <div class="mb-4 text-xs">
+        <div class="font-bold uppercase text-slate-800 border-b border-slate-300 pb-1 mb-2 flex items-center gap-1.5">
+          <span>II. NHẬN ĐỊNH THỊ TRƯỜNG KHU VỰC KHẢO SÁT & KHUYẾN NGHỊ TÍN DỤNG</span>
+        </div>
+        <div class="border border-slate-300 rounded-lg p-3 bg-slate-50 text-slate-700 space-y-2 leading-relaxed">
+          <div id="pAiSummaryContent" class="text-[11px] text-justify">
+            Chưa có nhận định thị trường.
+          </div>
+          <div id="pAiRecommendationsBox" class="border-t border-slate-200 pt-2 space-y-1">
+            <div class="font-bold text-slate-800 text-[11px]">Khuyến nghị thẩm định tín dụng đề xuất:</div>
+            <ul id="pAiRecommendationsList" class="list-disc list-inside text-[11px] text-slate-600 space-y-1"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- MỤC III: TÀI SẢN SO SÁNH (CÓ CỘT NGÀY ĐĂNG) -->
+      <div class="mb-4 text-xs">
+        <div class="font-bold uppercase text-slate-800 border-b border-slate-300 pb-1 mb-2">
+          III. CƠ SỞ DỮ LIỆU ĐỊNH GIÁ SO SÁNH (PHƯƠNG PHÁP SO SÁNH TRỰC TIẾP)
+        </div>
+        <table class="report-table mb-2">
+          <thead class="bg-slate-100 font-semibold text-center">
+            <tr>
+              <th class="w-8">STT</th>
+              <th class="text-left">Đặc Điểm Tài Sản So Sánh</th>
+              <th class="w-20">Ngày Đăng</th>
+              <th class="w-16">DT (m²)</th>
+              <th class="w-20">Mặt Tiền</th>
+              <th class="w-20">Giá Rao Bán</th>
+              <th class="w-24">Sau CK 10%</th>
+              <th class="w-16">Tương Đồng</th>
+              <th class="w-24">Nguồn Tin Rao</th>
+            </tr>
+          </thead>
+          <tbody id="printCompareTbody"></tbody>
+        </table>
+      </div>
+
+      <!-- MỤC IV: KẾT QUẢ ĐỊNH GIÁ PHÂN RÃ CHI TIẾT THEO LOẠI ĐẤT & HẠN MỨC VAY -->
+      <div class="mb-4 text-xs">
+        <div class="font-bold uppercase text-slate-800 border-b border-slate-300 pb-1 mb-2">
+          IV. KẾT QUẢ ĐỊNH GIÁ SƠ BỘ & HẠN MỨC CHO VAY THAM KHẢO
+        </div>
+        <table class="report-table">
+          <tr class="bg-slate-50 font-semibold">
+            <td>Hạng Mục Định Giá</td>
+            <td class="text-center w-24">Khối Lượng</td>
+            <td class="text-right w-32">Đơn Giá Đề Xuất</td>
+            <td class="text-right w-36">Thành Tiền (Tỷ VNĐ)</td>
+          </tr>
+          <tr>
+            <td class="font-medium">1. Quyền sử dụng đất ở (ONT/ODT)</td>
+            <td class="text-center" id="pLandArea">0 m²</td>
+            <td class="text-right" id="pLandUnitPrice">0.00 tr/m²</td>
+            <td class="text-right font-semibold text-emerald-800" id="pLandTotalVal">0.00 Tỷ</td>
+          </tr>
+          <tr>
+            <td class="font-medium">2. Quyền sử dụng đất nông nghiệp / Vườn (CLN)</td>
+            <td class="text-center" id="pAgriArea">0 m²</td>
+            <td class="text-right" id="pAgriUnitPrice">0.00 tr/m²</td>
+            <td class="text-right font-semibold text-amber-800" id="pAgriTotalVal">0.00 Tỷ</td>
+          </tr>
+          <tr>
+            <td class="font-medium">3. Công trình xây dựng gắn liền</td>
+            <td class="text-center" id="pBldArea">0 m²</td>
+            <td class="text-right" id="pBldUnitPrice">--</td>
+            <td class="text-right font-semibold" id="pBldTotalVal">0.00 Tỷ</td>
+          </tr>
+          <tr class="bg-emerald-50 font-bold text-slate-900">
+            <td class="uppercase" colspan="3">TỔNG GIÁ TRỊ TÀI SẢN ƯỚC TÍNH (1 + 2 + 3):</td>
+            <td class="text-right text-emerald-800 text-sm" id="pGrandTotalVal">0.00 Tỷ VNĐ</td>
+          </tr>
+          <tr class="bg-blue-50 font-bold text-slate-900">
+            <td class="uppercase" colspan="3">HẠN MỨC CHO VAY TỐI ĐA THAM KHẢO (LTV 70%):</td>
+            <td class="text-right text-blue-900 text-sm" id="pMaxLoanVal">0.00 Tỷ VNĐ</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="mt-4 pt-2.5 border-t border-slate-300 text-[10px] text-slate-500 italic space-y-1">
+        <div>* <strong>Lưu ý nghiệp vụ:</strong> Báo cáo này được lập tự động dựa trên dữ liệu khảo sát thị trường đa kênh tại thời điểm tra cứu và chỉ mang tính chất tham khảo sơ bộ phục vụ thẩm định tín dụng.</div>
+        <div>* Kết quả định giá chính thức cần căn cứ vào biên bản kiểm tra thực địa, hồ sơ pháp lý hoàn chỉnh và được phê duyệt theo đúng thẩm quyền quy định.</div>
+      </div>
     </div>
   </div>
 
@@ -827,7 +848,7 @@
 
   <script>
     // =========================================================================
-    // CẤU HÌNH & TRẠNG THÁI TOÀN CỤC (v6.2 Live)
+    // CẤU HÌNH & TRẠNG THÁI TOÀN CỤC (v6.3 Live)
     // =========================================================================
     const DEFAULT_VAULT_BIN_ID = "67246ec3ad19ca34f8c2e92a"; 
     const DEFAULT_VAULT_MASTER_KEY = "$2a$10$YourMasterKeyGoesHere...";
@@ -858,7 +879,7 @@
       return { binId, masterKey };
     }
 
-    // === QUẢN LÝ PHIÊN (sessionStorage) & MÀN HÌNH KHÓA AN TOÀN TUYỆT ĐỐI ===
+    // === QUẢN LÝ PHIÊN (sessionStorage) & MÀN HÌNH KHÓA AN TOÀN ===
     function checkAuthLockStatus() {
       try {
         const lockOverlay = document.getElementById('lockScreenOverlay');
@@ -922,7 +943,6 @@
         return;
       }
 
-      // HỖ TRỢ MASTER PIN DỰ PHÒNG TẠI MÁY (888999 HOẶC ĐÃ CÓ KEY LƯU SẴN)
       const localKey = localStorage.getItem('gemini_api_key') || localStorage.getItem('gemini_api_key_free');
       if ((pin === '888999' || pin === '101908') && localKey) {
         successUnlock();
@@ -954,7 +974,7 @@
         });
 
         if (!response.ok) {
-          throw new Error("Không thể kết nối Két Cloud (Mã phản hồi: " + response.status + ")");
+          throw new Error("Không thể kết nối Két Cloud (Mã: " + response.status + ")");
         }
 
         const data = await response.json();
@@ -1027,7 +1047,7 @@
       showToast("Mở khóa thành công & đã đồng bộ 2 API Key!");
     }
 
-    // === GIAO DIỆN MODAL QUẢN TRỊ ADMIN (LUÔN MỞ AN TOÀN) ===
+    // === GIAO DIỆN MODAL QUẢN TRỊ ADMIN ===
     function openApiKeyModal() {
       try {
         const modal = document.getElementById('apiKeyModal');
@@ -1089,7 +1109,6 @@
       showToast("Đã lưu API Key vào máy này thành công!");
     }
 
-    // === CHUYỂN ĐỔI 2 MODE (FREE & PAYG) ===
     function selectApiModeDirect(targetMode) {
       const currentMode = localStorage.getItem('gemini_api_mode') || 'free';
       if (targetMode === 'payg' && currentMode !== 'payg') {
@@ -1250,14 +1269,53 @@
       }
     }
 
-    // === XỬ LÝ XEM TRƯỚC BÁO CÁO (PDF PREVIEW) & XUẤT FILE ===
-    function openPdfPreviewModal() {
-      recalculateTargetValues();
-      
+    // =========================================================================
+    // HÀM ĐỒNG BỘ DỮ LIỆU SANG BÁO CÁO IN (#printArea) - SỬA LỖI GẠCH NỐI VÀ TRẮNG TRƠN
+    // =========================================================================
+    function syncDataToPrintReport() {
       const now = new Date();
-      document.getElementById('printCurrentDate').innerText = `Ngày ${now.getDate()} tháng ${now.getMonth() + 1} năm ${now.getFullYear()}`;
+      const dateText = `Ngày ${now.getDate()} tháng ${now.getMonth() + 1} năm ${now.getFullYear()}`;
+      document.getElementById('printCurrentDate').innerText = dateText;
 
-      // Đồng bộ nội dung AI Overview
+      // 1. Đồng bộ thông tin Mục I: Hiện trạng
+      const lotVal = document.getElementById('targetLot').value.trim() || "--";
+      const ownerVal = document.getElementById('targetOwnerNameInput').value.trim() || window.currentOwnerName || "--";
+      
+      const st = document.getElementById('targetStreet').value.trim();
+      const hm = document.getElementById('targetHamlet').value.trim();
+      const wd = document.getElementById('targetWard').value.trim();
+      const dp = document.getElementById('targetDistrictProvince').value.trim();
+      const addrParts = [st, hm, wd, dp].filter(Boolean);
+      const addrVal = addrParts.length > 0 ? addrParts.join(', ') : "--";
+
+      const totalA = parseFloat(document.getElementById('targetArea').value) || 0;
+      const resA = parseFloat(document.getElementById('targetResArea').value) || 0;
+      const agriA = parseFloat(document.getElementById('targetAgriArea').value) || 0;
+      const areaStructVal = totalA > 0 ? `Tổng ${totalA} m² (Đất ở: ${resA} m², Đất vườn/CLN: ${agriA} m²)` : "--";
+
+      const f = document.getElementById('targetFrontage').value.trim();
+      const d = document.getElementById('targetDepth').value.trim();
+      const shapeVal = (f || d) ? `Mặt tiền ${f || '--'}m × Sâu ${d || '--'}m` : "--";
+
+      const rw = document.getElementById('targetRoadWidth').value.trim();
+      const posSelect = document.getElementById('targetPosType');
+      const posText = posSelect ? posSelect.options[posSelect.selectedIndex].text : "Đường trước đất";
+      const roadVal = rw ? `${posText} (Rộng ~${rw}m)` : posText;
+
+      const bldType = document.getElementById('targetBuildingType').value.trim();
+      const bldArea = parseFloat(document.getElementById('targetBuildingArea').value) || 0;
+      const bldQual = document.getElementById('targetBuildingQuality').value.trim() || "70";
+      const bldVal = bldArea > 0 ? `${bldType || 'Nhà ở'} (DT sàn: ${bldArea} m², CLCL: ${bldQual}%)` : (bldType || "Không có / Đất trống");
+
+      document.getElementById('pLotNumber').innerText = lotVal;
+      document.getElementById('pOwnerName').innerText = ownerVal;
+      document.getElementById('pAddress').innerText = addrVal;
+      document.getElementById('pAreaStructure').innerText = areaStructVal;
+      document.getElementById('pShape').innerText = shapeVal;
+      document.getElementById('pRoadWidth').innerText = roadVal;
+      document.getElementById('pBuilding').innerText = bldVal;
+
+      // 2. Đồng bộ thông tin Mục II: AI Overview & Khuyến nghị
       const aiP1 = document.getElementById('aiSummaryP1').innerHTML;
       document.getElementById('pAiSummaryContent').innerHTML = aiP1;
 
@@ -1275,10 +1333,51 @@
         pAiList.innerHTML = '<li>Áp dụng đơn giá thận trọng và kiểm tra hiện trạng ranh mốc thực tế.</li>';
       }
 
-      // Sao chép nội dung #printArea sang khung xem trước
-      const printArea = document.getElementById('printArea');
+      // 3. Đồng bộ Bảng so sánh TSSS Mục III
+      const printTbody = document.getElementById('printCompareTbody');
+      printTbody.innerHTML = '';
+      const discountPercent = parseFloat(document.getElementById('discountRate').value) || 10;
+
+      if (currentComps && currentComps.length > 0) {
+        currentComps.forEach((comp, idx) => {
+          const rawUnitPrice = (comp.rawPrice * 1000) / comp.area;
+          const discountedUnitPrice = rawUnitPrice * (1 - discountPercent / 100);
+          let score = 85;
+          if (comp.roadType === document.getElementById('targetPosType').value) score += 10;
+          if (totalA > 0 && Math.abs(comp.area - totalA) < 40) score += 5;
+          score = Math.min(score, 98);
+
+          const ptr = document.createElement('tr');
+          ptr.innerHTML = `
+            <td class="text-center font-bold">#${idx + 1}</td>
+            <td><b>${comp.address}</b><br><span class="text-[10px] text-slate-500">${comp.roadDesc}</span></td>
+            <td class="text-center text-slate-600 font-medium whitespace-nowrap">${comp.postedDate || '--'}</td>
+            <td class="text-center font-semibold">${comp.area}</td>
+            <td class="text-center text-slate-600">${comp.frontage}m × ${comp.depth}m</td>
+            <td class="text-right font-semibold whitespace-nowrap">${comp.rawPrice.toFixed(2)} Tỷ</td>
+            <td class="text-right font-bold text-emerald-700 whitespace-nowrap">${discountedUnitPrice.toFixed(2)} tr/m²</td>
+            <td class="text-center font-bold">${score}%</td>
+            <td class="text-center font-medium">${comp.sourceName}</td>
+          `;
+          printTbody.appendChild(ptr);
+        });
+      } else {
+        printTbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-slate-400 italic">Chưa có tài sản so sánh được thu thập.</td></tr>`;
+      }
+    }
+
+    // === XỬ LÝ XEM TRƯỚC BÁO CÁO (PDF PREVIEW) ===
+    function openPdfPreviewModal() {
+      // 1. Chạy tính toán số liệu mới nhất
+      recalculateTargetValues();
+
+      // 2. Đồng bộ đầy đủ sang thẻ in ấn
+      syncDataToPrintReport();
+
+      // 3. Đưa bản in hoàn chỉnh vào khung xem trước
+      const printContent = document.getElementById('printArea').innerHTML;
       const previewContainer = document.getElementById('pdfPreviewContainer');
-      previewContainer.innerHTML = printArea.innerHTML;
+      previewContainer.innerHTML = printContent;
 
       document.getElementById('pdfPreviewModal').classList.remove('hidden');
     }
@@ -1287,79 +1386,69 @@
       document.getElementById('pdfPreviewModal').classList.add('hidden');
     }
 
-async function executeDownloadPdf() {
-  const btn = document.getElementById('btnDownloadPdfConfirm');
-  if (btn) {
-    btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang xuất PDF...`;
-    btn.disabled = true;
-  }
+    // === XUẤT VÀ TẢI FILE PDF AN TOÀN (CHỐNG TRẮNG TRƠN 100%) ===
+    async function executeDownloadPdf() {
+      const btn = document.getElementById('btnDownloadPdfConfirm');
+      if (btn) {
+        btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang xuất PDF...`;
+        btn.disabled = true;
+      }
 
-  // 1. Lấy trực tiếp phần tử đang hiển thị xem trước (đã render đầy đủ)
-  const previewSource = document.getElementById('pdfPreviewContainer');
-  if (!previewSource || !previewSource.innerHTML.trim()) {
-    showToast("Không tìm thấy nội dung báo cáo để xuất!");
-    if (btn) {
-      btn.innerHTML = `<i class="ph-bold ph-download-simple text-sm"></i> Tải File PDF Về Máy`;
-      btn.disabled = false;
+      // Luôn đồng bộ dữ liệu mới nhất trước khi in
+      recalculateTargetValues();
+      syncDataToPrintReport();
+
+      // Tạo một div độc lập trên body với kích thước cố định A4 (794px), hiển thị đầy đủ
+      const printWrapper = document.createElement('div');
+      printWrapper.style.position = 'fixed';
+      printWrapper.style.left = '0';
+      printWrapper.style.top = '0';
+      printWrapper.style.width = '794px';
+      printWrapper.style.minHeight = '1123px';
+      printWrapper.style.backgroundColor = '#ffffff';
+      printWrapper.style.zIndex = '-9999';
+      printWrapper.style.opacity = '1';
+      printWrapper.style.padding = '0';
+      printWrapper.innerHTML = document.getElementById('printArea').innerHTML;
+      document.body.appendChild(printWrapper);
+
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours()}${now.getMinutes()}`;
+      const fileName = `LendLandPro_v6.3_BaoCao_${dateStr}.pdf`;
+
+      const opt = {
+        margin: [8, 8, 8, 8],
+        filename: fileName,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          scrollY: 0,
+          scrollX: 0,
+          windowWidth: 800
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      try {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        await html2pdf().set(opt).from(printWrapper).save();
+        showToast("Đã tải báo cáo PDF về thiết bị thành công!");
+        closePdfPreview();
+      } catch (err) {
+        console.error("Lỗi xuất PDF:", err);
+        showToast("Lỗi khi xuất file: " + err.message);
+      } finally {
+        if (printWrapper && printWrapper.parentNode) {
+          printWrapper.parentNode.removeChild(printWrapper);
+        }
+        if (btn) {
+          btn.innerHTML = `<i class="ph-bold ph-download-simple text-sm"></i> Tải File PDF Về Máy`;
+          btn.disabled = false;
+        }
+      }
     }
-    return;
-  }
-
-  // 2. Tạo một khung tạm thời hiển thị thực tế (đảm bảo html2canvas đo được chiều cao)
-  const tempContainer = document.createElement('div');
-  tempContainer.style.position = 'fixed';
-  tempContainer.style.left = '0';
-  tempContainer.style.top = '0';
-  tempContainer.style.width = '794px'; // Chuẩn bề ngang khổ A4 (96 DPI)
-  tempContainer.style.minHeight = '1123px';
-  tempContainer.style.backgroundColor = '#ffffff';
-  tempContainer.style.zIndex = '-9999'; // Nằm dưới màn hình không che người dùng
-  tempContainer.style.opacity = '1';
-  tempContainer.style.padding = '20px';
-  tempContainer.innerHTML = previewSource.innerHTML;
-  document.body.appendChild(tempContainer);
-
-  const now = new Date();
-  const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours()}${now.getMinutes()}`;
-  const fileName = `LendLandPro_v6.2_BaoCao_${dateStr}.pdf`;
-
-  const opt = {
-    margin: [10, 10, 10, 10],
-    filename: fileName,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: {
-      scale: 2,          // Độ nét cao x2
-      useCORS: true,     // Chống lỗi chặn ảnh/icon
-      logging: false,
-      scrollY: 0,        // Bắt đầu chụp từ đỉnh
-      scrollX: 0,
-      windowWidth: 800   // Cố định viewport chuẩn A4
-    },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
-
-  try {
-    // Chờ 150ms để trình duyệt vẽ hoàn chỉnh layout trước khi chụp canvas
-    await new Promise(resolve => setTimeout(resolve, 150));
-
-    // Thực hiện xuất PDF
-    await html2pdf().set(opt).from(tempContainer).save();
-    showToast("Đã tải báo cáo PDF về thiết bị thành công!");
-    closePdfPreview();
-  } catch (err) {
-    console.error("Lỗi xuất PDF:", err);
-    showToast("Lỗi khi xuất file: " + err.message);
-  } finally {
-    // Dọn dẹp thẻ tạm
-    if (tempContainer && tempContainer.parentNode) {
-      tempContainer.parentNode.removeChild(tempContainer);
-    }
-    if (btn) {
-      btn.innerHTML = `<i class="ph-bold ph-download-simple text-sm"></i> Tải File PDF Về Máy`;
-      btn.disabled = false;
-    }
-  }
-}
 
     // === QUẢN LÝ BẢN ĐỒ GIS LEAFLET ===
     function initLeafletMap() {
@@ -1637,7 +1726,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
     function applyParsedData(data) {
       if (data.owner) {
         window.currentOwnerName = data.owner;
-        document.getElementById('pOwnerName').innerText = data.owner;
+        document.getElementById('targetOwnerNameInput').value = data.owner;
       }
       if (data.lot !== undefined) document.getElementById('targetLot').value = data.lot;
       if (data.street) document.getElementById('targetStreet').value = data.street;
@@ -1890,9 +1979,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
 
       let totalWeightedPrice = 0, totalWeight = 0;
       const tbody = document.getElementById('comparisonTableBody');
-      const printTbody = document.getElementById('printCompareTbody');
       tbody.innerHTML = '';
-      printTbody.innerHTML = '';
 
       if (currentComps.length === 0) {
         document.getElementById('compsCountBadge').innerText = "Chưa có tài sản so sánh";
@@ -1954,20 +2041,6 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
           </td>
         `;
         tbody.appendChild(tr);
-
-        const ptr = document.createElement('tr');
-        ptr.innerHTML = `
-          <td class="border border-slate-300 p-1.5 text-center font-bold">#${idx + 1}</td>
-          <td class="border border-slate-300 p-1.5"><b>${comp.address}</b><br><span class="text-[10px] text-slate-500">${comp.roadDesc}</span></td>
-          <td class="border border-slate-300 p-1.5 text-center font-medium">${comp.postedDate || '--'}</td>
-          <td class="border border-slate-300 p-1.5 text-center">${comp.area}</td>
-          <td class="border border-slate-300 p-1.5 text-center">${comp.frontage}m × ${comp.depth}m</td>
-          <td class="border border-slate-300 p-1.5 text-right font-semibold">${comp.rawPrice.toFixed(2)} Tỷ</td>
-          <td class="border border-slate-300 p-1.5 text-right font-bold text-emerald-700">${discountedUnitPrice.toFixed(2)} tr/m²</td>
-          <td class="border border-slate-300 p-1.5 text-center font-bold">${score}%</td>
-          <td class="border border-slate-300 p-1.5 text-center font-medium">${comp.sourceName}</td>
-        `;
-        printTbody.appendChild(ptr);
       });
 
       // 1. ĐƠN GIÁ ĐẤT Ở (TÍNH TỪ TSSS)
@@ -2009,16 +2082,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       document.getElementById('breakdownValBld').innerText = `${bldTotalValue.toFixed(2)} Tỷ`;
       document.getElementById('breakdownDescBld').innerText = bldArea > 0 ? `DT sàn: ${bldArea} m² (CLCL: ${bldQuality}%)` : "Không có / Đất trống";
 
-      // Cập nhật dữ liệu cho Báo Cáo PDF (#printArea)
-      document.getElementById('pLotNumber').innerText = document.getElementById('targetLot').value || "Chưa có thông tin số thửa";
-      document.getElementById('pOwnerName').innerText = window.currentOwnerName || "--";
-      document.getElementById('pAddress').innerText = `${document.getElementById('targetStreet').value || ''}, ${document.getElementById('targetHamlet').value || ''}, ${document.getElementById('targetWard').value || ''}, ${document.getElementById('targetDistrictProvince').value || ''}`.replace(/^[\s,]+|[\s,]+$/g, '');
-      document.getElementById('pAreaStructure').innerText = `Tổng ${totalArea} m² (Đất ở: ${resArea} m², Đất vườn/CLN: ${agriArea} m²)`;
-      document.getElementById('pShape').innerText = `Mặt tiền ${document.getElementById('targetFrontage').value || '--'}m, Sâu ${document.getElementById('targetDepth').value || '--'}m`;
-      document.getElementById('pRoadWidth').innerText = `${document.getElementById('targetStreet').value || 'Đường tiếp giáp'} (Rộng ~${document.getElementById('targetRoadWidth').value || '--'}m)`;
-      document.getElementById('pBuilding').innerText = bldArea > 0 ? `${document.getElementById('targetBuildingType').value} (DT: ${bldArea} m², CLCL: ${bldQuality}%)` : "Không có / Đất trống";
-      
-      // Chi tiết bảng định giá PDF
+      // Cập nhật trực tiếp số liệu vào Bảng định giá Mục IV của báo cáo in
       document.getElementById('pLandArea').innerText = `${resArea.toFixed(1)} m²`;
       document.getElementById('pLandUnitPrice').innerText = `${avgDiscountedResPrice.toFixed(2)} tr/m²`;
       document.getElementById('pLandTotalVal').innerText = `${totalResLandValue.toFixed(2)} Tỷ`;
@@ -2047,6 +2111,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       }
 
       const target = {
+        owner: document.getElementById('targetOwnerNameInput').value.trim() || window.currentOwnerName || "",
         lot: document.getElementById('targetLot').value.trim() || "Tài sản mục tiêu",
         street: document.getElementById('targetStreet').value.trim() || "Tuyến đường chính",
         hamlet: document.getElementById('targetHamlet').value.trim(),
@@ -2209,10 +2274,11 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       return Math.round(num * 1000) / 1000;
     }
 
-    // === HÀM LÀM MỚI (XÓA SẠCH VÙNG IN & BỘ NHỚ TẠM) ===
+    // === HÀM LÀM MỚI (DỌN TRẮNG TOÀN BỘ DỮ LIỆU) ===
     function resetAllData() {
       window.currentOwnerName = "";
 
+      document.getElementById('targetOwnerNameInput').value = '';
       document.getElementById('targetLot').value = '';
       document.getElementById('targetStreet').value = '';
       document.getElementById('targetHamlet').value = '';
@@ -2242,7 +2308,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       document.getElementById('aiSummaryP1').innerText = 'Hệ thống đang sẵn sàng. Vui lòng nhập địa chỉ xã/phường hoặc nạp Giấy chứng nhận quyền sử dụng đất để nhận định giá trị thị trường và gợi ý định giá an toàn.';
       document.getElementById('aiSummaryTips').classList.add('hidden');
 
-      // Xóa sạch vùng in báo cáo PDF
+      // Dọn trắng báo cáo in
       document.getElementById('pLotNumber').innerText = '--';
       document.getElementById('pOwnerName').innerText = '--';
       document.getElementById('pAddress').innerText = '--';
@@ -2318,7 +2384,6 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       if (mFront) frontage = parseFloat(mFront[2].replace(',', '.'));
       depth = Math.round((area / frontage) * 10) / 10;
 
-      // Tìm ngày đăng nếu có trong văn bản
       const mDate = text.match(/(?:ngày|đăng ngày|hôm)\s*(\d{1,2}[\/\-\.]\d{1,2}(?:[\/\-\.]\d{2,4})?)/i);
       const postedDate = mDate ? mDate[1] : "Hôm nay";
 
