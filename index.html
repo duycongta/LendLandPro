@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>LendLand Pro v6.0 - Thẩm Định Giá BĐS Tín Dụng</title>
+  <title>LendLand Pro v6.1 - Thẩm Định Giá BĐS Tín Dụng</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -94,7 +94,7 @@
             <i class="ph-bold ph-file-pdf"></i>
           </div>
           <div>
-            <h3 class="font-bold text-slate-900 text-sm sm:text-base">Xem Trước Báo Cáo Thẩm Định (v6.0 Live)</h3>
+            <h3 class="font-bold text-slate-900 text-sm sm:text-base">Xem Trước Báo Cáo Thẩm Định (v6.1 Live)</h3>
             <p class="text-[11px] text-slate-500">Kiểm tra thông tin tài sản, nhận định thị trường và cơ cấu định giá trước khi tải</p>
           </div>
         </div>
@@ -102,9 +102,7 @@
       </div>
 
       <!-- VÙNG HIỂN THỊ NỘI DUNG XEM TRƯỚC (SCROLL) -->
-      <div id="pdfPreviewContainer" class="flex-grow overflow-y-auto border border-slate-200 rounded-xl p-3 sm:p-5 bg-slate-50 shadow-inner">
-        <!-- Nội dung #printArea sẽ được đồng bộ vào đây -->
-      </div>
+      <div id="pdfPreviewContainer" class="flex-grow overflow-y-auto border border-slate-200 rounded-xl p-3 sm:p-5 bg-slate-50 shadow-inner"></div>
 
       <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-200 mt-3 flex-shrink-0">
         <span class="text-[11px] text-slate-500 italic">* File PDF sẽ lưu nguyên vẹn định dạng A4 chuẩn hồ sơ tín dụng.</span>
@@ -126,7 +124,7 @@
     <span id="floatingStatusText" class="truncate">Đang xử lý dữ liệu...</span>
   </div>
 
-  <!-- HEADER v6.0 LIVE -->
+  <!-- HEADER v6.1 LIVE -->
   <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md no-print border-b border-slate-700">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 min-h-[4rem] flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center space-x-2.5 overflow-hidden min-w-[210px] flex-1 sm:flex-initial">
@@ -136,7 +134,7 @@
         <div class="truncate">
           <div class="font-bold text-sm sm:text-base tracking-wide flex items-center gap-1.5 flex-wrap">
             <span class="whitespace-nowrap">LendLand Pro</span>
-            <span class="text-[10px] sm:text-xs bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow whitespace-nowrap">v6.0 Live</span>
+            <span class="text-[10px] sm:text-xs bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow whitespace-nowrap">v6.1 Live</span>
             <span class="text-[10px] text-slate-400 font-normal hidden md:inline">by duycongta@gmail.com</span>
           </div>
           <div class="text-[11px] text-slate-300 truncate">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm</div>
@@ -386,7 +384,7 @@
         </div>
       </div>
 
-      <!-- BẢNG PHÂN RÃ CHI TIẾT CƠ CẤU GIÁ TRỊ TÀI SẢN (MINH BẠCH THEO LOẠI ĐẤT) -->
+      <!-- BẢNG PHÂN RÃ CHI TIẾT CƠ CẤU GIÁ TRỊ TÀI SẢN -->
       <div class="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 shadow-sm">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wide">
@@ -581,7 +579,7 @@
     <div class="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto max-h-[95vh] overflow-y-auto border border-slate-100">
       <div class="flex items-center justify-between border-b pb-2.5">
         <h3 class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
-          <i class="ph-bold ph-vault text-indigo-600 text-lg"></i> Quản Trị Két Cloud & Phân Quyền Admin (v6.0)
+          <i class="ph-bold ph-vault text-indigo-600 text-lg"></i> Quản Trị Két Cloud & Phân Quyền Admin (v6.1)
         </h3>
         <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="ph-bold ph-x text-lg"></i></button>
       </div>
@@ -690,7 +688,7 @@
         <div class="font-bold text-slate-800 text-sm tracking-wide flex items-center gap-2">
           <span>LENDLAND PRO</span>
           <span class="text-slate-400 font-normal">|</span>
-          <span class="font-semibold text-slate-600">BÁO CÁO KHẢO SÁT THỊ TRƯỜNG BẤT ĐỘNG SẢN (v6.0)</span>
+          <span class="font-semibold text-slate-600">BÁO CÁO KHẢO SÁT THỊ TRƯỜNG BẤT ĐỘNG SẢN (v6.1)</span>
         </div>
         <div id="printCurrentDate" class="font-medium text-slate-600">Ngày ... tháng ... năm ...</div>
       </div>
@@ -732,7 +730,7 @@
       </table>
     </div>
 
-    <!-- MỤC II: GOOGLE AI OVERVIEW & KHUYẾN NGHỊ THẨM ĐỊNH (TÍCH HỢP TRỰC TIẾP VÀO BÁO CÁO) -->
+    <!-- MỤC II: GOOGLE AI OVERVIEW & KHUYẾN NGHỊ THẨM ĐỊNH -->
     <div class="mb-4 text-xs">
       <div class="font-bold uppercase text-slate-800 border-b border-slate-300 pb-1 mb-2 flex items-center gap-1.5">
         <span>II. NHẬN ĐỊNH THỊ TRƯỜNG KHU VỰC KHẢO SÁT & KHUYẾN NGHỊ TÍN DỤNG</span>
@@ -825,11 +823,13 @@
 
   <script>
     // =========================================================================
-    // CẤU HÌNH KÉT CLOUD MẶC ĐỊNH CHO MÁY MỚI (LendLand Pro v6.0)
+    // CẤU HÌNH KÉT CLOUD MẶC ĐỊNH CHO MÁY MỚI (LendLand Pro v6.1)
     // =========================================================================
-    const DEFAULT_VAULT_BIN_ID = "67246ec3ad19ca34f8c2e92a"; 
-    const DEFAULT_VAULT_MASTER_KEY = "$2a$10$YourMasterKeyGoesHere...";
+    const DEFAULT_VAULT_BIN_ID = "6ae74af9ffd5d160539d4725"; 
+    const DEFAULT_VAULT_MASTER_KEY = "$2a$10$m.YwZIgsCSr6uPD3aT3Moeho7Ol/brNHN1H7tsfoEmQjD1sXw/gRi
+";
 
+    window.currentOwnerName = "";
     let backupCompsPool = [];
     let currentComps = [];
     let targetCoords = { lat: 13.9845, lng: 109.0745 };
@@ -1225,12 +1225,12 @@
 
     // === XỬ LÝ XEM TRƯỚC BÁO CÁO (PDF PREVIEW) & XUẤT FILE ===
     function openPdfPreviewModal() {
-      recalculateTargetValues(); // Cập nhật đồng bộ dữ liệu mới nhất
+      recalculateTargetValues();
       
       const now = new Date();
       document.getElementById('printCurrentDate').innerText = `Ngày ${now.getDate()} tháng ${now.getMonth() + 1} năm ${now.getFullYear()}`;
 
-      // Đồng bộ nội dung phân tích Google AI Overview vào báo cáo PDF
+      // Đồng bộ nội dung AI Overview
       const aiP1 = document.getElementById('aiSummaryP1').innerHTML;
       document.getElementById('pAiSummaryContent').innerHTML = aiP1;
 
@@ -1266,7 +1266,7 @@
       printEl.classList.remove('hidden');
       printEl.style.display = 'block';
 
-      const fileName = `LendLandPro_v6.0_BaoCao_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}.pdf`;
+      const fileName = `LendLandPro_v6.1_BaoCao_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}.pdf`;
       const btn = document.getElementById('btnDownloadPdfConfirm');
       btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang xuất PDF...`;
       btn.disabled = true;
@@ -1578,6 +1578,10 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
     }
 
     function applyParsedData(data) {
+      if (data.owner) {
+        window.currentOwnerName = data.owner;
+        document.getElementById('pOwnerName').innerText = data.owner;
+      }
       if (data.lot !== undefined) document.getElementById('targetLot').value = data.lot;
       if (data.street) document.getElementById('targetStreet').value = data.street;
       if (data.hamlet) document.getElementById('targetHamlet').value = data.hamlet;
@@ -1813,7 +1817,6 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       let resArea = parseFloat(document.getElementById('targetResArea').value);
       let agriArea = parseFloat(document.getElementById('targetAgriArea').value);
 
-      // Tự động phân rã nếu người dùng chỉ nhập tổng diện tích hoặc thiếu đất nông nghiệp
       if (isNaN(resArea)) resArea = totalArea > 0 ? Math.min(totalArea, 100) : 0;
       if (isNaN(agriArea)) agriArea = Math.max(0, totalArea - resArea);
 
@@ -1911,7 +1914,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       const avgDiscountedResPrice = totalWeight > 0 ? (totalWeightedPrice / totalWeight) : 6.0;
       const rawAvgResPrice = avgDiscountedResPrice / (1 - discountPercent / 100);
 
-      // 2. ĐƠN GIÁ ĐẤT NÔNG NGHIỆP / VƯỜN (TỰ ĐỘNG LẤY THEO Ô NHẬP HOẶC TỶ LỆ 15% ĐẤT Ở)
+      // 2. ĐƠN GIÁ ĐẤT NÔNG NGHIỆP / VƯỜN
       let customAgriUnitPrice = parseFloat(document.getElementById('targetAgriUnitPrice').value);
       if (isNaN(customAgriUnitPrice) || customAgriUnitPrice <= 0) {
         customAgriUnitPrice = Math.round((avgDiscountedResPrice * 0.15) * 100) / 100;
@@ -1936,7 +1939,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       document.getElementById('statAssetBreakdown').innerText = `Ở: ${totalResLandValue.toFixed(2)}T | Vườn: ${totalAgriLandValue.toFixed(2)}T | Nhà: ${bldTotalValue.toFixed(2)}T`;
       document.getElementById('statMaxLoanLimit').innerHTML = `${maxLoan.toFixed(2)} <span class="text-xs font-normal text-slate-300">Tỷ</span>`;
 
-      // Cập nhật Bảng Phân Rã Chi Tiết ở giao diện chính
+      // Cập nhật Bảng Phân Rã Chi Tiết
       document.getElementById('breakdownValRes').innerText = `${totalResLandValue.toFixed(2)} Tỷ`;
       document.getElementById('breakdownDescRes').innerText = `DT: ${resArea.toFixed(1)} m² × ${avgDiscountedResPrice.toFixed(2)} tr/m²`;
 
@@ -1948,6 +1951,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
 
       // Cập nhật dữ liệu cho Báo Cáo PDF (#printArea)
       document.getElementById('pLotNumber').innerText = document.getElementById('targetLot').value || "Chưa có thông tin số thửa";
+      document.getElementById('pOwnerName').innerText = window.currentOwnerName || "--";
       document.getElementById('pAddress').innerText = `${document.getElementById('targetStreet').value || ''}, ${document.getElementById('targetHamlet').value || ''}, ${document.getElementById('targetWard').value || ''}, ${document.getElementById('targetDistrictProvince').value || ''}`.replace(/^[\s,]+|[\s,]+$/g, '');
       document.getElementById('pAreaStructure').innerText = `Tổng ${totalArea} m² (Đất ở: ${resArea} m², Đất vườn/CLN: ${agriArea} m²)`;
       document.getElementById('pShape').innerText = `Mặt tiền ${document.getElementById('targetFrontage').value || '--'}m, Sâu ${document.getElementById('targetDepth').value || '--'}m`;
@@ -2140,7 +2144,10 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       return Math.round(num * 1000) / 1000;
     }
 
+    // === HÀM LÀM MỚI (ĐÃ SỬA TRIỆT ĐỂ XÓA SẠCH VÙNG IN PDF) ===
     function resetAllData() {
+      window.currentOwnerName = "";
+
       document.getElementById('targetLot').value = '';
       document.getElementById('targetStreet').value = '';
       document.getElementById('targetHamlet').value = '';
@@ -2170,9 +2177,22 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       document.getElementById('aiSummaryP1').innerText = 'Hệ thống đang sẵn sàng. Vui lòng nhập địa chỉ xã/phường hoặc nạp Giấy chứng nhận quyền sử dụng đất để nhận định giá trị thị trường và gợi ý định giá an toàn.';
       document.getElementById('aiSummaryTips').classList.add('hidden');
 
+      // Xóa sạch vùng in báo cáo PDF
+      document.getElementById('pLotNumber').innerText = '--';
+      document.getElementById('pOwnerName').innerText = '--';
+      document.getElementById('pAddress').innerText = '--';
+      document.getElementById('pAreaStructure').innerText = '--';
+      document.getElementById('pShape').innerText = '--';
+      document.getElementById('pRoadWidth').innerText = '--';
+      document.getElementById('pBuilding').innerText = '--';
+      document.getElementById('pAiSummaryContent').innerHTML = 'Chưa có nhận định thị trường.';
+      document.getElementById('pAiRecommendationsList').innerHTML = '';
+      document.getElementById('printCompareTbody').innerHTML = '';
+      document.getElementById('pdfPreviewContainer').innerHTML = '';
+
       renderMapElements();
       recalculateTargetValues();
-      showToast("Đã xóa trắng dữ liệu thành công!");
+      showToast("Đã xóa trắng toàn bộ dữ liệu & bản in!");
     }
 
     function updateTargetOverview() {
