@@ -1287,59 +1287,79 @@
       document.getElementById('pdfPreviewModal').classList.add('hidden');
     }
 
-    async function executeDownloadPdf() {
-      const now = new Date();
-      const printEl = document.getElementById('printArea');
-      printEl.classList.remove('hidden');
-      printEl.style.display = 'block';
+async function executeDownloadPdf() {
+  const btn = document.getElementById('btnDownloadPdfConfirm');
+  if (btn) {
+    btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang xuất PDF...`;
+    btn.disabled = true;
+  }
 
-      const fileName = `LendLandPro_v6.2_BaoCao_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}.pdf`;
-      const btn = document.getElementById('btnDownloadPdfConfirm');
-      if (btn) {
-        btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang xuất PDF...`;
-        btn.disabled = true;
-      }
-
-      const opt = {
-        margin: [8, 8, 8, 8],
-        filename: fileName,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-
-      try {
-        if (window.showSaveFilePicker) {
-          const pdfBlob = await html2pdf().set(opt).from(printEl).output('blob');
-          const fileHandle = await window.showSaveFilePicker({
-            suggestedName: fileName,
-            types: [{ description: 'PDF Document', accept: { 'application/pdf': ['.pdf'] } }]
-          });
-          const writable = await fileHandle.createWritable();
-          await writable.write(pdfBlob);
-          await writable.close();
-          showToast("Đã lưu file PDF vào máy thành công!");
-          closePdfPreview();
-        } else {
-          await html2pdf().set(opt).from(printEl).save();
-          showToast("Đã tải báo cáo PDF về thiết bị!");
-          closePdfPreview();
-        }
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          await html2pdf().set(opt).from(printEl).save();
-          showToast("Đã lưu file PDF!");
-          closePdfPreview();
-        }
-      } finally {
-        printEl.style.display = 'none';
-        printEl.classList.add('hidden');
-        if (btn) {
-          btn.innerHTML = `<i class="ph-bold ph-download-simple text-sm"></i> Tải File PDF Về Máy`;
-          btn.disabled = false;
-        }
-      }
+  // 1. Lấy trực tiếp phần tử đang hiển thị xem trước (đã render đầy đủ)
+  const previewSource = document.getElementById('pdfPreviewContainer');
+  if (!previewSource || !previewSource.innerHTML.trim()) {
+    showToast("Không tìm thấy nội dung báo cáo để xuất!");
+    if (btn) {
+      btn.innerHTML = `<i class="ph-bold ph-download-simple text-sm"></i> Tải File PDF Về Máy`;
+      btn.disabled = false;
     }
+    return;
+  }
+
+  // 2. Tạo một khung tạm thời hiển thị thực tế (đảm bảo html2canvas đo được chiều cao)
+  const tempContainer = document.createElement('div');
+  tempContainer.style.position = 'fixed';
+  tempContainer.style.left = '0';
+  tempContainer.style.top = '0';
+  tempContainer.style.width = '794px'; // Chuẩn bề ngang khổ A4 (96 DPI)
+  tempContainer.style.minHeight = '1123px';
+  tempContainer.style.backgroundColor = '#ffffff';
+  tempContainer.style.zIndex = '-9999'; // Nằm dưới màn hình không che người dùng
+  tempContainer.style.opacity = '1';
+  tempContainer.style.padding = '20px';
+  tempContainer.innerHTML = previewSource.innerHTML;
+  document.body.appendChild(tempContainer);
+
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours()}${now.getMinutes()}`;
+  const fileName = `LendLandPro_v6.2_BaoCao_${dateStr}.pdf`;
+
+  const opt = {
+    margin: [10, 10, 10, 10],
+    filename: fileName,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: {
+      scale: 2,          // Độ nét cao x2
+      useCORS: true,     // Chống lỗi chặn ảnh/icon
+      logging: false,
+      scrollY: 0,        // Bắt đầu chụp từ đỉnh
+      scrollX: 0,
+      windowWidth: 800   // Cố định viewport chuẩn A4
+    },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  try {
+    // Chờ 150ms để trình duyệt vẽ hoàn chỉnh layout trước khi chụp canvas
+    await new Promise(resolve => setTimeout(resolve, 150));
+
+    // Thực hiện xuất PDF
+    await html2pdf().set(opt).from(tempContainer).save();
+    showToast("Đã tải báo cáo PDF về thiết bị thành công!");
+    closePdfPreview();
+  } catch (err) {
+    console.error("Lỗi xuất PDF:", err);
+    showToast("Lỗi khi xuất file: " + err.message);
+  } finally {
+    // Dọn dẹp thẻ tạm
+    if (tempContainer && tempContainer.parentNode) {
+      tempContainer.parentNode.removeChild(tempContainer);
+    }
+    if (btn) {
+      btn.innerHTML = `<i class="ph-bold ph-download-simple text-sm"></i> Tải File PDF Về Máy`;
+      btn.disabled = false;
+    }
+  }
+}
 
     // === QUẢN LÝ BẢN ĐỒ GIS LEAFLET ===
     function initLeafletMap() {
