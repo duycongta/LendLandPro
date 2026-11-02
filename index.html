@@ -14,15 +14,13 @@
   
   <!-- THƯ VIỆN MẬT MÃ AES-256 & SHA-256 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <!-- THƯ VIỆN XUẤT FILE PDF TRỰC TIẾP LƯU VỀ MÁY -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
     @media print {
       body { background-color: #fff !important; font-size: 11pt; color: #000 !important; }
-      .no-print, header, nav, #toastNotification, #floatingStatusBar, #lockScreenOverlay, #modeConfirmModal, .leaflet-control-zoom, .leaflet-control-layers { display: none !important; }
+      .no-print, header, nav, #toastNotification, #floatingStatusBar, #lockScreenOverlay, .leaflet-control-zoom, .leaflet-control-layers { display: none !important; }
       #printArea { display: block !important; padding: 0 !important; }
       .print-page-break { page-break-after: always; }
       .shadow-sm, .shadow-md, .shadow-lg { box-shadow: none !important; border: 1px solid #cbd5e1 !important; }
@@ -67,58 +65,32 @@
     </div>
   </div>
 
-  <!-- THANH TRẠNG THÁI NỔI: CHUYỂN HOÀN TOÀN XUỐNG GÓC DƯỚI BÊN PHẢI (BOTTOM-RIGHT) -->
-  <div id="floatingStatusBar" class="hidden fixed bottom-16 right-4 sm:right-6 z-40 px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md max-w-[90vw] truncate">
+  <!-- THANH TRẠNG THÁI NỔI TRÔI CỐ ĐỊNH -->
+  <div id="floatingStatusBar" class="hidden fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md max-w-[92vw] truncate">
     <div id="floatingStatusIcon"></div>
     <span id="floatingStatusText" class="truncate">Đang xử lý dữ liệu...</span>
   </div>
 
-  <!-- POPUP THÔNG BÁO XÁC NHẬN CHUYỂN SANG MODE CÓ TRẢ PHÍ (PAYG) -->
-  <div id="modeConfirmModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-amber-200 text-center space-y-4">
-      <div class="w-12 h-12 mx-auto rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl">
-        <i class="ph-bold ph-lightning"></i>
-      </div>
-      <div>
-        <h4 class="font-bold text-slate-900 text-sm sm:text-base">Xác Nhận Chuyển Mode API</h4>
-        <p class="text-xs text-slate-600 mt-2 leading-relaxed">
-          Bạn đã chuyển đổi sang mode <strong>Có trả phí (Pay-As-You-Go ⚡)</strong> - tăng tốc tìm kiếm và khảo sát giá BĐS qua thẻ tín dụng liên kết của bạn.
-        </p>
-      </div>
-      <div class="flex items-center gap-2 pt-1">
-        <button onclick="cancelSwitchToPayg()" type="button" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 px-3 rounded-xl text-xs transition">
-          Trở lại
-        </button>
-        <button onclick="confirmSwitchToPayg()" type="button" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition shadow-md">
-          OK chuyển mode
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- HEADER v5.8 - ĐÃ NỚI RỘNG CHO MOBILE, KHÔNG ĐÈ CHỮ (HÌNH 1) -->
+  <!-- HEADER -->
   <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md no-print border-b border-slate-700">
-    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-0 min-h-[4rem] sm:h-16 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2">
-      <!-- Cụm Brand & Tiêu đề -->
-      <div class="flex items-center space-x-2 sm:space-x-3 overflow-hidden min-w-0">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-2.5 sm:space-x-3 overflow-hidden">
         <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-lg sm:text-xl shadow-inner flex-shrink-0">
           <i class="ph-bold ph-shield-check"></i>
         </div>
-        <div class="min-w-0">
-          <div class="font-bold text-xs sm:text-base tracking-wide flex items-center flex-wrap gap-1 sm:gap-2 leading-tight">
+        <div class="truncate">
+          <div class="font-bold text-sm sm:text-base tracking-wide flex items-center gap-1.5 sm:gap-2">
             <span>LendLand Pro</span>
-            <span class="text-[9px] sm:text-[10px] bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow whitespace-nowrap">v5.8 Live</span>
-            <span class="text-[9px] sm:text-[10px] text-slate-400 font-normal truncate max-w-[150px] sm:max-w-none">by duycongta@gmail.com</span>
+            <span class="text-[10px] sm:text-xs bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow whitespace-nowrap">v5.8 Live</span>
+            <span class="text-[10px] text-slate-400 hidden sm:inline font-normal">by duycongta@gmail.com</span>
           </div>
-          <div class="text-[10px] sm:text-xs text-slate-300 truncate mt-0.5">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm</div>
+          <div class="text-[11px] sm:text-xs text-slate-300 truncate">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm</div>
         </div>
       </div>
       
-      <!-- Cụm Nút Thao Tác Header (Bấm trực tiếp Mode để đổi) -->
-      <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ml-auto sm:ml-0">
-        <!-- Nút Badge Mode API: Click để chuyển đổi nhanh hoặc mở modal -->
-        <button onclick="toggleActiveApiMode()" id="headerModeToggleBtn" title="Bấm để chuyển đổi nhanh giữa Free và Trả Phí" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-slate-600 flex items-center gap-1 transition shadow-sm">
-          <i class="ph-bold ph-key"></i> <span id="apiKeyBtnText">Free Tier</span>
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <button onclick="openApiKeyModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-slate-600 flex items-center gap-1 transition shadow-sm">
+          <i class="ph-bold ph-key"></i> <span id="apiKeyBtnText">Cấu hình 2 Key</span>
         </button>
         <button onclick="lockAppNow()" title="Khóa ứng dụng ngay lập tức" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-lg border border-slate-600 flex items-center gap-1 transition">
           <i class="ph-bold ph-lock-key"></i> <span class="hidden sm:inline">Khóa</span>
@@ -126,8 +98,8 @@
         <button onclick="resetAllData()" title="Làm mới dữ liệu" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs p-1.5 sm:px-2.5 sm:py-2 rounded-lg border border-slate-600 flex items-center gap-1 transition">
           <i class="ph-bold ph-arrow-counter-clockwise"></i> <span class="hidden md:inline">Làm Mới</span>
         </button>
-        <button onclick="handleExportPDF()" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg shadow text-[11px] sm:text-xs flex items-center gap-1 transition active:scale-95">
-          <i class="ph-bold ph-file-pdf text-sm"></i> <span class="hidden sm:inline">Xuất PDF</span><span class="sm:hidden">Lưu PDF</span>
+        <button onclick="handleExportPDF()" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg shadow text-[11px] sm:text-xs flex items-center gap-1 transition">
+          <i class="ph-bold ph-file-pdf text-sm"></i> <span class="hidden sm:inline">Xuất PDF</span><span class="sm:hidden">PDF</span>
         </button>
       </div>
     </div>
@@ -515,7 +487,7 @@
     </div>
   </main>
 
-  <!-- MODAL CẤU HÌNH & QUẢN TRỊ ADMIN (HÌNH 2 & 3: CHUYỂN ĐỔI LINH HOẠT VÀ XÁC NHẬN) -->
+  <!-- MODAL CẤU HÌNH & QUẢN TRỊ ADMIN -->
   <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto max-h-[95vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b pb-2.5">
@@ -526,28 +498,28 @@
       </div>
 
       <div class="space-y-3 text-xs">
-        <!-- Ô 1: KHÓA FREE TIER (CLICK VÀO KHỐI ĐỂ CHỌN) -->
-        <div id="boxModeFree" onclick="selectApiMode('free')" class="border rounded-xl p-2.5 sm:p-3 bg-slate-50 transition border-slate-200 cursor-pointer">
+        <!-- Ô 1: KHÓA FREE TIER -->
+        <div id="boxModeFree" class="border rounded-xl p-2.5 sm:p-3 bg-slate-50 transition border-slate-200">
           <div class="flex items-center justify-between mb-1">
             <label class="flex items-center gap-2 font-bold text-slate-800 cursor-pointer">
-              <input type="radio" name="apiMode" value="free" id="radioModeFree" class="text-indigo-600 focus:ring-indigo-500" onchange="selectApiMode('free')">
+              <input type="radio" name="apiMode" value="free" id="radioModeFree" class="text-indigo-600 focus:ring-indigo-500" onchange="updateApiModeUI()">
               <span class="text-xs">1. API Key - Gói Miễn Phí (Free Tier)</span>
             </label>
             <span id="badgeStatusFree" class="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-slate-200 text-slate-600">Chưa lưu</span>
           </div>
-          <input type="password" id="geminiApiKeyFreeInput" placeholder="AIzaSy... (Khóa miễn phí từ AI Studio)" class="w-full border border-slate-300 rounded-lg p-2 sm:p-2.5 focus:ring-2 focus:ring-indigo-500 font-mono text-xs bg-white" onclick="event.stopPropagation()" oninput="updateKeyBadgeUI()">
+          <input type="password" id="geminiApiKeyFreeInput" placeholder="AIzaSy... (Khóa miễn phí từ AI Studio)" class="w-full border border-slate-300 rounded-lg p-2 sm:p-2.5 focus:ring-2 focus:ring-indigo-500 font-mono text-xs bg-white" oninput="updateKeyBadgeUI()">
         </div>
 
-        <!-- Ô 2: KHÓA PAY-AS-YOU-GO (CLICK VÀO KHỐI ĐỂ KÍCH HOẠT NHẮC XÁC NHẬN) -->
-        <div id="boxModePayg" onclick="selectApiMode('payg')" class="border rounded-xl p-2.5 sm:p-3 bg-slate-50 transition border-slate-200 cursor-pointer">
+        <!-- Ô 2: KHÓA PAY-AS-YOU-GO -->
+        <div id="boxModePayg" class="border rounded-xl p-2.5 sm:p-3 bg-slate-50 transition border-slate-200">
           <div class="flex items-center justify-between mb-1">
             <label class="flex items-center gap-2 font-bold text-emerald-800 cursor-pointer">
-              <input type="radio" name="apiMode" value="payg" id="radioModePayg" class="text-emerald-600 focus:ring-emerald-500" onchange="selectApiMode('payg')">
+              <input type="radio" name="apiMode" value="payg" id="radioModePayg" class="text-emerald-600 focus:ring-emerald-500" onchange="updateApiModeUI()">
               <span class="text-xs flex items-center gap-1">2. API Key - Gói Trả Phí (Pay-As-You-Go <i class="ph-bold ph-lightning text-amber-500"></i>)</span>
             </label>
             <span id="badgeStatusPayg" class="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-slate-200 text-slate-600">Chưa lưu</span>
           </div>
-          <input type="password" id="geminiApiKeyPaygInput" placeholder="AIzaSy... (Khóa từ Project đã liên kết thẻ)" class="w-full border border-slate-300 rounded-lg p-2 sm:p-2.5 focus:ring-2 focus:ring-emerald-500 font-mono text-xs bg-white" onclick="event.stopPropagation()" oninput="updateKeyBadgeUI()">
+          <input type="password" id="geminiApiKeyPaygInput" placeholder="AIzaSy... (Khóa từ Project đã liên kết thẻ)" class="w-full border border-slate-300 rounded-lg p-2 sm:p-2.5 focus:ring-2 focus:ring-emerald-500 font-mono text-xs bg-white" oninput="updateKeyBadgeUI()">
         </div>
 
         <!-- NÚT KIỂM TRA ĐỘ SẴN SÀNG CỦA CẢ 2 KEY -->
@@ -569,15 +541,15 @@
             </div>
           </div>
           <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-2">
-            <input type="checkbox" id="chkSearchGrounding" class="sr-only peer" checked onchange="saveGroundingSetting()">
+            <input type="checkbox" id="chkSearchGrounding" class="sr-only peer" checked>
             <div class="w-8 h-4 sm:w-9 sm:h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 sm:after:h-4 sm:after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
           </label>
         </div>
 
-        <!-- CẤU HÌNH KÉT CLOUD NÂNG CAO -->
+        <!-- CẤU HÌNH KÉT CLOUD NÂNG CAO (NẾU MUỐN THAY ĐỔI BIN MẶC ĐỊNH) -->
         <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
           <div class="font-bold text-slate-800 text-xs flex items-center gap-1">
-            <i class="ph-bold ph-cloud text-indigo-600"></i> Cấu Hình JSONBin.io
+            <i class="ph-bold ph-cloud text-indigo-600"></i> Cấu Hình JSONBin.io (Mặc định tự động điền)
           </div>
           <div class="grid grid-cols-2 gap-2">
             <div>
@@ -591,7 +563,7 @@
           </div>
         </div>
 
-        <!-- MỤC ĐỔI MÃ PIN KÉT CLOUD - CHỈ ADMIN SHA-256 -->
+        <!-- MỤC ĐỔI MÃ PIN KÉT CLOUD - CHỈ ADMIN SHA-256 MỚI CÓ QUYỀN -->
         <div class="border border-rose-200 rounded-xl p-3 bg-rose-50/50 space-y-2.5">
           <div class="font-bold text-rose-800 text-xs flex items-center justify-between">
             <span class="flex items-center gap-1"><i class="ph-bold ph-shield-warning text-base"></i> Đổi Mã PIN App & Thu Hồi Quyền PIN Cũ</span>
@@ -616,18 +588,13 @@
         </div>
       </div>
 
-      <div class="flex justify-between items-center gap-2 pt-2 border-t border-slate-200">
-        <button onclick="saveAndApplyApiKeys()" class="px-4 py-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow transition">
-          Lưu Cấu Hình
-        </button>
-        <button onclick="closeApiKeyModal()" class="px-4 py-2 text-xs bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg shadow">
-          Đóng
-        </button>
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
+        <button onclick="closeApiKeyModal()" class="px-4 py-2 text-xs bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg shadow">Đóng</button>
       </div>
     </div>
   </div>
 
-  <!-- BIỂU MẪU IN / LƯU PDF A4 CHUẨN BÁO CÁO (DÙNG ĐỂ RENDER THÀNH FILE PDF TỰ ĐỘNG) -->
+  <!-- BIỂU MẪU IN / LƯU PDF A4 CHUẨN BÁO CÁO THAM KHẢO SƠ BỘ -->
   <div id="printArea" class="max-w-4xl mx-auto p-8 bg-white text-slate-900">
     <div class="border-b-2 border-slate-800 pb-3 mb-5">
       <div class="flex justify-between items-center text-xs text-slate-500 mb-2">
@@ -736,17 +703,18 @@
     </div>
   </div>
 
-  <!-- TOAST THÔNG BÁO Ở GÓC DƯỚI BÊN PHẢI (BOTTOM-RIGHT) -->
-  <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-slate-700 pointer-events-none max-w-sm">
-    <i class="ph-bold ph-bell text-emerald-400 text-base flex-shrink-0"></i>
-    <span id="toastMessage" class="truncate">Thông báo</span>
+  <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 border border-slate-700">
+    <i class="ph-bold ph-bell text-emerald-400 text-base"></i>
+    <span id="toastMessage">Thông báo</span>
   </div>
 
   <script>
-    // Cấu hình Két Cloud mặc định
+    // =========================================================================
+    // CẤU HÌNH KÉT CLOUD MẶC ĐỊNH CHO MÁY MỚI (CHỈ CẦN LINK APP & PIN)
+    // Thay thế 2 chuỗi bên dưới bằng Bin ID và Master Key của bạn trên JSONBin.io:
+    // =========================================================================
     const DEFAULT_VAULT_BIN_ID = "6ae74af9ffd5d160539d4725"; 
-    const DEFAULT_VAULT_MASTER_KEY = "$2a$10$m.YwZIgsCSr6uPD3aT3Moeho7Ol/brNHN1H7tsfoEmQjD1sXw/gRi
-";
+    const DEFAULT_VAULT_MASTER_KEY = "$2a$10$m.YwZIgsCSr6uPD3aT3Moeho7Ol/brNHN1H7tsfoEmQjD1sXw/gRi";
 
     let backupCompsPool = [];
     let currentComps = [];
@@ -756,23 +724,19 @@
 
     // KHỞI ĐỘNG ỨNG DỤNG
     window.addEventListener('DOMContentLoaded', () => {
-      // Đảm bảo mặc định luôn là Free Tier nếu chưa lưu
-      if (!localStorage.getItem('gemini_api_mode')) {
-        localStorage.setItem('gemini_api_mode', 'free');
-      }
       initLeafletMap();
       recalculateTargetValues();
       checkAuthLockStatus();
-      checkSavedApiKey();
     });
 
+    // LẤY BIN ID & MASTER KEY (Ưu tiên đã lưu trên máy, nếu chưa có thì dùng mặc định)
     function getCloudVaultCredentials() {
       const binId = localStorage.getItem('llp_vault_bin') || DEFAULT_VAULT_BIN_ID;
       const masterKey = localStorage.getItem('llp_vault_key') || DEFAULT_VAULT_MASTER_KEY;
       return { binId, masterKey };
     }
 
-    // === QUẢN LÝ PHIÊN & MÀN HÌNH KHÓA ===
+    // === QUẢN LÝ PHIÊN (sessionStorage) & MÀN HÌNH KHÓA TỐI GIẢN ===
     function checkAuthLockStatus() {
       const lockOverlay = document.getElementById('lockScreenOverlay');
       const isSessionUnlocked = sessionStorage.getItem('llp_session_unlocked') === 'true';
@@ -809,7 +773,7 @@
       showToast("Ứng dụng đã được khóa bảo vệ.");
     }
 
-    // MỞ KHÓA BẰNG MÃ PIN
+    // MỞ KHÓA BẰNG 1 Ô PIN DUY NHẤT & TỰ GIẢI MÃ KÉT CLOUD
     async function unlockAppWithPin() {
       const pin = document.getElementById('pinInput').value.trim();
       const errBox = document.getElementById('pinErrorMsg');
@@ -824,17 +788,18 @@
       const { binId, masterKey } = getCloudVaultCredentials();
 
       if (!binId || !masterKey || masterKey.includes("YourMasterKey")) {
+        // Dự phòng nếu mở offline và đã có key trên máy
         const fallbackKey = localStorage.getItem('gemini_api_key');
         if (fallbackKey) {
           successUnlock();
           return;
         }
-        errBox.innerText = "Chưa kết nối Két Cloud. Bấm 'Quản trị Két Cloud & Admin' để cấu hình!";
+        errBox.innerText = "Chưa cấu hình JSONBin. Vui lòng bấm 'Quản trị Két Cloud & Admin' bên dưới để cấu hình!";
         errBox.classList.remove('hidden');
         return;
       }
 
-      btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang mở khóa...`;
+      btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang kết nối Két Cloud...`;
       btn.disabled = true;
 
       try {
@@ -842,12 +807,13 @@
           headers: { 'X-Master-Key': masterKey }
         });
 
-        if (!response.ok) throw new Error("Không thể kết nối Két Cloud. Kiểm tra lại đường truyền mạng!");
+        if (!response.ok) throw new Error("Không thể kết nối Két Cloud. Kiểm tra kết nối mạng!");
         const data = await response.json();
         const record = data.record;
 
         let vaultData = null;
 
+        // Giải mã gói dữ liệu AES-256 từ Két Cloud bằng PIN người dùng nhập
         if (record && record.vault) {
           try {
             const bytes = CryptoJS.AES.decrypt(record.vault, pin);
@@ -858,6 +824,7 @@
           } catch(e) {}
         }
 
+        // Tương thích dự phòng nếu Cloud lưu active_pin
         if (!vaultData && record && (record.active_pin || record.pin)) {
           const cloudPin = record.active_pin || record.pin;
           if (String(cloudPin).trim() === pin) {
@@ -869,21 +836,24 @@
           throw new Error("Mã PIN không đúng hoặc đã bị đổi bởi Admin!");
         }
 
-        // Đồng bộ 2 API Key
+        // Nạp tự động 2 API Key & Mode vào LocalStorage
         if (vaultData.kf || vaultData.free) {
           localStorage.setItem('gemini_api_key_free', vaultData.kf || vaultData.free);
         }
         if (vaultData.kp || vaultData.payg) {
           localStorage.setItem('gemini_api_key_payg', vaultData.kp || vaultData.payg);
         }
+        if (vaultData.m || vaultData.default_mode) {
+          localStorage.setItem('gemini_api_mode', vaultData.m || vaultData.default_mode);
+        }
         if (vaultData.g !== undefined || vaultData.grounding !== undefined) {
           const gVal = vaultData.g !== undefined ? vaultData.g : vaultData.grounding;
           localStorage.setItem('gemini_search_grounding', gVal ? 'true' : 'false');
         }
 
-        // Giữ mode hiện tại hoặc mặc định Free
-        const currentMode = localStorage.getItem('gemini_api_mode') || 'free';
-        applyMode(currentMode);
+        const mode = localStorage.getItem('gemini_api_mode') || 'free';
+        const activeKey = mode === 'payg' ? localStorage.getItem('gemini_api_key_payg') : localStorage.getItem('gemini_api_key_free');
+        if (activeKey) localStorage.setItem('gemini_api_key', activeKey);
 
         successUnlock();
 
@@ -904,134 +874,7 @@
       showToast("Mở khóa thành công & đã đồng bộ 2 API Key!");
     }
 
-    // === XỬ LÝ CHUYỂN ĐỔI 2 MODE (HÌNH 2 & 3: MẶC ĐỊNH FREE + POPUP XÁC NHẬN PAYG) ===
-    function selectApiMode(targetMode) {
-      const currentMode = localStorage.getItem('gemini_api_mode') || 'free';
-
-      if (targetMode === 'payg') {
-        if (currentMode === 'payg') return; // đã ở PAYG
-        // Bật popup nhắc nhở xác nhận
-        document.getElementById('modeConfirmModal').classList.remove('hidden');
-      } else {
-        // Chuyển thẳng về Free Tier
-        applyMode('free');
-        showToast("Đã chuyển về Gói Miễn Phí (Free Tier)");
-      }
-    }
-
-    function confirmSwitchToPayg() {
-      document.getElementById('modeConfirmModal').classList.add('hidden');
-      applyMode('payg');
-      showToast("Đã chuyển sang Gói Trả Phí (Pay-As-You-Go ⚡)");
-    }
-
-    function cancelSwitchToPayg() {
-      document.getElementById('modeConfirmModal').classList.add('hidden');
-      // Trả lại chọn Free
-      applyMode('free');
-    }
-
-    function toggleActiveApiMode() {
-      const currentMode = localStorage.getItem('gemini_api_mode') || 'free';
-      if (currentMode === 'free') {
-        selectApiMode('payg');
-      } else {
-        selectApiMode('free');
-      }
-    }
-
-    function applyMode(mode) {
-      localStorage.setItem('gemini_api_mode', mode);
-      const keyFree = localStorage.getItem('gemini_api_key_free') || '';
-      const keyPayg = localStorage.getItem('gemini_api_key_payg') || '';
-      localStorage.setItem('gemini_api_key', mode === 'payg' ? keyPayg : keyFree);
-
-      const radioFree = document.getElementById('radioModeFree');
-      const radioPayg = document.getElementById('radioModePayg');
-      if (radioFree && radioPayg) {
-        radioFree.checked = (mode === 'free');
-        radioPayg.checked = (mode === 'payg');
-      }
-      updateApiModeUI();
-      checkSavedApiKey();
-    }
-
-    function updateApiModeUI() {
-      const mode = localStorage.getItem('gemini_api_mode') || 'free';
-      const isPayg = (mode === 'payg');
-      const boxFree = document.getElementById('boxModeFree');
-      const boxPayg = document.getElementById('boxModePayg');
-
-      if (!boxFree || !boxPayg) return;
-
-      if (isPayg) {
-        boxPayg.className = "border-2 border-emerald-500 rounded-xl p-2.5 sm:p-3 bg-emerald-50/50 shadow-sm transition cursor-pointer";
-        boxFree.className = "border border-slate-200 rounded-xl p-2.5 sm:p-3 bg-slate-50 opacity-70 transition cursor-pointer";
-      } else {
-        boxFree.className = "border-2 border-indigo-500 rounded-xl p-2.5 sm:p-3 bg-indigo-50/50 shadow-sm transition cursor-pointer";
-        boxPayg.className = "border border-slate-200 rounded-xl p-2.5 sm:p-3 bg-slate-50 opacity-70 transition cursor-pointer";
-      }
-    }
-
-    function checkSavedApiKey() {
-      const mode = localStorage.getItem('gemini_api_mode') || 'free';
-      const btnText = document.getElementById('apiKeyBtnText');
-      const headerBtn = document.getElementById('headerModeToggleBtn');
-      if (!btnText) return;
-
-      if (mode === 'payg') {
-        btnText.innerHTML = `<span class="text-amber-400 font-bold flex items-center gap-1">⚡ PAYG</span>`;
-        if (headerBtn) headerBtn.className = "bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-amber-500/50 flex items-center gap-1 transition shadow-sm";
-      } else {
-        btnText.innerHTML = `<span class="text-emerald-400 font-semibold">Free Tier</span>`;
-        if (headerBtn) headerBtn.className = "bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-slate-600 flex items-center gap-1 transition shadow-sm";
-      }
-    }
-
-    function updateKeyBadgeUI() {
-      const kf = document.getElementById('geminiApiKeyFreeInput')?.value.trim();
-      const kp = document.getElementById('geminiApiKeyPaygInput')?.value.trim();
-      const badgeF = document.getElementById('badgeStatusFree');
-      const badgeP = document.getElementById('badgeStatusPayg');
-
-      if (badgeF) {
-        badgeF.innerText = kf ? "Đã có Key" : "Chưa lưu";
-        badgeF.className = kf ? "text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-indigo-100 text-indigo-700 border border-indigo-200" : "text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-slate-200 text-slate-600";
-      }
-      if (badgeP) {
-        badgeP.innerText = kp ? "Đã có ⚡" : "Chưa lưu";
-        badgeP.className = kp ? "text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300" : "text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-slate-200 text-slate-600";
-      }
-    }
-
-    function saveGroundingSetting() {
-      const chk = document.getElementById('chkSearchGrounding');
-      if (chk) {
-        localStorage.setItem('gemini_search_grounding', chk.checked ? 'true' : 'false');
-      }
-    }
-
-    function saveAndApplyApiKeys() {
-      const kf = document.getElementById('geminiApiKeyFreeInput').value.trim();
-      const kp = document.getElementById('geminiApiKeyPaygInput').value.trim();
-      if (kf) localStorage.setItem('gemini_api_key_free', kf);
-      if (kp) localStorage.setItem('gemini_api_key_payg', kp);
-
-      const mode = localStorage.getItem('gemini_api_mode') || 'free';
-      localStorage.setItem('gemini_api_key', mode === 'payg' ? kp : kf);
-
-      const binId = document.getElementById('vaultBinIdInput').value.trim();
-      const masterKey = document.getElementById('vaultMasterKeyInput').value.trim();
-      if (binId) localStorage.setItem('llp_vault_bin', binId);
-      if (masterKey) localStorage.setItem('llp_vault_key', masterKey);
-
-      checkSavedApiKey();
-      updateKeyBadgeUI();
-      closeApiKeyModal();
-      showToast("Đã lưu và áp dụng cấu hình thành công!");
-    }
-
-    // ĐỔI MÃ PIN KÉT CLOUD (ADMIN SHA-256)
+    // ĐỔI MÃ PIN KÉT CLOUD (CHỈ ADMIN SHA-256 MỚI ĐƯỢC PHÉP ĐỔI)
     async function changeVaultPinOnCloud() {
       const adminPass = document.getElementById('adminPasswordInput').value.trim();
       const newPin = document.getElementById('newPinForChange').value.trim();
@@ -1043,12 +886,12 @@
         return;
       }
 
-      // SHA-256 của Duy@101908
+      // Hash SHA-256 của mật khẩu: Duy@101908
       const ADMIN_HASH_SHA256 = "8c41460395b3b7548684d0b001a1f1b6218148b59d9c2cb28d6c141703ce589d";
       const inputHash = CryptoJS.SHA256(adminPass).toString();
 
       if (inputHash !== ADMIN_HASH_SHA256) {
-        showToast("❌ Sai Mật khẩu Admin! Không có quyền đổi PIN.");
+        showToast("❌ Sai Mật khẩu Admin! Bạn không có quyền đổi mã PIN.");
         return;
       }
 
@@ -1059,17 +902,20 @@
       }
 
       try {
-        showToast("Đang xác thực quyền Admin & cập nhật Cloud...");
+        showToast("Đang xác thực quyền Admin & mã hóa lại Két Cloud...");
         const getRes = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
           headers: { 'X-Master-Key': masterKey }
         });
-        if (!getRes.ok) throw new Error("Không thể kết nối Két Cloud!");
+        if (!getRes.ok) throw new Error("Không thể kết nối Két Cloud để đọc dữ liệu!");
+        const data = await getRes.json();
+        const record = data.record;
 
         let kf = localStorage.getItem('gemini_api_key_free') || document.getElementById('geminiApiKeyFreeInput').value.trim();
         let kp = localStorage.getItem('gemini_api_key_payg') || document.getElementById('geminiApiKeyPaygInput').value.trim();
         let m = localStorage.getItem('gemini_api_mode') || "free";
         let g = localStorage.getItem('gemini_search_grounding') !== 'false';
 
+        // Đóng gói và mã hóa AES-256 lại bằng PIN MỚI
         const payload = { kf, kp, m, g };
         const newCipher = CryptoJS.AES.encrypt(JSON.stringify(payload), newPin).toString();
 
@@ -1090,16 +936,17 @@
 
         document.getElementById('adminPasswordInput').value = '';
         document.getElementById('newPinForChange').value = '';
-        showToast("ĐÃ ĐỔI PIN THÀNH CÔNG! Toàn bộ máy dùng PIN cũ đã bị thu hồi.");
+
+        showToast("ĐÃ ĐỔI PIN THÀNH CÔNG! Toàn bộ máy dùng PIN cũ đã bị thu hồi quyền truy cập.");
       } catch (err) {
         showToast("Lỗi: " + err.message);
       }
     }
 
-    // KIỂM TRA ĐỘ SẴN SÀNG 2 KEY
+    // KIỂM TRA ĐỘ KHẢ DỤNG CỦA 2 KEY
     async function testBothApiKeys() {
-      const kf = document.getElementById('geminiApiKeyFreeInput').value.trim() || localStorage.getItem('gemini_api_key_free');
-      const kp = document.getElementById('geminiApiKeyPaygInput').value.trim() || localStorage.getItem('gemini_api_key_payg');
+      const kf = document.getElementById('geminiApiKeyFreeInput').value.trim();
+      const kp = document.getElementById('geminiApiKeyPaygInput').value.trim();
       const notice = document.getElementById('keyTestResultNotice');
       const btn = document.getElementById('btnTestKeys');
 
@@ -1149,6 +996,7 @@
       btn.disabled = false;
     }
 
+    // GIAO DIỆN CẤU HÌNH API MODAL
     function openApiKeyModal() {
       document.getElementById('apiKeyModal').classList.remove('hidden');
       const mode = localStorage.getItem('gemini_api_mode') || 'free';
@@ -1162,12 +1010,8 @@
       document.getElementById('vaultBinIdInput').value = binId;
       document.getElementById('vaultMasterKeyInput').value = masterKey;
 
-      const radioFree = document.getElementById('radioModeFree');
-      const radioPayg = document.getElementById('radioModePayg');
-      if (radioFree && radioPayg) {
-        radioFree.checked = (mode === 'free');
-        radioPayg.checked = (mode === 'payg');
-      }
+      if (mode === 'payg') document.getElementById('radioModePayg').checked = true;
+      else document.getElementById('radioModeFree').checked = true;
 
       document.getElementById('chkSearchGrounding').checked = localStorage.getItem('gemini_search_grounding') !== 'false';
 
@@ -1179,9 +1023,57 @@
       document.getElementById('apiKeyModal').classList.add('hidden');
     }
 
+    function updateApiModeUI() {
+      const isPayg = document.getElementById('radioModePayg').checked;
+      const boxFree = document.getElementById('boxModeFree');
+      const boxPayg = document.getElementById('boxModePayg');
+
+      if (isPayg) {
+        boxPayg.className = "border-2 border-emerald-500 rounded-xl p-2.5 sm:p-3 bg-emerald-50/40 shadow-sm transition";
+        boxFree.className = "border border-slate-200 rounded-xl p-2.5 sm:p-3 bg-slate-50 opacity-70 transition";
+      } else {
+        boxFree.className = "border-2 border-indigo-500 rounded-xl p-2.5 sm:p-3 bg-indigo-50/40 shadow-sm transition";
+        boxPayg.className = "border border-slate-200 rounded-xl p-2.5 sm:p-3 bg-slate-50 opacity-70 transition";
+      }
+    }
+
+    function updateKeyBadgeUI() {
+      const kf = document.getElementById('geminiApiKeyFreeInput').value.trim();
+      const kp = document.getElementById('geminiApiKeyPaygInput').value.trim();
+      const badgeF = document.getElementById('badgeStatusFree');
+      const badgeP = document.getElementById('badgeStatusPayg');
+
+      if (kf) {
+        badgeF.innerText = "Đã có Key";
+        badgeF.className = "text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-indigo-100 text-indigo-700 border border-indigo-200";
+      } else {
+        badgeF.innerText = "Chưa lưu";
+        badgeF.className = "text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-slate-200 text-slate-600";
+      }
+
+      if (kp) {
+        badgeP.innerText = "Đã có ⚡";
+        badgeP.className = "text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300";
+      } else {
+        badgeP.innerText = "Chưa lưu";
+        badgeP.className = "text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded font-semibold bg-slate-200 text-slate-600";
+      }
+    }
+
     function getActiveApiKey() {
       const mode = localStorage.getItem('gemini_api_mode') || 'free';
       return mode === 'payg' ? (localStorage.getItem('gemini_api_key_payg') || localStorage.getItem('gemini_api_key') || '') : (localStorage.getItem('gemini_api_key_free') || localStorage.getItem('gemini_api_key') || '');
+    }
+
+    function checkSavedApiKey() {
+      const mode = localStorage.getItem('gemini_api_mode') || 'free';
+      const activeKey = getActiveApiKey();
+      const btnText = document.getElementById('apiKeyBtnText');
+      if (activeKey) {
+        btnText.innerHTML = mode === 'payg' ? `<span class="text-amber-300 font-bold">⚡ PAYG</span>` : `<span class="text-emerald-300 font-bold">Free Tier</span>`;
+      } else {
+        btnText.innerText = "Cấu hình 2 Key";
+      }
     }
 
     // === QUẢN LÝ BẢN ĐỒ GIS LEAFLET ===
@@ -1254,7 +1146,6 @@
       if (group.getLayers().length > 0) map.fitBounds(group.getBounds().pad(0.15));
     }
 
-    // === FLOATING BAR: CHUYỂN HOÀN TOÀN XUỐNG BOTTOM-RIGHT ===
     function setFloatingStatus(state, msg) {
       const bar = document.getElementById('floatingStatusBar');
       const icon = document.getElementById('floatingStatusIcon');
@@ -1268,15 +1159,15 @@
       text.innerText = msg;
 
       if (state === 'ocr' || state === 'survey') {
-        bar.className = "fixed bottom-16 right-4 sm:right-6 z-40 px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md bg-indigo-950/95 border-indigo-500 text-white";
-        icon.innerHTML = `<i class="ph-bold ph-spinner animate-spin text-indigo-300 text-base"></i>`;
+        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-indigo-900/90 border-indigo-500 text-white";
+        icon.innerHTML = `<i class="ph-bold ph-spinner animate-spin text-indigo-300 text-sm"></i>`;
       } else if (state === 'success') {
-        bar.className = "fixed bottom-16 right-4 sm:right-6 z-40 px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md bg-emerald-950/95 border-emerald-500 text-white";
-        icon.innerHTML = `<i class="ph-bold ph-check-circle text-emerald-400 text-base"></i>`;
+        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-emerald-900/90 border-emerald-500 text-white";
+        icon.innerHTML = `<i class="ph-bold ph-check-circle text-emerald-400 text-sm"></i>`;
         setTimeout(() => bar.classList.add('hidden'), 3500);
       } else if (state === 'error') {
-        bar.className = "fixed bottom-16 right-4 sm:right-6 z-40 px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md bg-rose-950/95 border-rose-500 text-white";
-        icon.innerHTML = `<i class="ph-bold ph-warning-circle text-rose-400 text-base"></i>`;
+        bar.className = "fixed top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-40 px-4 sm:px-5 py-2 rounded-full shadow-2xl border text-[11px] sm:text-xs font-semibold flex items-center gap-2 transition-all duration-300 backdrop-blur-md bg-rose-900/90 border-rose-500 text-white";
+        icon.innerHTML = `<i class="ph-bold ph-warning-circle text-rose-400 text-sm"></i>`;
         setTimeout(() => bar.classList.add('hidden'), 4000);
       }
     }
@@ -1315,6 +1206,7 @@
       document.getElementById('loadedFilesContainer').classList.add('hidden');
     }
 
+    // HÀM ĐỌC ẢNH & FILE PDF BẰNG GEMINI AI
     async function executeOCRWithRealAI() {
       if (uploadedFilesList.length === 0) return;
 
@@ -1503,22 +1395,27 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
 
       try {
         let validModels = [];
-        const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-        if (!listResponse.ok) throw new Error("API Key không hợp lệ");
-        const listData = await listResponse.json();
-        validModels = (listData.models || []).filter(m => 
-          m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")
-        );
-        validModels.sort((a, b) => {
-          const getScore = name => {
-            if (name.includes("3.8-flash")) return 100;
-            if (name.includes("2.0-flash")) return 90;
-            if (name.includes("1.5-flash")) return 80;
-            if (name.includes("flash") && !name.includes("2.5")) return 70;
-            return 50;
-          };
-          return getScore(b.name) - getScore(a.name);
-        });
+        const cachedModel = localStorage.getItem('gemini_cached_model');
+        if (cachedModel && apiMode === 'payg') {
+          validModels = [{ name: cachedModel }];
+        } else {
+          const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+          if (!listResponse.ok) throw new Error("API Key không hợp lệ");
+          const listData = await listResponse.json();
+          validModels = (listData.models || []).filter(m => 
+            m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")
+          );
+          validModels.sort((a, b) => {
+            const getScore = name => {
+              if (name.includes("3.8-flash")) return 100;
+              if (name.includes("2.0-flash")) return 90;
+              if (name.includes("1.5-flash")) return 80;
+              if (name.includes("flash") && !name.includes("2.5")) return 70;
+              return 50;
+            };
+            return getScore(b.name) - getScore(a.name);
+          });
+        }
 
         const promptText = `Bạn là chuyên gia thẩm định giá tài sản bảo đảm của ngân hàng tại Việt Nam.
 Hãy tìm kiếm và khảo sát giá bất động sản thực tế cho khu vực sau:
@@ -1537,7 +1434,7 @@ Yêu cầu thực hiện:
    - "link": Đường link bài đăng thực tế nếu tìm thấy từ tìm kiếm, hoặc link tìm kiếm sàn tương ứng.
 4. Viết 1 đoạn tóm tắt thị trường (aiSummary) và 3 khuyến nghị thẩm định cho tờ trình tín dụng.
 
-Trả về duy nhất định dạng JSON thuần túy:
+Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\`\`):
 {
   "aiSummary": "Thông tin khảo sát bất động sản tại...",
   "recommendations": [
@@ -1607,6 +1504,7 @@ Trả về duy nhất định dạng JSON thuần túy:
                     }
                   });
                 }
+                localStorage.setItem('gemini_cached_model', model.name);
                 break;
               }
             }
@@ -2069,68 +1967,15 @@ Trả về duy nhất định dạng JSON thuần túy:
       showToast("Đã thêm tài sản vào bảng!");
     }
 
-    // === XUẤT FILE PDF TỰ ĐỘNG TẢI VỀ THIẾT BỊ (KHÔNG BẬT MÁY IN) ===
-    async function handleExportPDF() {
+    function handleExportPDF() {
       const now = new Date();
-      const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-      const fileName = `LendLandPro_BaoCao_${dateStr}.pdf`;
-
       document.getElementById('printCurrentDate').innerText = `Ngày ${now.getDate()} tháng ${now.getMonth() + 1} năm ${now.getFullYear()}`;
-      
-      const printElem = document.getElementById('printArea');
-      printElem.style.display = 'block';
-
-      showToast("Đang tạo file PDF để lưu về máy...");
-      setFloatingStatus('ocr', 'Đang kết xuất PDF...');
-
-      const opt = {
-        margin: [10, 10, 10, 10],
-        filename: fileName,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-
-      try {
-        // Hỗ trợ File System Access API cho phép chọn nơi lưu trực tiếp (Chrome/Edge desktop)
-        if (window.showSaveFilePicker) {
-          const pdfBlob = await html2pdf().set(opt).from(printElem).output('blob');
-          const fileHandle = await window.showSaveFilePicker({
-            suggestedName: fileName,
-            types: [{
-              description: 'PDF Document',
-              accept: { 'application/pdf': ['.pdf'] }
-            }]
-          });
-          const writableStream = await fileHandle.createWritable();
-          await writableStream.write(pdfBlob);
-          await writableStream.close();
-          showToast(`Đã lưu file "${fileName}" thành công!`);
-        } else {
-          // Trình duyệt điện thoại / Safari: tự động tải file PDF về máy để lưu
-          await html2pdf().set(opt).from(printElem).save();
-          showToast(`Đã tải file "${fileName}" về thiết bị!`);
-        }
-        setFloatingStatus('success', 'Đã lưu PDF về thiết bị');
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          // Fallback tải file thông thường nếu bị chặn
-          try {
-            await html2pdf().set(opt).from(printElem).save();
-            showToast(`Đã lưu file "${fileName}" về máy!`);
-          } catch(e) {
-            showToast("Lỗi khi tạo file PDF: " + err.message);
-          }
-        }
-      } finally {
-        printElem.style.display = 'none';
-      }
+      window.print();
     }
 
     function showToast(msg) {
       const toast = document.getElementById('toastNotification');
       const text = document.getElementById('toastMessage');
-      if (!toast || !text) return;
       text.innerText = msg;
       toast.classList.remove('translate-y-20', 'opacity-0');
       setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
