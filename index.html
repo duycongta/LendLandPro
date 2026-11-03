@@ -977,8 +977,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.11";
+    const APP_VERSION = "6.12";
     const APP_CHANGELOG = {
+      "6.12": "Gộp app Python vào thư mục server/ của repo; nhắc cách chạy (cd server) trong thông báo lỗi kết nối; có thể mở giao diện qua http://localhost:8000/lendland.",
       "6.11": "Nối máy chủ khảo giá (Python): khi bấm Khảo sát, app lấy TIN THẬT có link (Chợ Tốt, Alonhadat, Batdongsan...) đưa lên bảng chính; AI chỉ gợi ý thêm vào Hàng chờ. Có cấu hình địa chỉ máy chủ và nút kiểm tra kết nối ở mục Quản trị.",
       "6.10": "Chống tin giả: tin do AI tạo chỉ vào Hàng chờ (gắn nhãn \"AI tạo - chưa kiểm chứng\", phải xác nhận mới đưa lên bảng); bỏ số mặc định (100 m², 5 m, 20 m, 1,5 tỷ, 6 tr/m²); bỏ vị trí bản đồ ngẫu nhiên; không còn gán link theo thứ tự; báo rõ khi Google Search lỗi; bỏ 2 cảnh báo hành lang/lưu không.",
       "6.9": "Đơn giản hóa: chỉ giữ ghi chú GCN (trang 2) + diện tích không tính giá/loại đất trừ; bỏ khối lối vào-lộ giới quy hoạch và dòng nhắc quyền riêng tư; thêm bản quyền ở màn hình PIN.",
@@ -2682,7 +2683,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         out.textContent = j && j.ok ? 'Kết nối được. Nguồn: ' + (j.sources || []).join(', ') : 'Máy chủ trả lời lạ, kiểm tra địa chỉ.';
         out.className = 'text-[11px] ' + (j && j.ok ? 'text-emerald-700' : 'text-rose-700');
       } catch (e) {
-        out.textContent = 'Không kết nối được. Hãy chạy app Python trên máy (python -m uvicorn app.main:app --port 8000); Chrome có thể hỏi quyền truy cập mạng cục bộ: chọn Cho phép.';
+        out.textContent = 'Không kết nối được. Hãy chạy app Python trên máy: vào thư mục server của repo rồi chạy python -m uvicorn app.main:app --port 8000. Chrome có thể hỏi quyền truy cập mạng cục bộ: chọn Cho phép. Hoặc mở giao diện qua http://localhost:8000/lendland.';
         out.className = 'text-[11px] text-rose-700';
       }
     }
@@ -2704,7 +2705,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         if (!r.ok) throw new Error('HTTP ' + r.status);
         data = await r.json();
       } catch (err) {
-        const msg = `Không kết nối được máy chủ khảo giá (${base}): ${err.message}. Hãy chạy app Python trên máy rồi thử lại.`;
+        const msg = `Không kết nối được máy chủ khảo giá (${base}): ${err.message}. Hãy chạy app Python (thư mục server, lệnh python -m uvicorn app.main:app --port 8000) rồi thử lại.`;
         showBackendLog([msg]); showToast(msg);
         return { ok: false, usable: 0, error: msg };
       }
