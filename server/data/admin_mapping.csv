@@ -1,0 +1,5 @@
+ten_cu,ten_moi,ghi_chu
+# Dòng bắt đầu bằng # là chú thích. Mỗi dòng: tên đơn vị hành chính cũ (xã/phường/huyện) -> tên mới sau sáp nhập. Có thể nhiều dòng cùng ten_moi.
+# CÁC DÒNG DƯỚI ĐÂY CHỈ LÀ VÍ DỤ MINH HOẠ ĐỊNH DẠNG - PHẢI ĐỐI CHIẾU NGHỊ QUYẾT SÁP NHẬP TRƯỚC KHI DÙNG.
+Bình Định,Gia Lai,ví dụ cấp tỉnh
+thành phố Quy Nhơn,Quy Nhơn,ví dụ

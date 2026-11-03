@@ -1,0 +1,7 @@
+<!doctype html><meta charset="utf-8"><title>Đã thêm</title>
+<body style="font:15px system-ui;max-width:700px;margin:20px auto">
+<h2>Đã trích xuất từ tin dán</h2>
+<ul><li>Giá: {{ l.price_vnd|vnd }} đ</li><li>Diện tích: {{ l.area_m2|vnd }} m²</li><li>Mặt tiền: {{ l.frontage_m or '-' }} m</li>
+<li>Loại đất (đoán): {{ l.land_type or 'không rõ' }}</li><li>Giá/m²: {{ l.price_per_m2|vnd }}</li></ul>
+<p>Kiểm tra lại các số trên. Nếu sai, hãy nhập lại tin với nội dung rõ hơn (vd "500m2", "1,2 tỷ").</p>
+<a href="/">← Quay lại</a>
