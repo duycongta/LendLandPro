@@ -1,0 +1,10 @@
+{
+  "_ghi_chu": "Trọng số độ tin cậy theo nguồn (0-1), dùng khi xếp hạng và tính đơn giá bình quân có trọng số. Đây là giá trị khởi đầu do người lập đề xuất, KHÔNG phải kết luận về mức kiểm duyệt của từng trang; hãy chỉnh theo đánh giá của bạn.",
+  "batdongsan": 1.0,
+  "chotot": 0.9,
+  "alonhadat": 0.8,
+  "thuviennhadat": 0.7,
+  "raobannhadat": 0.7,
+  "google": 0.5,
+  "mac_dinh": 0.6
+}

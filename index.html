@@ -978,8 +978,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.13";
+    const APP_VERSION = "6.14";
     const APP_CHANGELOG = {
+      "6.14": "Bộ lọc chất lượng tin so sánh: gộp tin trùng (cùng SĐT/nội dung), tin ngoại lai về đơn giá (IQR) và tin không rõ ngày đăng chỉ vào Hàng chờ, ưu tiên tin 3-6 tháng; đơn giá bình quân có trọng số theo độ tin cậy của nguồn.",
       "6.13": "Tin so sánh phải CÙNG xã/phường và đúng tỉnh (cùng thôn/xóm, cùng đường xếp trước); khác xã chỉ hiện khi bật \"mở rộng sang cùng huyện\" và chỉ vào Hàng chờ; loại tin không rõ loại tài sản (khách sạn, nhà xưởng...); gắn nhãn mức khớp địa danh.",
       "6.12": "Gộp app Python vào thư mục server/ của repo; nhắc cách chạy (cd server) trong thông báo lỗi kết nối; có thể mở giao diện qua http://localhost:8000/lendland.",
       "6.11": "Nối máy chủ khảo giá (Python): khi bấm Khảo sát, app lấy TIN THẬT có link (Chợ Tốt, Alonhadat, Batdongsan...) đưa lên bảng chính; AI chỉ gợi ý thêm vào Hàng chờ. Có cấu hình địa chỉ máy chủ và nút kiểm tra kết nối ở mục Quản trị.",
@@ -1177,7 +1178,7 @@
             <td class="py-2 px-3">
               <div class="font-medium text-slate-800 leading-snug">${escHtml(c.address)}</div>
               <div class="text-[10px] text-slate-500">${escHtml(c.roadDesc)} (MT ${fmtMaybe(c.frontage, 'm')})</div>
-              <div class="mt-1 flex flex-wrap items-center gap-1">${originBadgeHtml(c)} ${matchBadgeHtml(c)} ${compLinkHtml(c)}</div>
+              <div class="mt-1 flex flex-wrap items-center gap-1">${originBadgeHtml(c)} ${matchBadgeHtml(c)} ${qualityBadgesHtml(c)} ${compLinkHtml(c)}</div>
             </td>
             <td class="py-2 px-2 text-center text-slate-600 whitespace-nowrap">${escHtml(c.postedDate || '--')}</td>
             <td class="py-2 px-2 text-center font-semibold">${fmtMaybe(c.area)}</td>
@@ -1205,6 +1206,7 @@
         const okConfirm = window.confirm('Tin này do AI tạo và CHƯA được kiểm chứng.\nBạn đã tra cứu (nút "Tra cứu kiểm chứng") và xác nhận tin có thật, số liệu đúng?');
         if (!okConfirm) return;
         cand.userConfirmed = true;
+        cand.sourceWeight = 0.5;      // tin do AI tạo dù đã xác nhận vẫn có trọng số thấp
       }
       const promoted = backupCompsPool.splice(poolIndex, 1)[0];
       currentComps.push(promoted);
@@ -2616,6 +2618,14 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       const cls = c.matchLevel === 'thon' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : c.matchLevel === 'xa' ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-amber-50 text-amber-800 border-amber-300';
       return `<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold border ${cls}">${MATCH_LABEL[c.matchLevel]}</span>`;
     }
+    function qualityBadgesHtml(c) {
+      const tag = (txt, cls) => `<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold border ${cls}">${txt}</span>`;
+      const out = [];
+      if (c.poolReason === 'outlier' || c.outlier) out.push(tag('Ngoại lai giá', 'bg-rose-50 text-rose-700 border-rose-300'));
+      if (c.poolReason === 'no_date' || c.dateTier === 3) out.push(tag('Không rõ ngày đăng', 'bg-amber-50 text-amber-800 border-amber-300'));
+      if (c.dupCount > 0) out.push(tag(`Đã gộp ${c.dupCount} tin trùng${c.alsoOn && c.alsoOn.length ? ' (' + escHtml(c.alsoOn.join(', ')) + ')' : ''}`, 'bg-slate-50 text-slate-600 border-slate-300'));
+      return out.join(' ');
+    }
     function safeHttpUrl(u) { try { const x = new URL(String(u)); return (x.protocol === 'http:' || x.protocol === 'https:') ? x.href : ''; } catch (e) { return ''; } }
     function verifySearchUrl(c) {
       return 'https://www.google.com/search?q=' + encodeURIComponent(`${c.address || ''} bán ${c.area ? c.area + 'm2' : ''} ${c.rawPrice ? c.rawPrice + ' tỷ' : ''}`.trim());
@@ -2668,6 +2678,8 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       const price = Number(it.price_vnd) > 0 ? Math.round(Number(it.price_vnd) / 1e6) / 1000 : null;   // tỷ đồng, 3 chữ số
       return {
         id: 'b' + i, origin: 'backend', userConfirmed: true, kind: it.kind || '', matchLevel: it.match_level || '',
+        sourceWeight: Number(it.weight) > 0 ? Number(it.weight) : 1, outlier: !!it.outlier, dateTier: (typeof it.date_tier === 'number') ? it.date_tier : null,
+        dupCount: Number(it.dup_count) || 0, alsoOn: it.also_on || [], poolReason: it.pool_reason || '', eligibleMain: it.eligible_main !== false,
         address: it.address || it.title || '(không có địa chỉ)', roadDesc: it.title || '',
         postedDate: fmtIsoDate(it.posted_at), roadType: '',
         area: Number(it.area_m2) > 0 ? Number(it.area_m2) : null,
@@ -2704,7 +2716,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         xa: valStr('targetWard'), duong: cleanStreetName(valStr('targetStreet')),
         area: String(valNum('targetArea') || 0), kind: valNum('targetBuildingArea') > 0 ? '' : 'dat',
         thon: valStr('targetHamlet'), scope: localStorage.getItem('llp_expand_district') === 'true' ? 'district' : 'ward',
-        months: '12', tol: '50', live: '1', maxn: '100', limit: '60'
+        months: '6', tol: '50', live: '1', maxn: '100', limit: '60'
       });
       const dp = splitDistrictProvince(valStr('targetDistrictProvince'));
       params.set('huyen', dp.huyen); params.set('tinh', dp.tinh);
@@ -2724,7 +2736,9 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       // Bảng chính CHỈ nhận tin cùng xã/phường (thôn trước); tin cùng huyện khác xã (nếu bật mở rộng) chỉ vào Hàng chờ
       const inWard = mapped.filter(c => c.matchLevel !== 'huyen');
       const districtOnly = mapped.filter(c => c.matchLevel === 'huyen');
-      const usableList = inWard.filter(compIsValid), unusable = inWard.filter(c => !compIsValid(c));
+      // Bảng chính CHỈ nhận tin đạt chuẩn: cùng xã/phường, có ngày đăng rõ, không ngoại lai giá, đủ giá + diện tích
+      const usableList = inWard.filter(c => c.eligibleMain && compIsValid(c));
+      const unusable = inWard.filter(c => !(c.eligibleMain && compIsValid(c)));
       const top = usableList.slice(0, 5), rest = usableList.slice(5).concat(unusable).concat(districtOnly);
       // giữ tin nhập tay đang có; thay các tin lấy từ máy chủ lần trước
       currentComps = currentComps.filter(c => c.origin !== 'backend').concat(top);
@@ -2735,6 +2749,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       else if (usableList.length < 3) hints.push(`Chỉ có ${usableList.length} tin cùng xã/phường: ít mẫu, kết quả định giá có độ tin cậy thấp.`);
       if (data.extra_district_available > 0 && !districtOnly.length) hints.push(`Có thêm ${data.extra_district_available} tin cùng huyện (khác xã): bật "Mở rộng sang cùng huyện" ở Quản trị để xem trong Hàng chờ.`);
       showBackendLog([
+        ...(data.quality ? [`Bộ lọc chất lượng: gộp ${data.quality.merged_duplicates} tin trùng; ${data.quality.outliers} tin ngoại lai đơn giá và ${data.quality.no_date} tin không rõ ngày đăng được đưa vào Hàng chờ (không tính giá); ${data.quality.eligible} tin đạt chuẩn.`] : []),
         `Máy chủ khảo giá: cùng thôn/xóm ${mc.thon || 0} tin, cùng xã/phường ${mc.xa || 0} tin${districtOnly.length ? ', cùng huyện khác xã ' + districtOnly.length + ' tin (Hàng chờ)' : ''}; đưa ${top.length} tin lên bảng chính.`,
         ...hints, ...(data.fetchlog || []).slice(0, 12), ...(data.errors || []).slice(0, 6).map(e => 'Lỗi nguồn: ' + e)
       ]);
@@ -2801,7 +2816,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         score = Math.min(score, 98);
 
         if (okc) {
-          const weight = score / 100;
+          const weight = (score / 100) * (Number(comp.sourceWeight) > 0 ? Number(comp.sourceWeight) : 1);   // điểm tương đồng x độ tin cậy nguồn
           totalWeightedPrice += discountedUnitPrice * weight;
           totalWeight += weight;
         }
@@ -2813,7 +2828,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
           <td class="py-3 px-3" style="min-width: 250px; max-width: 320px;">
             <div class="font-medium text-slate-800 leading-snug whitespace-normal">${escHtml(comp.address)}</div>
             <div class="text-[11px] text-slate-500 mt-0.5 whitespace-normal">${escHtml(comp.roadDesc)}</div>
-            <div class="mt-1 flex flex-wrap gap-1">${originBadgeHtml(comp)} ${matchBadgeHtml(comp)}</div>
+            <div class="mt-1 flex flex-wrap gap-1">${originBadgeHtml(comp)} ${matchBadgeHtml(comp)} ${qualityBadgesHtml(comp)}</div>
           </td>
           <td class="py-3 px-2 text-center text-slate-600 font-medium whitespace-nowrap">${escHtml(comp.postedDate || '--')}</td>
           <td class="py-3 px-2 text-center font-semibold">${fmtMaybe(comp.area)}</td>

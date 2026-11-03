@@ -36,3 +36,10 @@ Chạy app Python trên máy bạn (`python -m uvicorn app.main:app --port 8000`
 - `GET /api/health`: kiểm tra kết nối.
 - `GET /api/comps?xa=&huyen=&tinh=&duong=&area=&kind=dat|nha|can_ho&months=12&tol=100&live=1&maxn=100`: trả tin so sánh THẬT (có link), xếp cùng đường lên đầu. `live=1` thu thập mới từ các trang rao trước (mất vài phút).
 - Chỉ các nguồn gốc `https://duycongta.github.io` và `localhost` được phép gọi (đổi bằng biến môi trường `ALLOWED_ORIGIN_REGEX`). Chrome có thể hỏi quyền "truy cập thiết bị trong mạng cục bộ": chọn Cho phép.
+
+## Bộ lọc chất lượng tin so sánh (`/api/comps`)
+1. **Địa danh:** bắt buộc cùng xã/phường (tên cũ hoặc mới) và không nhắc tỉnh khác; cùng thôn/xóm, cùng đường xếp trước. `scope=district` thêm tin cùng huyện (khác xã), chỉ để tham khảo.
+2. **Ngày đăng:** chỉ lấy tin trong `months` tháng (mặc định 6); ưu tiên ≤90 ngày rồi ≤180 ngày; tin không rõ ngày không lên bảng chính.
+3. **Gộp tin trùng:** cùng SĐT + diện tích ±3% + giá ±10%, hoặc nội dung giống ≥85% + diện tích ±3% + giá ±15%. Cùng SĐT nhưng khác diện tích/giá là lô khác nên không gộp.
+4. **Ngoại lai đơn giá:** IQR 1.5 khi ≥5 tin (tối thiểu cho phép ±40% quanh trung vị); 3–4 tin dùng ngưỡng 0.4x–2.5x trung vị; dưới 3 tin không kết luận.
+5. **Trọng số nguồn:** `data/source_weights.json` (giá trị khởi đầu do người lập đề xuất, hãy chỉnh theo đánh giá của bạn), dùng khi xếp hạng và tính đơn giá có trọng số.

@@ -160,7 +160,7 @@ def _seed(monkeypatch, tmp_path):
     import app.store as store
     monkeypatch.setattr(store, "DB", tmp_path / "t.sqlite")
     def mk(url, title, addr, price, area, kind, raw=None, src="chotot"):
-        l = Listing(src, url, title, address=addr, price_vnd=price, area_m2=area, kind=kind, posted_at="2026-10-30T10:00:00", fetched_at="2026-11-03T10:00:00")
+        l = Listing(src, url, title, address=addr, price_vnd=price, area_m2=area, kind=kind, posted_at=(__import__("datetime").datetime.now() - __import__("datetime").timedelta(days=5)).isoformat(timespec="seconds"), fetched_at="2026-11-03T10:00:00")
         l.raw = raw or {}
         return l
     store.save([
@@ -245,3 +245,74 @@ def test_api_strict_location_levels(monkeypatch, tmp_path):
     # Gia Lai (mới) và Bình Định (cũ) là một: nhập tỉnh nào cũng nhận tin nhắc tỉnh còn lại
     r3 = c.get("/api/comps", params={**p, "tinh": "Gia Lai"}).json()
     assert {i["url"].split("/")[-1] for i in r3["items"]} == {"A", "B", "G"}
+
+
+# ---------------- bộ lọc chất lượng ----------------
+import datetime as _dt
+
+def _ago(days):
+    return (_dt.datetime.now() - _dt.timedelta(days=days)).isoformat(timespec="seconds") if days is not None else ""
+
+_TITLES = ["gần chợ mặt tiền đường lớn thuận tiện kinh doanh", "hẻm bê tông sổ hồng riêng chính chủ cần bán", "vị trí đẹp khu dân cư đông đúc yên tĩnh",
+           "ngay trường học bệnh viện giao thông thuận lợi", "lô góc hai mặt thoáng rộng rãi vuông vức", "đất vườn cây ăn trái sầu riêng mới trồng",
+           "cần tiền bán gấp giá rẻ hơn thị trường", "sát khu công nghiệp dự án đang triển khai", "gần biển view đẹp tiềm năng tăng giá",
+           "nhà cấp bốn kèm đất rộng thổ cư toàn bộ", "ven sông thoáng mát không khí trong lành", "mặt đường nhựa xe tải vào tận nơi",
+           "tách sổ ngay công chứng trong ngày", "đầu tư sinh lời dòng tiền ổn định lâu dài", "gần ủy ban chợ trung tâm hành chính xã",
+           "đất nền phân lô quy hoạch đồng bộ hạ tầng", "bán nhanh trong tuần thương lượng chính chủ", "khu vực an ninh tốt dân trí cao",
+           "đường ba gác hẻm thông thoáng ô tô tránh nhau", "lô đất hiếm có tại thôn thuận tiện đi lại", "giá mềm cho người thiện chí",
+           "gần nhà thờ chùa trường mầm non", "bán rẻ do gia đình ra nước ngoài định cư", "gần quốc lộ cách mặt đường năm mươi mét", "view đồng ruộng thoáng khu vực yên bình"]
+def _L(n, src="chotot", price=3e9, area=100, title=None, desc="", days=10, addr="Xã Phước Lộc, Huyện Tuy Phước, Bình Định", kind="dat"):
+    return Listing(src, f"https://x/{n}", title or ("Bán đất " + _TITLES[n % len(_TITLES)]), address=addr, description=desc,
+                   price_vnd=price, area_m2=area, kind=kind, posted_at=_ago(days))
+
+def test_phone_extraction():
+    from app.quality import extract_phones
+    assert extract_phones("LH 0905 123 456 hoặc +84 905.123.456") == {"0905123456"}
+    assert extract_phones("giá 1200000000 đồng") == set()
+
+def test_dedupe_by_phone_keeps_trusted_source_and_separate_lots():
+    from app.quality import dedupe_semantic
+    a = _L(1, "chotot", 3e9, 100, desc="Liên hệ 0905 123 456")
+    b = _L(2, "batdongsan", 3.05e9, 101, desc="Bán gấp, LH 0905123456")             # cùng SĐT, cùng diện tích/giá -> trùng
+    c = _L(3, "chotot", 3e9, 200, desc="Lô khác của cùng người LH 0905123456")      # cùng SĐT nhưng khác diện tích -> lô khác
+    out, merged = dedupe_semantic([(a, "xa"), (b, "xa"), (c, "xa")])
+    assert merged == 1 and len(out) == 2
+    kept = {o[0].url: o for o in out}
+    assert "https://x/2" in kept and kept["https://x/2"][2]["dup_count"] == 1 and kept["https://x/2"][2]["also_on"] == ["chotot"]   # giữ nguồn trọng số cao hơn
+    assert "https://x/3" in kept
+
+def test_dedupe_by_text():
+    from app.quality import dedupe_semantic
+    t = "Bán lô đất mặt tiền đường bê tông gần chợ trường học khu dân cư đông đúc sổ hồng riêng"
+    a = _L(1, title=t, area=120); b = _L(2, "alonhadat", title=t + " lh ngay", area=121)
+    assert dedupe_semantic([(a, "xa"), (b, "xa")])[1] == 1
+
+def test_price_bounds_and_recency():
+    from app.quality import price_bounds, recency_tier
+    lo, hi = price_bounds([30, 31, 29, 32, 30, 120])
+    assert hi < 120 and lo < 29
+    assert price_bounds([30, 31]) is None
+    lo3, hi3 = price_bounds([30, 31, 90]); assert hi3 < 90 * 1.0 and lo3 < 30
+    assert [recency_tier(_L(i, days=d)) for i, d in enumerate((10, 120, 400, None))] == [0, 1, 2, 3]
+
+def test_api_quality_pipeline(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+    import app.main as m, app.store as store
+    monkeypatch.setattr(store, "DB", tmp_path / "q.sqlite")
+    items = [_L(i, "chotot", price=(3.0e9 + i * 5e7), area=100 + i, days=10 + i) for i in range(1, 7)]           # 6 tin bình thường
+    items += [_L(20, "chotot", price=3e10, area=100, days=5)]                                                      # ngoại lai giá (300 tr/m2)
+    items += [_L(21, "alonhadat", price=3.2e9, area=110, days=None)]                                               # không rõ ngày
+    items += [_L(22, "chotot", price=3.1e9, area=111, days=400)]                                                   # quá cũ -> loại hẳn
+    items += [_L(23, "batdongsan", price=(3.0e9 + 1 * 5e7) + 1e6, area=101, days=3, title="Bán đất " + _TITLES[1] + " lh gấp")]   # trùng tin số 1 (nội dung giống, cùng diện tích và giá)
+    store.save(items)
+    c = TestClient(m.app)
+    r = c.get("/api/comps", params={"xa": "Xã Phước Lộc", "huyen": "Huyện Tuy Phước", "tinh": "Bình Định", "area": 105, "kind": "dat", "months": 6, "tol": 100}).json()
+    by = {i["url"].split("/")[-1]: i for i in r["items"]}
+    assert "22" not in by                                                    # tin quá 6 tháng bị loại
+    assert by["20"]["outlier"] is True and by["20"]["pool_reason"] == "outlier" and by["20"]["eligible_main"] is False
+    assert by["21"]["pool_reason"] == "no_date" and by["21"]["date_tier"] == 3 and by["21"]["eligible_main"] is False
+    assert "1" not in by and by["23"]["dup_count"] == 1 and by["23"]["also_on"] == ["chotot"]     # tin 1 và 23 gộp, giữ bản từ batdongsan (trọng số cao hơn)
+    assert all(by[str(i)]["eligible_main"] for i in range(2, 7)) and by["23"]["eligible_main"]
+    assert r["quality"]["merged_duplicates"] == 1 and r["quality"]["outliers"] == 1 and r["quality"]["no_date"] == 1 and r["quality"]["eligible"] == 6
+    assert r["stats"]["weighted_median_per_m2"] and r["items"][0]["eligible_main"] is True      # tin đạt chuẩn xếp trước
+    assert by["2"]["weight"] == 0.9 and by["21"]["weight"] == 0.8 and by["23"]["weight"] == 1.0

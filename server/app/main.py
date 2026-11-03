@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import store
 from .search import build_keywords, location_terms, filter_listings, same_street, rank, select_comps
+from .quality import dedupe_semantic, recency_tier, price_bounds, source_weight, source_weights, weighted_median
 from .sources import SOURCES, parse_manual_text
 from .sources.googlesearch import build_queries
 from .parse import KIND_LABEL
@@ -199,10 +200,15 @@ def api_health():
 
 @app.get("/api/comps")
 def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", tinh: str = "Gia Lai", area: float = 0, kind: str = "",
-              land_type: str = "", months: int = 12, tol: float = 50, discount: float = 10, scope: str = "ward",
+              land_type: str = "", months: int = 6, tol: float = 50, discount: float = 10, scope: str = "ward",
               live: int = 0, maxn: int = 100, limit: int = 60, src: str = ""):
-    """Tin so sánh THẬT (có link). Bắt buộc cùng xã/phường (và không thuộc tỉnh khác); cùng thôn/xóm, cùng đường được xếp lên trước.
-    scope=district: thêm tin cùng huyện khác xã (match_level='huyen'). live=1: thu thập mới từ các trang rao trước (mất vài phút)."""
+    """Tin so sánh THẬT (có link), đã qua các bộ lọc chất lượng:
+    - bắt buộc cùng xã/phường và không thuộc tỉnh khác; cùng thôn/xóm, cùng đường xếp trước (scope=district: thêm tin cùng huyện, khác xã);
+    - gộp tin trùng (cùng SĐT+diện tích+giá, hoặc nội dung giống nhau), giữ bản từ nguồn tin cậy hơn;
+    - ưu tiên tin có ngày đăng rõ trong 3-6 tháng; tin không rõ ngày KHÔNG đưa lên bảng chính;
+    - ngoại lai về đơn giá (IQR) bị gắn cờ, không đưa lên bảng chính;
+    - trọng số theo nguồn (data/source_weights.json) khi xếp hạng và tính trung vị có trọng số.
+    live=1: thu thập mới từ các trang rao trước (mất vài phút)."""
     q = qdict(xa, huyen, tinh, area, land_type, discount, 1, duong, months, tol, kind)
     q["maxn"] = maxn
     q["fetchlog"] = []
@@ -210,23 +216,51 @@ def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", ti
     if live:
         chosen = [x for x in src.split(",") if x.strip()]
         collect_live(q, xa, huyen, tinh, duong, land_type, months, maxn, chosen, errors)
+    weights = source_weights()
     allr = store.load_all()
-    rec = recent(allr, months)
-    picked = select_comps(rec, admin, xa, huyen, tinh, thon, "district", area or None, tol / 100, land_type, kind, duong)
-    extra_district = sum(1 for _, lv in picked if lv == "huyen")
+    rec = [l for l in allr if recency_tier(l) == 3 or (l.posted_at and (recency_tier(l) <= 2 and _within(l, months)))]
+    pairs = select_comps(rec, admin, xa, huyen, tinh, thon, "district", area or None, tol / 100, land_type, kind, duong)
+    deduped, merged = dedupe_semantic(pairs, weights)
+    extra_district = sum(1 for _, lv, _ in deduped if lv == "huyen")
     if scope != "district":
-        picked = [(l, lv) for l, lv in picked if lv != "huyen"]
-    counts = {lv: sum(1 for _, x in picked if x == lv) for lv in ("thon", "xa", "huyen")}
-    core = [l for l, lv in picked if lv in ("thon", "xa")]
-    res = summarize(core, discount=discount / 100)
+        deduped = [t for t in deduped if t[1] != "huyen"]
+    # ngoại lai về đơn giá: tính trên tin cùng xã/phường có ngày rõ
+    base = [l.price_per_m2 for l, lv, _ in deduped if lv != "huyen" and recency_tier(l) <= 2 and l.price_per_m2]
+    bounds = price_bounds(base)
+    rows = []
+    for l, lv, info in deduped:
+        tier = recency_tier(l); ppm = l.price_per_m2
+        outlier = bool(bounds and ppm and (ppm < bounds[0] or ppm > bounds[1]))
+        reason = ("district" if lv == "huyen" else "no_date" if tier == 3 else "outlier" if outlier else
+                  "incomplete" if not (l.price_vnd and l.area_m2) else "")
+        rows.append((l, lv, info, tier, outlier, reason, source_weight(l.source, weights)))
+    def key(r):
+        l, lv, info, tier, outlier, reason, w = r
+        st_ = 0 if (duong and same_street(l, duong)) else 1
+        d = abs(l.area_m2 - area) / area if (area and l.area_m2) else 9
+        return ({"thon": 0, "xa": 1, "huyen": 2}[lv], 0 if reason == "" else 1, st_, tier, -w, d)
+    rows.sort(key=key)
+    ok_rows = [r for r in rows if r[5] == ""]
+    res = summarize([r[0] for r in ok_rows], discount=discount / 100)
+    wmed = weighted_median([(r[0].price_per_m2, r[6]) for r in ok_rows])
+    counts = {lv: sum(1 for r in rows if r[1] == lv) for lv in ("thon", "xa", "huyen")}
     out = []
-    for l, lv in picked[:limit]:
-        d = listing_to_api(l); d["match_level"] = lv; out.append(d)
+    for l, lv, info, tier, outlier, reason, w in rows[:limit]:
+        d = listing_to_api(l)
+        d.update(match_level=lv, weight=w, outlier=outlier, date_tier=tier, dup_count=info["dup_count"], also_on=info["also_on"],
+                 eligible_main=(reason == ""), pool_reason=reason)
+        out.append(d)
     return {
-        "items": out, "total_matched": len(picked), "match_counts": counts, "extra_district_available": extra_district,
-        "same_street": sum(1 for l, _ in picked if duong and same_street(l, duong)),
-        "stats": {"n_used": res.n_used, "median_per_m2": res.median, "p25": res.p25, "p75": res.p75, "warning": res.warning},
-        "funnel": [("Tổng số tin đã lưu", len(allr)), (f"Sau lọc thời gian ({months} tháng)", len(rec)),
-                   ("Cùng xã/phường, đúng tỉnh, đúng loại, diện tích phù hợp", counts["thon"] + counts["xa"])],
+        "items": out, "total_matched": len(rows), "match_counts": counts, "extra_district_available": extra_district,
+        "same_street": sum(1 for r in rows if duong and same_street(r[0], duong)),
+        "quality": {"merged_duplicates": merged, "outliers": sum(1 for r in rows if r[5] == "outlier"),
+                    "no_date": sum(1 for r in rows if r[5] == "no_date"), "eligible": len(ok_rows),
+                    "price_bounds": list(bounds) if bounds else None},
+        "stats": {"n_used": res.n_used, "median_per_m2": res.median, "weighted_median_per_m2": wmed, "p25": res.p25, "p75": res.p75, "warning": res.warning},
         "fetchlog": q["fetchlog"], "errors": errors,
     }
+
+def _within(l, months):
+    from .quality import days_old
+    n = days_old(l)
+    return n is not None and (not months or n <= 30 * months)
