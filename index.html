@@ -1636,36 +1636,66 @@
     }
 
     // === XỬ LÝ XEM TRƯỚC BÁO CÁO (PDF PREVIEW) ===
+    const PDF_BTN_HTML = `<i class="ph-bold ph-file-pdf text-base"></i> Xuất File Báo Cáo PDF`;
+
+    function resetPdfButton() {
+      const btn = document.getElementById('btnDownloadPdfConfirm');
+      if (btn) { btn.innerHTML = PDF_BTN_HTML; btn.disabled = false; }
+    }
+
+    // Bản sao báo cáo dùng cho khung xem trước: BỎ HẾT thuộc tính id để không trùng id với #printArea
+    // (trùng id làm getElementById trả về bản cũ trong khung xem trước -> báo cáo hiện dữ liệu tài sản trước/trống)
+    function getReportMarkupForPreview() {
+      const clone = document.getElementById('printArea').cloneNode(true);
+      clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+      return clone.innerHTML;
+    }
+
     function openPdfPreviewModal() {
-      recalculateTargetValues();
-      syncDataToPrintReport();
-
-      const printContent = document.getElementById('printArea').innerHTML;
-      const previewContainer = document.getElementById('pdfPreviewContainer');
-      previewContainer.innerHTML = printContent;
-
-      document.getElementById('pdfPreviewModal').classList.remove('hidden');
+      try {
+        recalculateTargetValues();
+        syncDataToPrintReport();
+        document.getElementById('pdfPreviewContainer').innerHTML = getReportMarkupForPreview();
+        resetPdfButton();
+        document.getElementById('pdfPreviewModal').classList.remove('hidden');
+      } catch (err) {
+        console.error('Lỗi mở xem trước báo cáo:', err);
+        showToast('Không mở được bản xem trước: ' + err.message);
+      }
     }
 
     function closePdfPreview() {
       document.getElementById('pdfPreviewModal').classList.add('hidden');
+      resetPdfButton();
     }
 
     // === XUẤT FILE BÁO CÁO PDF QUA IFRAME IN ĐỘC LẬP (CHỐNG TRẮNG TRANG 100%) ===
     function executeIsolatedPrintPdf() {
       const btn = document.getElementById('btnDownloadPdfConfirm');
-      if (btn) {
-        btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang chuẩn bị in...`;
-        btn.disabled = true;
+      try {
+        if (btn) {
+          btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang chuẩn bị in...`;
+          btn.disabled = true;
+        }
+        runIsolatedPrint();
+      } catch (err) {
+        console.error('Lỗi xuất PDF:', err);
+        showToast('Không xuất được PDF: ' + err.message);
+        resetPdfButton();                       // luôn mở lại nút, tránh bị "liệt" ở lần bấm sau
       }
+    }
 
+    function runIsolatedPrint() {
+      // Dữ liệu mới nhất của tài sản đang tra cứu -> #printArea (id duy nhất) -> iframe in
       recalculateTargetValues();
       syncDataToPrintReport();
 
       const reportHtml = document.getElementById('reportPaperContent').innerHTML;
+      document.querySelectorAll('iframe[data-llp-print]').forEach(f => f.remove());   // dọn iframe của lần in trước
 
       // Tạo một iframe ẩn độc lập để cách ly hoàn toàn CSS trang web
       const iframe = document.createElement('iframe');
+      iframe.setAttribute('data-llp-print', '1');
       iframe.style.position = 'fixed';
       iframe.style.right = '0';
       iframe.style.bottom = '0';
@@ -1722,20 +1752,20 @@
       iframeDoc.close();
 
       setTimeout(() => {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-        
-        // Dọn dẹp iframe sau khi in
-        setTimeout(() => {
-          if (iframe && iframe.parentNode) {
-            iframe.parentNode.removeChild(iframe);
-          }
-          if (btn) {
-            btn.innerHTML = `<i class="ph-bold ph-file-pdf text-base"></i> Xuất File Báo Cáo PDF`;
-            btn.disabled = false;
-          }
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+        } catch (err) {
+          console.error('Lỗi gọi hộp thoại in:', err);
+          showToast('Trình duyệt không mở được hộp thoại in: ' + err.message);
+        } finally {
+          resetPdfButton();
           closePdfPreview();
-        }, 1000);
+        }
+        // Không xoá iframe ngay (Safari/Firefox có thể huỷ lệnh in); dọn khi in xong hoặc sau 2 phút
+        const cleanup = () => { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); };
+        try { iframe.contentWindow.addEventListener('afterprint', cleanup); } catch (e) {}
+        setTimeout(cleanup, 120000);
       }, 350);
     }
 
@@ -2294,6 +2324,12 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         document.getElementById('statTotalAssetValue').innerHTML = `-- <span class="text-xs font-normal text-slate-500">Tỷ</span>`;
         document.getElementById('statAssetBreakdown').innerText = `Chưa có dữ liệu định giá`;
         document.getElementById('statMaxLoanLimit').innerHTML = `-- <span class="text-xs font-normal text-slate-300">Tỷ</span>`;
+        // Báo cáo in: xoá số liệu định giá của tài sản trước
+        ['pLandArea','pLandUnitPrice','pLandTotalVal','pAgriArea','pAgriUnitPrice','pAgriTotalVal',
+         'pBldArea','pBldUnitPrice','pBldTotalVal','pGrandTotalVal','pMaxLoanVal'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.innerText = (id === 'pGrandTotalVal' || id === 'pMaxLoanVal') ? 'Chưa có TSSS' : '--';
+        });
         return;
       }
 
