@@ -194,9 +194,11 @@ def listing_to_api(l):
         "lat": lat if ok_coord else None, "lng": lng if ok_coord else None,
     }
 
+API_VERSION = 3     # 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
+
 @app.get("/api/health")
 def api_health():
-    return {"ok": True, "sources": list(SOURCES)}
+    return {"ok": True, "api_version": API_VERSION, "folder": str(BASE.parent), "sources": list(SOURCES)}
 
 @app.get("/api/comps")
 def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", tinh: str = "Gia Lai", area: float = 0, kind: str = "",
@@ -251,6 +253,7 @@ def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", ti
                  eligible_main=(reason == ""), pool_reason=reason)
         out.append(d)
     return {
+        "api_version": API_VERSION,
         "items": out, "total_matched": len(rows), "match_counts": counts, "extra_district_available": extra_district,
         "same_street": sum(1 for r in rows if duong and same_street(r[0], duong)),
         "quality": {"merged_duplicates": merged, "outliers": sum(1 for r in rows if r[5] == "outlier"),

@@ -316,3 +316,24 @@ def test_api_quality_pipeline(monkeypatch, tmp_path):
     assert r["quality"]["merged_duplicates"] == 1 and r["quality"]["outliers"] == 1 and r["quality"]["no_date"] == 1 and r["quality"]["eligible"] == 6
     assert r["stats"]["weighted_median_per_m2"] and r["items"][0]["eligible_main"] is True      # tin đạt chuẩn xếp trước
     assert by["2"]["weight"] == 0.9 and by["21"]["weight"] == 0.8 and by["23"]["weight"] == 1.0
+
+
+def test_api_version_and_user_scenario(monkeypatch, tmp_path):
+    """Tài sản ở Xã Phước Sơn, huyện Tuy Phước: các tin ở Hoài Hải, Vĩnh Phú, Quy Nhơn, An Nhơn... KHÔNG được xuất hiện."""
+    from fastapi.testclient import TestClient
+    import app.main as m, app.store as store
+    monkeypatch.setattr(store, "DB", tmp_path / "u.sqlite")
+    rows = [
+        ("1", ", Xã Hoài Hải, Thị xã Hoài Nhơn, Bình Định, , Phường Hoài Nhơn Đông, Gia Lai", "620M2 GÓC 2 MẶT TIỀN TRỰC DIỆN BIỂN HOÀI HẢI", 7e9, 590),
+        ("2", "Khu dân cư Vĩnh Phú, Phường Nhơn Thành, Phường An Nhơn Bắc, Thị xã An Nhơn, Bình Định, Gia Lai", "CHÍNH CHỦ BÁN ĐẤT KHU VỰC SÂN BAY PHÙ CÁT", 9.2e9, 955.7),
+        ("3", "Đường Hàn Mạc Tử, Phường Quy Nhơn Nam, Thành phố Quy Nhơn, Bình Định, Gia Lai", "Bán khách sạn 3 sao mặt tiền đường hàn mạc tử", 110e9, 510),
+        ("4", "Đường D1, Phường Quy Nhơn Đông, Thành phố Quy Nhơn, Bình Định, Gia Lai", "CHÍNH CHỦ BÁN ĐẤT MẶT BIỂN XÃ NHƠN LÝ", 30.55e9, 470),
+        ("5", "Duong Hong Linh, Xã Nhơn Mỹ, Phường An Nhơn, Thị xã An Nhơn, Bình Định, Gia Lai", "Ac ai co mua lien he em dat minh ky ban", 0.6e9, 450),
+        ("6", "Thôn Xuân Phương, Xã Phước Sơn, Huyện Tuy Phước, Bình Định", "Bán đất thôn Xuân Phương hẻm bê tông", 0.7e9, 700),
+    ]
+    store.save([Listing("chotot", f"https://x/{n}", t, address=a, price_vnd=pr, area_m2=ar, kind="dat", posted_at=_ago(10)) for n, a, t, pr, ar in rows])
+    c = TestClient(m.app)
+    assert c.get("/api/health").json()["api_version"] == 3 and "folder" in c.get("/api/health").json()
+    r = c.get("/api/comps", params={"xa": "Xã Phước Sơn", "huyen": "Huyện Tuy Phước", "tinh": "Tỉnh Bình Định", "thon": "Thôn Xuân Phương", "area": 751.4, "kind": "dat", "tol": 50}).json()
+    assert r["api_version"] == 3
+    assert [i["url"].split("/")[-1] for i in r["items"]] == ["6"] and r["items"][0]["match_level"] == "thon"

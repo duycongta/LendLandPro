@@ -978,8 +978,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.14";
+    const APP_VERSION = "6.15";
     const APP_CHANGELOG = {
+      "6.15": "Kiểm tra phiên bản máy chủ khảo giá: nếu đang chạy bản cũ (thiếu bộ lọc địa danh) thì KHÔNG dùng kết quả và báo rõ cách cập nhật; nút Kiểm tra hiện phiên bản API và thư mục đang chạy.",
       "6.14": "Bộ lọc chất lượng tin so sánh: gộp tin trùng (cùng SĐT/nội dung), tin ngoại lai về đơn giá (IQR) và tin không rõ ngày đăng chỉ vào Hàng chờ, ưu tiên tin 3-6 tháng; đơn giá bình quân có trọng số theo độ tin cậy của nguồn.",
       "6.13": "Tin so sánh phải CÙNG xã/phường và đúng tỉnh (cùng thôn/xóm, cùng đường xếp trước); khác xã chỉ hiện khi bật \"mở rộng sang cùng huyện\" và chỉ vào Hàng chờ; loại tin không rõ loại tài sản (khách sạn, nhà xưởng...); gắn nhãn mức khớp địa danh.",
       "6.12": "Gộp app Python vào thư mục server/ của repo; nhắc cách chạy (cd server) trong thông báo lỗi kết nối; có thể mở giao diện qua http://localhost:8000/lendland.",
@@ -2654,6 +2655,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
     // v6.11: MÁY CHỦ KHẢO GIÁ (PYTHON) - TIN SO SÁNH THẬT CÓ LINK
     // =========================================================================
     const BACKEND_URL_DEFAULT = 'http://localhost:8000';
+    const REQUIRED_API_VERSION = 3;    // máy chủ cũ hơn không có bộ lọc địa danh nghiêm ngặt -> giao diện từ chối dùng
     function getBackendUrl() {
       let u = '';
       try { u = (localStorage.getItem('llp_backend_url') || '').trim(); } catch (e) {}
@@ -2691,7 +2693,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
     }
     function showBackendLog(lines) {
       const box = document.getElementById('backendLogBox'); if (!box) return;
-      const ls = lines.filter(Boolean).map(l => (l.length > 200 ? l.slice(0, 200) + '…' : l));   // rút gọn dòng lỗi dài
+      const ls = lines.filter(Boolean).map(l => (l.length > 420 ? l.slice(0, 420) + '…' : l));   // rút gọn dòng lỗi dài
       box.textContent = ls.join('\n'); box.classList.toggle('hidden', ls.length === 0);
     }
     async function testBackendConnection() {
@@ -2702,8 +2704,10 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 6000);
         const r = await fetch(base + '/api/health', { signal: ctrl.signal }); clearTimeout(t);
         const j = await r.json();
-        out.textContent = j && j.ok ? 'Kết nối được. Nguồn: ' + (j.sources || []).join(', ') : 'Máy chủ trả lời lạ, kiểm tra địa chỉ.';
-        out.className = 'text-[11px] ' + (j && j.ok ? 'text-emerald-700' : 'text-rose-700');
+const okVer = j && Number(j.api_version) >= REQUIRED_API_VERSION;
+        if (j && j.ok && okVer) { out.textContent = `Kết nối được, đúng phiên bản (API v${j.api_version}). Thư mục đang chạy: ${j.folder || '?'}. Nguồn: ${(j.sources || []).join(', ')}`; out.className = 'text-[11px] text-emerald-700'; }
+        else if (j && j.ok) { out.textContent = `Kết nối được NHƯNG máy chủ là BẢN CŨ (API v${j.api_version || 1}, cần v${REQUIRED_API_VERSION}). Tắt máy chủ cũ (Ctrl+C) và chạy lại từ thư mục server của bản mới nhất.`; out.className = 'text-[11px] text-rose-700 font-semibold'; }
+        else { out.textContent = 'Máy chủ trả lời lạ, kiểm tra địa chỉ.'; out.className = 'text-[11px] text-rose-700'; }
       } catch (e) {
         out.textContent = 'Không kết nối được. Hãy chạy app Python trên máy: vào thư mục server của repo rồi chạy python -m uvicorn app.main:app --port 8000. Chrome có thể hỏi quyền truy cập mạng cục bộ: chọn Cho phép. Hoặc mở giao diện qua http://localhost:8000/lendland.';
         out.className = 'text-[11px] text-rose-700';
@@ -2727,6 +2731,11 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         const r = await fetch(`${base}/api/comps?${params.toString()}`, { signal: ctrl.signal }); clearTimeout(t);
         if (!r.ok) throw new Error('HTTP ' + r.status);
         data = await r.json();
+        if (!data || !(Number(data.api_version) >= REQUIRED_API_VERSION)) {
+          const msg = 'Máy chủ khảo giá đang chạy BẢN CŨ nên trả tin sai khu vực; app KHÔNG dùng kết quả. Tắt cửa sổ máy chủ cũ (Ctrl+C), vào thư mục server của bản LendLandPro mới nhất và chạy lại. Kiểm tra: mở ' + base + '/api/health phải có "api_version":' + REQUIRED_API_VERSION + '.';
+          showBackendLog([msg]); showToast('Máy chủ khảo giá là bản cũ: xem hướng dẫn ở ô nhật ký phía trên bảng.');
+          return { ok: false, usable: 0, error: msg, outdated: true };
+        }
       } catch (err) {
         const msg = `Không kết nối được máy chủ khảo giá (${base}): ${err.message}. Hãy chạy app Python (thư mục server, lệnh python -m uvicorn app.main:app --port 8000) rồi thử lại.`;
         showBackendLog([msg]); showToast(msg);
