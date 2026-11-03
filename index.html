@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>LendLand Pro v6.5 - Thẩm Định Giá BĐS Tín Dụng</title>
+  <title>LendLand Pro - Thẩm Định Giá BĐS Tín Dụng</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -62,7 +62,7 @@
 
       <div class="space-y-1">
         <h2 class="font-bold text-slate-900 text-xl tracking-tight">LendLand Pro</h2>
-        <div class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Xác Thực Bảo Mật Tín Dụng (v6.5)</div>
+        <div class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Xác Thực Bảo Mật Tín Dụng (v<span data-app-version></span>)</div>
         <p class="text-xs text-slate-500 pt-1">Nhập mã PIN để tự động kết nối Két Cloud & làm việc</p>
       </div>
 
@@ -117,7 +117,7 @@
             <i class="ph-bold ph-file-pdf"></i>
           </div>
           <div>
-            <h3 class="font-bold text-slate-900 text-sm sm:text-base">Xem Trước Báo Cáo Thẩm Định (v6.5 Live)</h3>
+            <h3 class="font-bold text-slate-900 text-sm sm:text-base">Xem Trước Báo Cáo Thẩm Định (v<span data-app-version></span> Live)</h3>
             <p class="text-[11px] text-slate-500">Kiểm tra thông tin tài sản, nhận định thị trường và cơ cấu định giá trước khi tải</p>
           </div>
         </div>
@@ -148,7 +148,7 @@
     <span id="floatingStatusText" class="truncate">Đang xử lý dữ liệu...</span>
   </div>
 
-  <!-- HEADER v6.5 LIVE -->
+  <!-- HEADER LIVE -->
   <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md no-print border-b border-slate-700">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 min-h-[4rem] flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center space-x-2.5 overflow-hidden min-w-[210px] flex-1 sm:flex-initial">
@@ -158,7 +158,7 @@
         <div class="truncate">
           <div class="font-bold text-sm sm:text-base tracking-wide flex items-center gap-1.5 flex-wrap">
             <span class="whitespace-nowrap">LendLand Pro</span>
-            <span class="text-[10px] sm:text-xs bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow whitespace-nowrap">v6.5 Live</span>
+            <span class="text-[10px] sm:text-xs bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow whitespace-nowrap">v<span data-app-version></span> Live</span>
             <span class="text-[10px] text-slate-400 font-normal hidden md:inline">by duycongta@gmail.com</span>
           </div>
           <div class="text-[11px] text-slate-300 truncate">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm</div>
@@ -668,7 +668,7 @@
     <div class="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto max-h-[95vh] overflow-y-auto border border-slate-100">
       <div class="flex items-center justify-between border-b pb-2.5">
         <h3 class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
-          <i class="ph-bold ph-vault text-indigo-600 text-lg"></i> Quản Trị Két Cloud & Phân Quyền Admin (v6.5)
+          <i class="ph-bold ph-vault text-indigo-600 text-lg"></i> Quản Trị Két Cloud & Phân Quyền Admin (v<span data-app-version></span>)
         </h3>
         <button onclick="closeApiKeyModal()" type="button" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"><i class="ph-bold ph-x text-lg"></i></button>
       </div>
@@ -771,7 +771,7 @@
           <div class="font-bold text-slate-800 text-sm tracking-wide flex items-center gap-2">
             <span>LENDLAND PRO</span>
             <span class="text-slate-400 font-normal">|</span>
-            <span class="font-semibold text-slate-600">BÁO CÁO KHẢO SÁT THỊ TRƯỜNG BẤT ĐỘNG SẢN (v6.5)</span>
+            <span class="font-semibold text-slate-600">BÁO CÁO KHẢO SÁT THỊ TRƯỜNG BẤT ĐỘNG SẢN (v<span data-app-version></span>)</span>
           </div>
           <div id="printCurrentDate" class="font-medium text-slate-600">Ngày ... tháng ... năm ...</div>
         </div>
@@ -907,6 +907,18 @@
   </div>
 
   <script>
+    // =========================================================================
+    // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
+    // =========================================================================
+    const APP_VERSION = "6.6";
+    const APP_CHANGELOG = {
+      "6.6": "Sửa lỗi xuất PDF: bỏ ID trùng ở khung xem trước, nút không bị khóa khi lỗi, xóa số liệu cũ khi chưa có TSSS.",
+      "6.5": "Hàng chờ TSSS, quản lý nhóm Facebook, nút mở Google Maps, xuất PDF qua iframe."
+    };
+    document.title = `LendLand Pro v${APP_VERSION} - Thẩm Định Giá BĐS Tín Dụng`;
+    document.querySelectorAll('[data-app-version]').forEach(el => { el.textContent = APP_VERSION; });
+    console.info(`LendLand Pro v${APP_VERSION} - ${APP_CHANGELOG[APP_VERSION] || ''}`);
+
     // =========================================================================
     // THÔNG SỐ KÉT CLOUD MỚI MẶC ĐỊNH & DANH SÁCH 11 GROUP FB ĐÃ HARDCODE
     // =========================================================================
