@@ -552,6 +552,11 @@
         <div id="fbGroupDupAlert" class="hidden text-[11px] text-rose-600 font-bold bg-rose-50 border border-rose-200 p-2 rounded-lg">
           Đường link nhóm này đã có sẵn trong danh sách!
         </div>
+        <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <label class="text-[11px] font-semibold text-slate-700 whitespace-nowrap">Từ khóa tìm trong nhóm:</label>
+          <input id="fbSearchQuery" type="text" placeholder="Để trống = tự lấy từ Xã/Phường đang nhập" class="flex-grow border border-slate-300 rounded-lg p-2 text-xs bg-white">
+        </div>
+        <div class="text-[11px] text-slate-600 leading-snug">Facebook không cho app tự đọc nội dung nhóm. Bấm biểu tượng kính lúp ở từng nhóm để mở ô tìm kiếm của nhóm (bằng tài khoản Facebook của bạn), sao chép các bài phù hợp rồi dán vào ô "Dán tin rao" bên dưới (dán nhiều bài một lần, ngăn cách bằng dòng ---). AI sẽ trích giá, diện tích, mặt tiền, đường vào từ nội dung bài.</div>
         <div id="fbGroupChipsList" class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pt-1"></div>
       </div>
 
@@ -563,6 +568,7 @@
               <i class="ph-bold ph-clipboard"></i> Dán Clipboard
             </button>
           </div>
+          <select id="manualSourceGroup" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"><option value="">Nguồn: Zalo / khác</option></select>
           <textarea id="manualRawText" rows="3" placeholder="Ví dụ: Cần bán đất hẻm 3m đường Hùng Vương P. Trần Quang Diệu, DT 55m2 thổ cư ODT, ngang 4.5m, giá 1 tỷ 150 triệu bớt lộc. Đăng ngày 28/10. LH 0905..." class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500"></textarea>
           <div class="flex justify-end">
             <button onclick="parseManualText()" type="button" class="bg-slate-800 hover:bg-slate-900 text-white font-medium text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 shadow cursor-pointer">
@@ -764,6 +770,7 @@
             <input type="text" id="backendUrlInput" placeholder="http://localhost:8000" class="flex-grow border border-slate-300 rounded-lg p-2 font-mono text-[11px] bg-white">
             <button onclick="testBackendConnection()" type="button" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 rounded-lg">Kiểm tra</button>
           </div>
+          <label class="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" id="chkAiEnrich" checked> Dùng AI (Gemini) trích thông tin từ tin rao (mặt tiền, đường vào, loại đất, pháp lý, thôn/đường) và chấm tương đồng</label>
           <label class="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" id="chkAlwaysAi"> Luôn chạy thêm AI gợi ý (tin chưa kiểm chứng) sau khi lấy tin thật</label>
           <label class="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" id="chkExpandDistrict"> Hiển thị thêm tin cùng huyện (khác xã) trong Hàng chờ để tham khảo; không bao giờ tự đưa lên bảng chính hay tính giá</label>
           <div id="backendTestResult" class="text-[11px] text-slate-600"></div>
@@ -978,8 +985,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.16";
+    const APP_VERSION = "6.17";
     const APP_CHANGELOG = {
+      "6.17": "Tận dụng Gemini (khóa trả phí) ĐÚNG CHỖ: AI chỉ TRÍCH XUẤT thông tin từ tin rao thật/tin dán (mặt tiền, đường vào, loại đất, pháp lý, thôn/đường) kèm kiểm tra chống bịa, không tự tạo tin; điểm tương đồng tính theo tiêu chí minh bạch (rê chuột xem lý do). Nhóm Facebook: nút tìm trong từng nhóm + dán nhiều bài một lần.",
       "6.16": "Thu thập sâu hơn theo đúng phường/xã và huyện (Chợ Tốt theo mã khu vực; Alonhadat/Thuviennhadat theo trang huyện); tự học bảng tên cũ-mới từ dữ liệu tin; mặc định bật hiển thị tin cùng huyện (khác xã) trong Hàng chờ; thu thập tối đa 200 tin/nguồn.",
       "6.15": "Kiểm tra phiên bản máy chủ khảo giá: nếu đang chạy bản cũ (thiếu bộ lọc địa danh) thì KHÔNG dùng kết quả và báo rõ cách cập nhật; nút Kiểm tra hiện phiên bản API và thư mục đang chạy.",
       "6.14": "Bộ lọc chất lượng tin so sánh: gộp tin trùng (cùng SĐT/nội dung), tin ngoại lai về đơn giá (IQR) và tin không rõ ngày đăng chỉ vào Hàng chờ, ưu tiên tin 3-6 tháng; đơn giá bình quân có trọng số theo độ tin cậy của nguồn.",
@@ -1068,6 +1076,7 @@
       const btnText = document.getElementById('toggleFbGroupBtnText');
       if (btnText) btnText.innerText = `Hiện Danh Sách Nhóm (${customFbGroups.length})`;
       if (!container) return;
+      fillManualSourceSelect();
 
       container.innerHTML = '';
       customFbGroups.forEach((g, idx) => {
@@ -1075,7 +1084,8 @@
         chip.className = "inline-flex items-center gap-1.5 bg-white border border-indigo-200 text-indigo-900 px-2.5 py-1 rounded-full text-[11px] shadow-xs";
         chip.innerHTML = `
           <i class="ph-bold ph-facebook-logo text-blue-600"></i>
-          <a href="${g.url}" target="_blank" class="hover:underline font-medium truncate max-w-[170px]" title="${g.name}\n${g.url}">${g.name}</a>
+          <a href="${escHtml(safeHttpUrl(g.url))}" target="_blank" rel="noopener" class="hover:underline font-medium truncate max-w-[170px]" title="${escHtml(g.name)}\n${escHtml(g.url)}">${escHtml(g.name)}</a>
+          <button onclick="openFbGroupSearch(${idx})" type="button" title="Tìm trong nhóm này (bằng tài khoản Facebook của bạn)" class="text-indigo-600 hover:text-indigo-800 p-0.5 rounded-full cursor-pointer"><i class="ph-bold ph-magnifying-glass"></i></button>
           <button onclick="removeFbGroup(${idx})" type="button" class="text-slate-400 hover:text-rose-600 ml-1 p-0.5 rounded-full cursor-pointer"><i class="ph-bold ph-x"></i></button>
         `;
         container.appendChild(chip);
@@ -1441,6 +1451,7 @@
         if (elKey) elKey.value = masterKey;
         const elBe = document.getElementById('backendUrlInput'); if (elBe) elBe.value = getBackendUrl();
         const elAi = document.getElementById('chkAlwaysAi'); if (elAi) elAi.checked = localStorage.getItem('llp_always_ai') === 'true';
+        const elAe = document.getElementById('chkAiEnrich'); if (elAe) elAe.checked = localStorage.getItem('llp_ai_extract') !== 'false';
         const elEx = document.getElementById('chkExpandDistrict'); if (elEx) elEx.checked = localStorage.getItem('llp_expand_district') !== 'false';
 
         const radioP = document.getElementById('radioModePayg');
@@ -1477,6 +1488,7 @@
         localStorage.setItem('llp_backend_url', valStr('backendUrlInput'));
         localStorage.setItem('llp_always_ai', document.getElementById('chkAlwaysAi').checked ? 'true' : 'false');
         localStorage.setItem('llp_expand_district', document.getElementById('chkExpandDistrict').checked ? 'true' : 'false');
+        localStorage.setItem('llp_ai_extract', document.getElementById('chkAiEnrich').checked ? 'true' : 'false');
       } catch (e) {}
 
       const mode = localStorage.getItem('gemini_api_mode') || 'free';
@@ -1723,10 +1735,7 @@
           const okc = compIsValid(comp);
           const rawUnitPrice = okc ? (comp.rawPrice * 1000) / comp.area : null;
           const discountedUnitPrice = okc ? rawUnitPrice * (1 - discountPercent / 100) : null;
-          let score = 85;
-          if (comp.roadType && comp.roadType === document.getElementById('targetPosType').value) score += 10;
-          if (okc && totalA > 0 && Math.abs(comp.area - totalA) < 40) score += 5;
-          score = Math.min(score, 98);
+          const score = computeSimilarity(comp).score;
           const realLink = comp.origin !== 'ai' ? safeHttpUrl(comp.link) : '';
 
           const ptr = document.createElement('tr');
@@ -2614,10 +2623,10 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       if (c.origin === 'backend') return '<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Tin thật · có link</span>';
       return '<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300">Nhập tay</span>';
     }
-    const MATCH_LABEL = { thon: 'Cùng thôn/xóm', xa: 'Cùng xã/phường', huyen: 'Cùng huyện · KHÁC xã' };
+    const MATCH_LABEL = { thon: 'Cùng thôn/xóm', xa: 'Cùng xã/phường', huyen: 'Cùng huyện · KHÁC xã', nhac: 'Tin có nhắc xã/phường', khong: 'Chưa thấy nhắc xã/phường' };
     function matchBadgeHtml(c) {
       if (!c.matchLevel || !MATCH_LABEL[c.matchLevel]) return '';
-      const cls = c.matchLevel === 'thon' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : c.matchLevel === 'xa' ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-amber-50 text-amber-800 border-amber-300';
+      const cls = c.matchLevel === 'thon' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : (c.matchLevel === 'xa' || c.matchLevel === 'nhac') ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-amber-50 text-amber-800 border-amber-300';
       return `<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold border ${cls}">${MATCH_LABEL[c.matchLevel]}</span>`;
     }
     function qualityBadgesHtml(c) {
@@ -2625,6 +2634,8 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       const out = [];
       if (c.poolReason === 'outlier' || c.outlier) out.push(tag('Ngoại lai giá', 'bg-rose-50 text-rose-700 border-rose-300'));
       if (c.poolReason === 'no_date' || c.dateTier === 3) out.push(tag('Không rõ ngày đăng', 'bg-amber-50 text-amber-800 border-amber-300'));
+      if (c.aiFields && c.aiFields.length) out.push(tag('AI trích: ' + escHtml(c.aiFields.join(', ')), 'bg-indigo-50 text-indigo-700 border-indigo-300'));
+      if (c.poolReason === 'not_sale') out.push(tag('Không phải tin bán', 'bg-rose-50 text-rose-700 border-rose-300'));
       if (c.dupCount > 0) out.push(tag(`Đã gộp ${c.dupCount} tin trùng${c.alsoOn && c.alsoOn.length ? ' (' + escHtml(c.alsoOn.join(', ')) + ')' : ''}`, 'bg-slate-50 text-slate-600 border-slate-300'));
       return out.join(' ');
     }
@@ -2688,7 +2699,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         area: Number(it.area_m2) > 0 ? Number(it.area_m2) : null,
         frontage: Number(it.frontage_m) > 0 ? Number(it.frontage_m) : null, depth: null,
         rawPrice: price, link: it.url || '', sourceType: it.source || 'khac', sourceName: it.source_label || it.source || 'Tin rao',
-        distanceMeters: null,
+        distanceMeters: null, description: it.description || '',
         lat: typeof it.lat === 'number' ? it.lat : null, lng: typeof it.lng === 'number' ? it.lng : null
       };
     }
@@ -2753,6 +2764,13 @@ const okVer = j && Number(j.api_version) >= REQUIRED_API_VERSION;
       // giữ tin nhập tay đang có; thay các tin lấy từ máy chủ lần trước
       currentComps = currentComps.filter(c => c.origin !== 'backend').concat(top);
       backupCompsPool = rest.concat(backupCompsPool.filter(c => c.origin === 'ai'));
+      // AI bổ sung mặt tiền / đường vào / loại đất / pháp lý từ nội dung tin THẬT (không đổi giá, diện tích, link)
+      if (aiExtractEnabled()) {
+        setFloatingStatus('survey', 'Gemini đang trích thông tin từ các tin thật...');
+        await enrichCompsWithAi(currentComps.filter(c => c.origin === 'backend').concat(backupCompsPool.filter(c => c.origin === 'backend')));
+        const notSale = currentComps.filter(c => c.notSale);
+        if (notSale.length) { notSale.forEach(c => { c.poolReason = 'not_sale'; }); currentComps = currentComps.filter(c => !c.notSale); backupCompsPool = notSale.concat(backupCompsPool); }
+      }
       const mc = data.match_counts || {};
       const hints = [];
       if (usableList.length === 0) hints.push('Không có tin nào CÙNG xã/phường (đúng tỉnh) đủ giá và diện tích' + (districtOnly.length ? `; có ${districtOnly.length} tin cùng huyện (khác xã) trong Hàng chờ để tham khảo` : '') + '. Xã nhỏ thường có rất ít tin rao online: hãy dán thêm tin thủ công (Facebook/Zalo) hoặc dùng giá tham khảo khu vực lân cận.');
@@ -2768,6 +2786,224 @@ const okVer = j && Number(j.api_version) >= REQUIRED_API_VERSION;
       setFloatingStatus('success', `Đã lấy ${top.length} tin thật lên bảng chính`);
       if (usableList.length === 0) showToast('Không có tin nào cùng xã/phường đủ giá và diện tích. Xem gợi ý ở ô nhật ký phía trên bảng.');
       return { ok: true, usable: usableList.length };
+    }
+
+    // =========================================================================
+    // v6.17: GEMINI = TRÍCH XUẤT + KIỂM CHỨNG (KHÔNG TẠO TIN). Điểm tương đồng minh bạch. Nhóm Facebook.
+    // =========================================================================
+    function normVi(s) { return String(s == null ? '' : s).toLowerCase().replace(/đ/g, 'd').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+    function aiExtractEnabled() { return localStorage.getItem('llp_ai_extract') !== 'false' && !!getActiveApiKey(); }
+
+    async function pickGeminiModel(apiKey) {
+      const cached = localStorage.getItem('gemini_cached_model');
+      if (cached) return cached;
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+      if (!r.ok) throw new Error('API Key không hợp lệ');
+      const valid = ((await r.json()).models || []).filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'));
+      const score = n => n.includes('3.8-flash') ? 100 : n.includes('2.0-flash') ? 90 : n.includes('1.5-flash') ? 80 : (n.includes('flash') && !n.includes('2.5')) ? 70 : 50;
+      valid.sort((a, b) => score(b.name) - score(a.name));
+      if (!valid.length) throw new Error('Không có model khả dụng');
+      return valid[0].name;
+    }
+    async function callGeminiJSON(prompt) {
+      const apiKey = getActiveApiKey();
+      const model = await pickGeminiModel(apiKey);
+      const url = `https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=${apiKey}`;
+      const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0, responseMimeType: 'application/json' } };
+      let r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!r.ok && r.status === 400) {       // model cũ không hỗ trợ responseMimeType
+        delete body.generationConfig.responseMimeType;
+        r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      }
+      if (!r.ok) throw new Error('Gemini HTTP ' + r.status);
+      const j = await r.json();
+      const text = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts && j.candidates[0].content.parts[0] && j.candidates[0].content.parts[0].text) || '';
+      const m = text.match(/[\[{][\s\S]*[\]}]/);
+      if (!m) throw new Error('Gemini không trả JSON');
+      return JSON.parse(m[0]);
+    }
+
+    // Chống bịa: số liệu AI đưa ra phải CÓ trong văn bản gốc thì mới nhận
+    function numbersIn(text) { return (String(text).match(/\d+(?:[.,]\d+)?/g) || []).map(x => parseFloat(x.replace(',', '.'))).filter(n => !isNaN(n)); }
+    function numberAppears(n, text) {
+      if (!(n > 0)) return false;
+      return numbersIn(text).some(x => Math.abs(x - n) <= Math.max(0.011, n * 0.002));
+    }
+    // Giá chỉ được công nhận khi khớp một CỤM GIÁ trong văn bản ("1 tỷ 200", "1,2 tỷ", "800 triệu"), không khớp số rời rạc khác (như "ngang 5m")
+    function priceCandidates(text) {
+      const out = []; const t = String(text);
+      let m; const reTy = /(\d+(?:[.,]\d+)?)\s*(?:tỷ|tỉ|ty|ti)(?!\p{L})\s*(\d+)?/giu;
+      while ((m = reTy.exec(t)) !== null) {
+        const a = parseFloat(m[1].replace(',', '.')); let v = a * 1e9;
+        if (m[2]) { const b = parseFloat(m[2]); v += b < 10 ? b * 1e8 : b * 1e6; }
+        out.push(v);
+      }
+      const reTr = /(\d+(?:[.,]\d+)?)\s*(?:triệu|trieu|tr)(?!\p{L})/giu;
+      while ((m = reTr.exec(t)) !== null) out.push(parseFloat(m[1].replace(',', '.')) * 1e6);
+      return out;
+    }
+    function priceSupportedByText(p, text) {
+      if (!(p >= 1e6)) return false;
+      return priceCandidates(text).some(v => Math.abs(v - p) / p <= 0.01);
+    }
+    const AI_LAND = ['ONT', 'ODT', 'CLN', 'BHK', 'RSX', 'NTS', 'NN'], AI_LEGAL = ['so_do', 'so_hong', 'giay_tay', 'khac'];
+    function verifyAiFields(f, text) {
+      const out = {}; const t = normVi(text);
+      if (!f || typeof f !== 'object') return out;
+      ['area_m2', 'frontage_m', 'depth_m', 'road_width_m'].forEach(k => { const v = parseFloat(f[k]); if (v > 0 && numberAppears(v, text)) out[k] = v; });
+      const pv = parseFloat(f.price_vnd); if (priceSupportedByText(pv, text)) out.price_vnd = pv;
+      ['hamlet', 'street', 'ward', 'district'].forEach(k => { const v = String(f[k] || '').trim(); const nv = normVi(v); if (nv && t.includes(nv)) out[k] = v; });
+      if (AI_LAND.includes(f.land_type)) out.land_type = f.land_type;
+      if (AI_LEGAL.includes(f.legal)) out.legal = f.legal;
+      if (f.is_sale === false) out.is_sale = false;
+      if (typeof f.has_building === 'boolean') out.has_building = f.has_building;
+      return out;
+    }
+    // Gửi một lô văn bản cho Gemini; trả về mảng kết quả đã kiểm chứng theo đúng thứ tự (rỗng nếu AI lỗi)
+    async function aiExtractBatch(texts) {
+      const items = texts.map((t, i) => `[${i}] ${String(t).replace(/\s+/g, ' ').slice(0, 900)}`).join('\n');
+      const prompt = `Bạn TRÍCH XUẤT thông tin từ các tin rao bất động sản tại Việt Nam. Với MỖI tin trả về một đối tượng trong mảng "results" (đúng thứ tự, "i" là số thứ tự trong ngoặc vuông).
+QUY TẮC: chỉ ghi thông tin GHI RÕ trong văn bản; không suy đoán, không bịa; thiếu thì để null hoặc "". Giá đổi ra đồng (1 tỷ = 1000000000). Diện tích tính m2. "frontage_m": chiều ngang/mặt tiền của lô. "road_width_m": độ rộng đường/hẻm trước nhà.
+Cấu trúc mỗi đối tượng: {"i":0,"is_sale":true,"hamlet":"","street":"","ward":"","district":"","area_m2":null,"frontage_m":null,"depth_m":null,"road_width_m":null,"price_vnd":null,"land_type":"","legal":"","has_building":null}
+land_type: ONT (thổ cư nông thôn) | ODT (đất ở đô thị) | CLN (cây lâu năm/đất vườn) | BHK (cây hàng năm) | RSX (rừng sản xuất) | NTS (nuôi trồng thủy sản) | NN (nông nghiệp khác) | "" nếu không rõ. legal: so_do | so_hong | giay_tay | khac | "" nếu không rõ. is_sale=false nếu là tin cho thuê/tìm mua.
+Chỉ trả về JSON dạng {"results":[...]}.
+
+Danh sách tin:
+${items}`;
+      const j = await callGeminiJSON(prompt);
+      const arr = Array.isArray(j) ? j : (j.results || []);
+      const byIdx = {}; arr.forEach(x => { if (x && typeof x.i === 'number') byIdx[x.i] = x; });
+      return texts.map((t, i) => verifyAiFields(byIdx[i], t));
+    }
+    // Áp thông tin AI đã kiểm chứng lên một tài sản so sánh (chỉ bổ sung, không ghi đè số liệu gốc của trang rao)
+    function applyAiToComp(c, ai) {
+      const used = [];
+      if (c.frontage == null && ai.frontage_m) { c.frontage = ai.frontage_m; used.push('mặt tiền'); }
+      if (c.depth == null && ai.depth_m) { c.depth = ai.depth_m; }
+      if (c.roadWidth == null && ai.road_width_m) { c.roadWidth = ai.road_width_m; used.push('đường vào'); }
+      if (!c.landType && ai.land_type) { c.landType = ai.land_type; used.push('loại đất'); }
+      if (!c.legal && ai.legal) { c.legal = ai.legal; used.push('pháp lý'); }
+      if (!c.hamletText && ai.hamlet) { c.hamletText = ai.hamlet; used.push('thôn'); }
+      if (!c.streetText && ai.street) { c.streetText = ai.street; used.push('đường'); }
+      if (ai.is_sale === false) c.notSale = true;
+      c.aiFields = (c.aiFields || []).concat(used);
+    }
+    // Bổ sung thông tin cho các tin THẬT lấy từ máy chủ (mặt tiền, đường vào, loại đất, pháp lý...)
+    async function enrichCompsWithAi(list) {
+      if (!aiExtractEnabled() || !list.length) return 0;
+      const paid = (localStorage.getItem('gemini_api_mode') || 'free') === 'payg';
+      const batchSize = paid ? 40 : 15, maxBatches = paid ? 3 : 1;
+      let n = 0;
+      for (let b = 0; b < maxBatches && b * batchSize < list.length; b++) {
+        const chunk = list.slice(b * batchSize, (b + 1) * batchSize);
+        try {
+          const res = await aiExtractBatch(chunk.map(c => `${c.roadDesc || ''}. ${c.address || ''}. ${c.description || ''}`));
+          chunk.forEach((c, i) => { applyAiToComp(c, res[i] || {}); n++; });
+        } catch (e) { console.warn('AI trích xuất lỗi:', e); showToast('AI không trích xuất được thông tin bổ sung (' + e.message + '), vẫn dùng số liệu gốc.'); break; }
+      }
+      return n;
+    }
+
+    // Điểm tương đồng minh bạch (0-100) theo tiêu chí; rê chuột vào ô điểm để xem lý do
+    function computeSimilarity(c) {
+      const reasons = []; let score = 60;
+      const add = (d, why) => { score += d; reasons.push(`${d >= 0 ? '+' : ''}${d} ${why}`); };
+      const tArea = valNum('targetArea'), tFront = valNum('targetFrontage'), tRoad = valNum('targetRoadWidth');
+      const tStreet = normVi(cleanStreetName(valStr('targetStreet')));
+      if (c.matchLevel === 'thon') add(15, 'cùng thôn/xóm'); else if (c.matchLevel === 'xa') add(8, 'cùng xã/phường'); else if (c.matchLevel === 'nhac') add(4, 'tin có nhắc xã/phường');
+      const hay = normVi(`${c.address || ''} ${c.roadDesc || ''} ${c.streetText || ''}`);
+      if (tStreet && hay.includes(tStreet)) add(8, 'cùng đường');
+      if (tArea > 0 && c.area > 0) { const r = Math.abs(c.area - tArea) / tArea; if (r <= 0.2) add(8, 'diện tích chênh ≤20%'); else if (r <= 0.5) add(3, 'diện tích chênh ≤50%'); else add(-5, 'diện tích chênh >50%'); }
+      if (tFront > 0 && c.frontage > 0) { const r = c.frontage / tFront; if (r >= 0.7 && r <= 1.4) add(6, 'mặt tiền tương đương'); else if (r < 0.5 || r > 2) add(-6, 'mặt tiền chênh lớn'); }
+      if (tRoad > 0 && c.roadWidth > 0) { const r = c.roadWidth / tRoad; if (r >= 0.7 && r <= 1.4) add(6, 'đường vào tương đương'); else if (r < 0.5 || r > 2) add(-6, 'đường vào chênh lớn'); }
+      if (c.legal === 'so_do' || c.legal === 'so_hong') add(3, 'có sổ'); else if (c.legal === 'giay_tay') add(-10, 'giấy tay/chưa có sổ');
+      if (c.dateTier === 0) add(4, 'đăng ≤90 ngày'); else if (c.dateTier === 1) add(2, 'đăng ≤180 ngày');
+      if (!reasons.length) reasons.push('chưa đủ thông tin để so sánh chi tiết');
+      return { score: Math.max(30, Math.min(98, Math.round(score))), reasons };
+    }
+
+    // ---------------- Nhóm Facebook: tìm trong nhóm + dán nhiều bài ----------------
+    function fbSearchKeyword() {
+      const typed = valStr('fbSearchQuery');
+      if (typed) return typed;
+      return valStr('targetWard').replace(/^(xã|phường|thị trấn)\s+/i, '').trim() || valStr('targetDistrictProvince').split(',')[0].trim();
+    }
+    function openFbGroupSearch(idx) {
+      const g = customFbGroups[idx]; if (!g) return;
+      const m = /groups\/([^\/?#]+)/.exec(g.url || ''); const id = m ? m[1] : g.id;
+      const q = fbSearchKeyword();
+      if (!q) { showToast('Hãy nhập Xã/Phường (hoặc từ khóa tìm trong nhóm) trước.'); return; }
+      window.open(`https://www.facebook.com/groups/${encodeURIComponent(id)}/search/?q=${encodeURIComponent(q)}`, '_blank', 'noopener');
+    }
+    function fillManualSourceSelect() {
+      const sel = document.getElementById('manualSourceGroup'); if (!sel) return;
+      const cur = sel.value; sel.innerHTML = '';
+      const o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Nguồn: Zalo / khác'; sel.appendChild(o0);
+      customFbGroups.forEach((g, i) => { const o = document.createElement('option'); o.value = String(i); o.textContent = 'Facebook · ' + g.name; sel.appendChild(o); });
+      sel.value = cur && Number(cur) < customFbGroups.length ? cur : '';
+    }
+    function splitPosts(text) {
+      return String(text).split(/\n\s*(?:-{3,}|={3,}|_{3,}|\*{3,})\s*\n|\n\s*\n\s*\n+/).map(x => x.trim()).filter(x => x.length >= 15);
+    }
+    // Đọc một bài đăng bằng quy tắc (không cần AI)
+    function parsePostRegex(text) {
+      const mArea = text.match(/(\d+[\.,]?\d*)\s*(m2|m²)/i);
+      const mFront = text.match(/(ngang|mặt tiền|mt)\s*(\d+[\.,]?\d*)/i);
+      return { area: mArea ? parseFloat(mArea[1].replace(',', '.')) : null, price: normalizePriceToTy(text),
+               frontage: mFront ? parseFloat(mFront[2].replace(',', '.')) : null };
+    }
+    function buildManualComp(text, rx, ai, group) {
+      const mDate = text.match(/(?:ngày|đăng ngày|hôm)\s*(\d{1,2}[\/\-\.]\d{1,2}(?:[\/\-\.]\d{2,4})?)/i);
+      const mLink = text.match(/https?:\/\/[^\s]+/i);
+      const area = rx.area > 0 ? rx.area : (ai.area_m2 || null);
+      const price = rx.price > 0 ? rx.price : (ai.price_vnd ? Math.round(ai.price_vnd / 1e6) / 1000 : null);
+      if (!(area > 0) || !(price > 0)) return { error: !(area > 0) ? 'diện tích (vd "100m2")' : 'giá (vd "2,5 tỷ")' };
+      const wardCore = normVi(valStr('targetWard').replace(/^(xã|phường|thị trấn)\s+/i, ''));
+      const tn = normVi(text);
+      const comp = {
+        id: 'm' + Date.now() + Math.random().toString(36).slice(2, 6), origin: 'manual', userConfirmed: true,
+        address: text.replace(/\s+/g, ' ').slice(0, 80) + (text.length > 80 ? '...' : ''), description: text.replace(/\s+/g, ' ').slice(0, 500),
+        postedDate: mDate ? mDate[1] : '--', roadType: /mặt tiền/i.test(text) ? 'mat_tien' : '', roadDesc: '',
+        area, frontage: rx.frontage > 0 ? rx.frontage : (ai.frontage_m || null), depth: ai.depth_m || null, rawPrice: price,
+        link: mLink ? mLink[0] : '', sourceType: group ? 'facebook' : 'zalo',
+        sourceName: group ? 'Facebook · ' + group.name : 'Tin nhập tay (Zalo/Facebook)', distanceMeters: null, lat: null, lng: null,
+        matchLevel: wardCore ? (tn.includes(wardCore) ? 'nhac' : 'khong') : '', aiFields: []
+      };
+      applyAiToComp(comp, ai);
+      return { comp };
+    }
+    function finishManualAdd(added, errors, dups) {
+      document.getElementById('manualRawText').value = '';
+      renderMapElements(); recalculateTargetValues();
+      if (!added) {
+        showToast(dups ? `Không thêm tin mới: ${dups} tin đã có trong bảng (trùng)` + (errors.length ? `; ${errors.length} tin thiếu giá/diện tích` : '') + '.'
+                       : 'Không đọc được ' + errors[0] + ' trong tin. Hãy bổ sung vào nội dung rồi thử lại.');
+        return;
+      }
+      showToast(`Đã thêm ${added} tin vào bảng` + (errors.length ? `; bỏ ${errors.length} tin thiếu giá/diện tích` : '') + (dups ? `; bỏ ${dups} tin trùng` : '') + '.');
+    }
+    function manualAddChunks(chunks, aiList) {
+      const gi = valStr('manualSourceGroup'); const group = gi !== '' ? customFbGroups[Number(gi)] : null;
+      let added = 0, dups = 0; const errors = [];
+      chunks.forEach((t, i) => {
+        const r = buildManualComp(t, parsePostRegex(t), (aiList && aiList[i]) || {}, group);
+        if (r.error) { errors.push(r.error); return; }
+        if ((aiList && aiList[i] && aiList[i].is_sale === false)) { errors.push('thông tin bán (tin cho thuê/tìm mua)'); return; }
+        const key = `${r.comp.area}|${r.comp.rawPrice}|${normVi(t).slice(0, 60)}`;
+        if (currentComps.concat(backupCompsPool).some(c => c._key === key)) { dups++; return; }
+        r.comp._key = key; currentComps.push(r.comp); added++;
+      });
+      finishManualAdd(added, errors, dups);
+    }
+    function parseManualText() {
+      const text = document.getElementById('manualRawText').value.trim();
+      if (!text) { showToast("Vui lòng nhập nội dung tin rao."); return; }
+      const chunks = splitPosts(text).length ? splitPosts(text) : [text];
+      if (!aiExtractEnabled()) { manualAddChunks(chunks, null); return; }
+      showToast('AI đang đọc ' + chunks.length + ' bài...');
+      return aiExtractBatch(chunks).then(res => manualAddChunks(chunks, res)).catch(e => {
+        showToast('AI không đọc được (' + e.message + '), dùng bộ đọc quy tắc.'); manualAddChunks(chunks, null);
+      });
     }
 
     // === TÍNH TOÁN ĐỊNH GIÁ ĐA CƠ CẤU (ĐẤT Ở + ĐẤT VƯỜN + CTXD) ===
@@ -2820,10 +3056,8 @@ const okVer = j && Number(j.api_version) >= REQUIRED_API_VERSION;
         const okc = compIsValid(comp);
         const rawUnitPrice = okc ? (comp.rawPrice * 1000) / comp.area : null;
         const discountedUnitPrice = okc ? rawUnitPrice * (1 - discountPercent / 100) : null;
-        let score = 85;
-        if (comp.roadType && comp.roadType === document.getElementById('targetPosType').value) score += 10;
-        if (okc && totalArea > 0 && Math.abs(comp.area - totalArea) < 40) score += 5;
-        score = Math.min(score, 98);
+        const sim = computeSimilarity(comp);
+        const score = sim.score;
 
         if (okc) {
           const weight = (score / 100) * (Number(comp.sourceWeight) > 0 ? Number(comp.sourceWeight) : 1);   // điểm tương đồng x độ tin cậy nguồn
@@ -2848,7 +3082,7 @@ const okVer = j && Number(j.api_version) >= REQUIRED_API_VERSION;
             <span class="text-[10px] text-slate-500 font-normal block">${okc ? '(' + rawUnitPrice.toFixed(1) + ' tr/m²)' : '(thiếu số liệu)'}</span>
           </td>
           <td class="py-3 px-3 text-right font-bold text-emerald-700 whitespace-nowrap text-sm">${okc ? discountedUnitPrice.toFixed(2) : 'không tính'}</td>
-          <td class="py-3 px-2 text-center"><span class="inline-block px-1.5 py-0.5 rounded text-[11px] font-bold ${score >= 90 ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${okc ? score + '%' : '--'}</span></td>
+          <td class="py-3 px-2 text-center"><span title="${escHtml(sim.reasons.join('; '))}" class="inline-block px-1.5 py-0.5 rounded text-[11px] font-bold cursor-help ${score >= 90 ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${okc ? score + '%' : '--'}</span></td>
           <td class="py-3 px-2 text-center">
             <div class="flex flex-col items-center gap-1">
               ${getSourceBadge(comp.sourceType, comp.sourceName)}
@@ -3148,41 +3382,6 @@ const okVer = j && Number(j.api_version) >= REQUIRED_API_VERSION;
         document.getElementById('manualRawText').value = text;
         showToast("Đã dán văn bản từ bộ nhớ tạm!");
       } catch (err) { showToast("Vui lòng cấp quyền clipboard."); }
-    }
-
-    function parseManualText() {
-      const text = document.getElementById('manualRawText').value.trim();
-      if (!text) { showToast("Vui lòng nhập nội dung tin rao."); return; }
-
-      const mArea = text.match(/(\d+[\.,]?\d*)\s*(m2|m²)/i);
-      const area = mArea ? parseFloat(mArea[1].replace(',', '.')) : null;
-      const price = normalizePriceToTy(text);
-      if (!(area > 0) || !(price > 0)) {
-        showToast('Không đọc được ' + (!(area > 0) ? 'diện tích (vd "100m2")' : 'giá (vd "2,5 tỷ")') + ' trong tin. Hãy bổ sung vào nội dung rồi thử lại.');
-        return;
-      }
-      const mFront = text.match(/(ngang|mặt tiền|mt)\s*(\d+[\.,]?\d*)/i);
-      const frontage = mFront ? parseFloat(mFront[2].replace(',', '.')) : null;
-      const mDate = text.match(/(?:ngày|đăng ngày|hôm)\s*(\d{1,2}[\/\-\.]\d{1,2}(?:[\/\-\.]\d{2,4})?)/i);
-      const mLink = text.match(/https?:\/\/[^\s]+/i);
-
-      currentComps.push({
-        id: 'm' + Date.now(),
-        origin: 'manual', userConfirmed: true,
-        address: text.slice(0, 80) + (text.length > 80 ? '...' : ''),
-        postedDate: mDate ? mDate[1] : '--',
-        roadType: text.toLowerCase().includes("mặt tiền") ? "mat_tien" : "",
-        roadDesc: '',
-        area: area, frontage: frontage, depth: null,
-        rawPrice: price,
-        link: mLink ? mLink[0] : '', sourceType: "zalo", sourceName: "Tin nhập tay (Zalo/Facebook)",
-        distanceMeters: null, lat: null, lng: null
-      });
-
-      document.getElementById('manualRawText').value = '';
-      renderMapElements();
-      recalculateTargetValues();
-      showToast("Đã thêm tin vào bảng!");
     }
 
     function showToast(msg) {

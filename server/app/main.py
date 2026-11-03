@@ -195,7 +195,7 @@ def listing_to_api(l):
     lat, lng = _num(raw.get("latitude")), _num(raw.get("longitude"))
     ok_coord = lat is not None and lng is not None and 8 < lat < 24 and 102 < lng < 110     # trong lãnh thổ VN
     return {
-        "url": l.url, "title": l.title, "address": l.address or l.title,
+        "url": l.url, "title": l.title, "address": l.address or l.title, "description": (l.description or "")[:500],
         "source": l.source, "source_label": SOURCE_LABEL.get(l.source, l.source),
         "kind": l.kind, "land_type": l.land_type,
         "area_m2": l.area_m2, "frontage_m": l.frontage_m,
