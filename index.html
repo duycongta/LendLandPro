@@ -42,6 +42,7 @@
       word-wrap: break-word;
     }
     
+    .ai-pending { background-color: #fef9c3 !important; border-color: #eab308 !important; }
     @media print {
       body { background-color: #fff !important; font-size: 11pt; color: #000 !important; margin: 0; padding: 0; }
       .no-print, header, nav, #toastNotification, #floatingStatusBar, #lockScreenOverlay, #pdfPreviewModal, .leaflet-control-zoom, .leaflet-control-layers { display: none !important; }
@@ -125,6 +126,7 @@
       </div>
 
       <!-- VÙNG HIỂN THỊ NỘI DUNG XEM TRƯỚC -->
+      <div id="pdfFileNameHint" class="text-[11px] text-slate-600 mb-2 flex-shrink-0"></div>
       <div id="pdfPreviewContainer" class="flex-grow overflow-y-auto border border-slate-200 rounded-xl p-3 sm:p-5 bg-slate-100 shadow-inner"></div>
 
       <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-200 mt-3 flex-shrink-0">
@@ -209,6 +211,7 @@
           </div>
         </label>
 
+        <div id="gcnPrivacyNote" class="hidden mt-3 text-[11px] text-amber-900 bg-amber-50 border border-amber-200 rounded-lg p-2.5 leading-snug"></div>
         <div id="loadedFilesContainer" class="hidden mt-4 space-y-3">
           <div class="flex items-center justify-between text-xs font-semibold text-slate-600">
             <span id="filesCountBadge" class="text-indigo-700 font-bold">Đã nạp 0 tệp</span>
@@ -306,6 +309,77 @@
               <input type="number" id="targetRoadWidth" placeholder="Lộ giới" step="0.1" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium bg-white" oninput="recalculateTargetValues()">
             </div>
           </div>
+        </div>
+
+        <!-- v6.7: LỐI VÀO, LỘ GIỚI & GHI CHÚ QUY HOẠCH TRÊN GCN -->
+        <div class="border border-rose-200 bg-rose-50/30 rounded-xl p-3.5 sm:p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5 sm:gap-2">
+              <i class="ph-bold ph-warning-octagon text-rose-600 text-base sm:text-lg"></i>
+              <span class="font-bold text-slate-800 text-[11px] sm:text-xs uppercase tracking-wide">Lối Vào, Lộ Giới & Ghi Chú Quy Hoạch / Hành Lang Trên GCN</span>
+            </div>
+            <span class="text-[10px] sm:text-xs text-rose-700 bg-rose-100 px-2 py-0.5 rounded border border-rose-300 font-semibold">Phần diện tích quy hoạch / hành lang tính 0 đ</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-600 mb-1 font-medium">Lộ giới theo quy hoạch (m)</label>
+              <input type="number" id="targetRoadWidthPlan" placeholder="Nếu có" step="0.1" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium bg-white" oninput="recalculateTargetValues()">
+            </div>
+            <div>
+              <label class="block text-slate-600 mb-1 font-medium">Nguồn số đo đường / lộ giới</label>
+              <select id="targetRoadSource" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs bg-white" onchange="recalculateTargetValues()">
+                <option value="">Chưa xác định</option>
+                <option value="gcn">Theo sơ đồ GCN</option>
+                <option value="survey">Khảo sát hiện trạng</option>
+                <option value="plan">Theo quy hoạch</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-600 mb-1 font-medium">Lối đi vào tài sản</label>
+              <select id="targetAccessType" class="w-full border border-slate-300 rounded-lg p-2.5 text-xs bg-white" onchange="recalculateTargetValues()">
+                <option value="">Chưa rõ</option>
+                <option value="public">Đường / lối đi công cộng</option>
+                <option value="shared">Lối đi chung</option>
+                <option value="borrowed">Đi nhờ qua thửa khác</option>
+              </select>
+            </div>
+          </div>
+          <div id="roadEvidenceNote" class="hidden text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 leading-snug"></div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+            <div class="md:col-span-3">
+              <label class="block text-slate-600 mb-1 font-medium">Ghi chú trên GCN (chép nguyên văn: quy hoạch, hành lang an toàn, lưu không, đã thế chấp...)</label>
+              <textarea id="targetPlanningNotice" rows="2" placeholder="Ví dụ: Thửa đất có 24 m2 thuộc hành lang bảo vệ an toàn đường dây điện..." class="w-full border border-slate-300 rounded-lg p-2.5 text-xs bg-white" oninput="onPlanningNoticeInput()"></textarea>
+              <div id="planningHint" class="mt-1 text-[11px] text-slate-600"></div>
+            </div>
+            <div class="space-y-2">
+              <div>
+                <label class="block text-rose-700 font-bold mb-1">Diện tích không tính giá (m²)</label>
+                <input type="number" id="targetPlanningArea" placeholder="0.0" step="0.1" class="w-full border-2 border-rose-300 rounded-lg p-2.5 text-center font-bold text-rose-800 bg-white" oninput="recalculateTargetValues()">
+              </div>
+              <div>
+                <label class="block text-slate-600 mb-1 font-medium">Trừ vào loại đất</label>
+                <select id="targetPlanningDeductMode" class="w-full border border-slate-300 rounded-lg p-2 text-[11px] bg-white" onchange="recalculateTargetValues()">
+                  <option value="auto" selected>Tự động (theo sổ; không rõ thì trừ đất vườn trước)</option>
+                  <option value="agri_first">Đất vườn trước</option>
+                  <option value="res_first">Đất ở trước</option>
+                  <option value="prorata">Chia theo tỷ lệ</option>
+                </select>
+                <div id="planningAiBadge" class="hidden mt-1 text-[10px] text-amber-800 font-semibold"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- v6.7: BẢNG CẢNH BÁO / CHÚ Ý -->
+        <div id="alertsBox" class="hidden border border-amber-300 bg-amber-50/60 rounded-xl p-3.5 sm:p-4 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5 font-bold text-amber-900 text-xs uppercase tracking-wide">
+              <i class="ph-bold ph-warning text-base"></i> Cảnh báo / Chú ý khi xem xét tài sản
+            </div>
+            <button id="btnConfirmAi" onclick="confirmAiSuggestions()" type="button" class="hidden text-[11px] bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1 rounded-lg">Xác nhận các số AI đề xuất</button>
+          </div>
+          <ul id="alertsList" class="text-[12px] space-y-1"></ul>
+          <div class="text-[10px] text-slate-500 italic">Chỉ mang tính nhắc nhở nội bộ, không thay thế quy định và đánh giá chính thức của ngân hàng.</div>
         </div>
 
         <div class="border border-amber-200 bg-amber-50/40 rounded-xl p-3.5 sm:p-4">
@@ -668,7 +742,7 @@
     <div class="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto max-h-[95vh] overflow-y-auto border border-slate-100">
       <div class="flex items-center justify-between border-b pb-2.5">
         <h3 class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
-          <i class="ph-bold ph-vault text-indigo-600 text-lg"></i> Quản Trị Két Cloud & Phân Quyền Admin (v<span data-app-version></span>)
+          <i class="ph-bold ph-vault text-indigo-600 text-lg"></i> <span>Quản Trị Két Cloud & Phân Quyền Admin (v<span data-app-version></span>)</span>
         </h3>
         <button onclick="closeApiKeyModal()" type="button" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"><i class="ph-bold ph-x text-lg"></i></button>
       </div>
@@ -813,6 +887,17 @@
         </table>
       </div>
 
+      <!-- PHỤ MỤC I: LƯU Ý PHÁP LÝ & HIỆN TRẠNG QUY HOẠCH / LỐI VÀO (v6.7) -->
+      <div class="mb-4 text-xs" id="pAlertsSection">
+        <div class="font-bold uppercase text-slate-800 border-b border-slate-300 pb-1 mb-2">
+          <span>LƯU Ý PHÁP LÝ & HIỆN TRẠNG QUY HOẠCH / LỐI VÀO</span>
+        </div>
+        <div class="border border-slate-300 rounded-lg p-3 bg-slate-50" style="color:#334155;">
+          <div style="margin-bottom:6px;"><b>Ghi chú trên GCN (nguyên văn):</b> <span id="pPlanningNotice">--</span></div>
+          <ul id="pAlertsList" style="margin:4px 0 0 18px; padding:0;"></ul>
+        </div>
+      </div>
+
       <!-- MỤC II: GOOGLE AI OVERVIEW & KHUYẾN NGHỊ THẨM ĐỊNH -->
       <div class="mb-4 text-xs">
         <div class="font-bold uppercase text-slate-800 border-b border-slate-300 pb-1 mb-2 flex items-center gap-1.5">
@@ -876,6 +961,12 @@
             <td class="text-right" id="pAgriUnitPrice">0.00 tr/m²</td>
             <td class="text-right font-semibold text-amber-800" id="pAgriTotalVal">0.00 Tỷ</td>
           </tr>
+          <tr id="pPlanningRow" style="display:none;">
+            <td class="font-medium" style="color:#b91c1c;">Phần diện tích quy hoạch / hành lang / lưu không (không tính giá)</td>
+            <td class="text-center" id="pPlanningArea">0 m²</td>
+            <td class="text-right">0 đ/m²</td>
+            <td class="text-right font-semibold" style="color:#b91c1c;" id="pPlanningTotalVal">0.00 Tỷ</td>
+          </tr>
           <tr>
             <td class="font-medium">3. Công trình xây dựng gắn liền</td>
             <td class="text-center" id="pBldArea">0 m²</td>
@@ -910,8 +1001,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.6";
+    const APP_VERSION = "6.7";
     const APP_CHANGELOG = {
+      "6.7": "Tên file PDF mặc định (BC giá sơ bộ_Tên_Xã/Phường_DDMMYYHHMM); ghi chú GCN + diện tích quy hoạch/hành lang (tính 0 đ, trừ đất vườn trước); OCR mặt tiền tiếp giáp, lộ giới, lối vào có bằng chứng và bước xác nhận; bảng Cảnh báo/Chú ý trên app và báo cáo.",
       "6.6": "Sửa lỗi xuất PDF: bỏ ID trùng ở khung xem trước, nút không bị khóa khi lỗi, xóa số liệu cũ khi chưa có TSSS.",
       "6.5": "Hàng chờ TSSS, quản lý nhóm Facebook, nút mở Google Maps, xuất PDF qua iframe."
     };
@@ -1414,6 +1506,7 @@
     }
 
     function applyApiModeSwitch(mode) {
+      setTimeout(updateGcnPrivacyNote, 0);
       localStorage.setItem('gemini_api_mode', mode);
       const activeKey = mode === 'payg' ? localStorage.getItem('gemini_api_key_payg') : localStorage.getItem('gemini_api_key_free');
       if (activeKey) localStorage.setItem('gemini_api_key', activeKey);
@@ -1443,7 +1536,21 @@
       }
     }
 
+    // Nhắc về dữ liệu ảnh GCN theo gói khóa đang chọn (xem điều khoản Google hiện hành để xác nhận)
+    function updateGcnPrivacyNote() {
+      const el = document.getElementById('gcnPrivacyNote'); if (!el) return;
+      const mode = localStorage.getItem('gemini_api_mode') || 'free';
+      if (mode === 'free') {
+        el.textContent = 'Đang dùng khóa MIỄN PHÍ: ảnh GCN gửi tới Google Gemini. Theo điều khoản gói miễn phí, Google có thể dùng dữ liệu để cải thiện sản phẩm. Với hồ sơ khách hàng thật, nên chuyển sang khóa TRẢ PHÍ (và kiểm tra điều khoản/quy định bảo mật của ngân hàng).';
+        el.classList.remove('hidden');
+      } else {
+        el.textContent = 'Đang dùng khóa TRẢ PHÍ: ảnh GCN vẫn được gửi tới Google Gemini để đọc. Hãy đối chiếu điều khoản Google và quy định bảo mật thông tin khách hàng của ngân hàng.';
+        el.classList.remove('hidden');
+      }
+    }
+
     function checkSavedApiKey() {
+      updateGcnPrivacyNote();
       const mode = localStorage.getItem('gemini_api_mode') || 'free';
       const btnText = document.getElementById('apiKeyBtnText');
       if (btnText) {
@@ -1576,12 +1683,19 @@
 
       const f = document.getElementById('targetFrontage').value.trim();
       const d = document.getElementById('targetDepth').value.trim();
-      const shapeVal = (f || d) ? `Mặt tiền ${f || '--'}m × Sâu ${d || '--'}m` : "--";
+      const shapeVal = (f || d) ? `Mặt tiền tiếp giáp ${f || '--'}m × Sâu ${d || '--'}m` : "--";
 
       const rw = document.getElementById('targetRoadWidth').value.trim();
       const posSelect = document.getElementById('targetPosType');
       const posText = posSelect ? posSelect.options[posSelect.selectedIndex].text : "Đường trước đất";
-      const roadVal = rw ? `${posText} (Rộng ~${rw}m)` : posText;
+      const rwPlanTxt = valStr('targetRoadWidthPlan');
+      const srcSel = document.getElementById('targetRoadSource');
+      const srcTxt = srcSel && srcSel.value ? srcSel.options[srcSel.selectedIndex].text : '';
+      const accSel = document.getElementById('targetAccessType');
+      const accTxt = accSel && accSel.value ? accSel.options[accSel.selectedIndex].text : '';
+      const roadVal = [rw ? `${posText} (rộng ~${rw}m)` : posText,
+                       rwPlanTxt ? `lộ giới QH ${rwPlanTxt}m` : '',
+                       accTxt, srcTxt ? `(nguồn: ${srcTxt})` : ''].filter(Boolean).join(', ');
 
       const bldType = document.getElementById('targetBuildingType').value.trim();
       const bldArea = parseFloat(document.getElementById('targetBuildingArea').value) || 0;
@@ -1595,6 +1709,7 @@
       document.getElementById('pShape').innerText = shapeVal;
       document.getElementById('pRoadWidth').innerText = roadVal;
       document.getElementById('pBuilding').innerText = bldVal;
+      syncAlertsToReport(computePlanningDeduction(resA, agriA));
 
       // 2. Đồng bộ Mục II: AI Overview & Khuyến nghị
       const aiP1 = document.getElementById('aiSummaryP1').innerHTML;
@@ -1668,6 +1783,8 @@
         recalculateTargetValues();
         syncDataToPrintReport();
         document.getElementById('pdfPreviewContainer').innerHTML = getReportMarkupForPreview();
+        const hint = document.getElementById('pdfFileNameHint');
+        if (hint) hint.textContent = 'Tên file đề xuất: ' + buildPdfFileName() + '.pdf (có thể sửa ở hộp thoại lưu của trình duyệt)';
         resetPdfButton();
         document.getElementById('pdfPreviewModal').classList.remove('hidden');
       } catch (err) {
@@ -1703,6 +1820,10 @@
       syncDataToPrintReport();
 
       const reportHtml = document.getElementById('reportPaperContent').innerHTML;
+      const pdfFileName = buildPdfFileName();
+      const originalTitle = document.title;
+      document.title = pdfFileName;   // Chrome/Edge lấy tiêu đề trang làm tên file mặc định khi lưu PDF
+      const restoreTitle = () => { document.title = originalTitle; };
       document.querySelectorAll('iframe[data-llp-print]').forEach(f => f.remove());   // dọn iframe của lần in trước
 
       // Tạo một iframe ẩn độc lập để cách ly hoàn toàn CSS trang web
@@ -1723,7 +1844,7 @@
         <html>
         <head>
           <meta charset="UTF-8">
-          <title>LendLandPro_BaoCao_ThamDinhGia</title>
+          <title>${escHtml(pdfFileName)}</title>
           <style>
             @page { size: A4 portrait; margin: 12mm 10mm; }
             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 11pt; background: #fff; }
@@ -1776,8 +1897,9 @@
         }
         // Không xoá iframe ngay (Safari/Firefox có thể huỷ lệnh in); dọn khi in xong hoặc sau 2 phút
         const cleanup = () => { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); };
-        try { iframe.contentWindow.addEventListener('afterprint', cleanup); } catch (e) {}
-        setTimeout(cleanup, 120000);
+        try { iframe.contentWindow.addEventListener('afterprint', () => { cleanup(); restoreTitle(); }); } catch (e) {}
+        setTimeout(() => { cleanup(); restoreTitle(); }, 120000);
+        setTimeout(restoreTitle, 4000);
       }, 350);
     }
 
@@ -1965,7 +2087,22 @@
           return getScore(b.name) - getScore(a.name);
         });
 
-        const promptText = `Bạn là chuyên gia thẩm định giá tài sản bảo đảm của ngân hàng Việt Nam. Đọc kỹ tất cả các trang/ảnh Giấy chứng nhận quyền sử dụng đất (Sổ đỏ / Sổ hồng) này và trả về kết quả dạng JSON với cấu trúc chính xác như sau:
+        const promptText = `Bạn là chuyên viên thẩm định tài sản bảo đảm của ngân hàng Việt Nam. Đọc kỹ TẤT CẢ các trang/ảnh Giấy chứng nhận quyền sử dụng đất (Sổ đỏ / Sổ hồng) và trả về JSON đúng cấu trúc dưới đây.
+
+QUY TẮC TRUNG THỰC (rất quan trọng): chỉ ghi thông tin NHÌN THẤY RÕ trong ảnh. Không suy đoán, không bịa. Thông tin không có thì để null (số) hoặc "" (chữ). Với mỗi số đo đọc từ sơ đồ, ghi "evidence" (đã đọc ở đâu: cạnh nào, nhãn chữ nào trên sơ đồ) và "confidence" (high / medium / low).
+
+HƯỚNG DẪN ĐỌC SƠ ĐỒ THỬA ĐẤT (thường ở trang 3 của sổ):
+- "frontageRoad" = chiều dài cạnh của thửa đất TIẾP GIÁP đường / lối đi vào (cạnh nằm sát phần sơ đồ ghi "đường", "hẻm", "lối đi", "đường bê tông"...). Không lấy chiều ngang tùy ý. Nếu sơ đồ không cho biết rõ cạnh nào giáp đường thì value = null, confidence = "low".
+- "roadWidthActual" = độ rộng đường/lối đi hiện trạng CHỈ khi sơ đồ hoặc ghi chú ghi con số (ví dụ "đường rộng 3m"). Không thấy số thì null.
+- "roadWidthPlan" = lộ giới / chỉ giới quy hoạch CHỈ khi sơ đồ hoặc ghi chú nêu rõ. Không thấy thì null.
+- "roadFacingSides" = số cạnh của thửa giáp đường (1, 2...). "roadAccessType": "public" (đường công cộng), "shared" (lối đi chung), "borrowed" (đi nhờ qua đất khác), hoặc "unknown".
+
+HƯỚNG DẪN ĐỌC GHI CHÚ (trang 2 và mục "Những thay đổi sau khi cấp giấy chứng nhận"):
+- "gcnNotes": chép NGUYÊN VĂN toàn bộ ghi chú/ghi chú thay đổi liên quan quy hoạch, hành lang an toàn (lưới điện, đường giao thông, sông suối), lưu không, thế chấp, hạn chế/kê biên/tranh chấp. Không có thì "".
+- "planningAreaM2": tổng diện tích (m2) bị ghi chú nêu là thuộc quy hoạch / hành lang / lưu không / đất giao thông (không tính giá). Chỉ lấy khi ghi chú có số m2 rõ ràng, nếu không thì null.
+- "planningLandType": loại đất của phần diện tích đó nếu ghi chú ghi rõ: "res" (đất ở), "agri" (đất nông nghiệp/vườn/CLN...), còn lại "unknown".
+- "planningEvidence": trích đúng câu có số m2 đó.
+
 {
   "lot": "Thửa đất số ... / Tờ bản đồ số ...",
   "street": "Tên đường hoặc lối đi tiếp giáp",
@@ -1976,17 +2113,24 @@
   "area": 0.0,
   "resArea": 0.0,
   "agriArea": 0.0,
-  "frontage": 0.0,
-  "depth": 0.0,
+  "depth": null,
   "shape": "Nở hậu / Vuông vức",
+  "frontageRoad": { "value": null, "evidence": "", "confidence": "low" },
+  "roadWidthActual": { "value": null, "evidence": "", "confidence": "low" },
+  "roadWidthPlan": { "value": null, "evidence": "", "confidence": "low" },
+  "roadFacingSides": null,
+  "roadAccessType": "unknown",
   "roadType": "hem_oto",
-  "roadWidth": 4.0,
+  "gcnNotes": "",
+  "planningAreaM2": null,
+  "planningLandType": "unknown",
+  "planningEvidence": "",
   "buildingType": "Nhà ở hoặc Đất trống",
   "buildingArea": 0.0,
   "buildingCost": 3.5,
   "buildingQuality": 70,
-  "lat": 13.9845,
-  "lng": 109.0745
+  "lat": null,
+  "lng": null
 }
 Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuyệt đối không viết thêm lời chào hay giải thích ngoài JSON.`;
 
@@ -2008,7 +2152,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
             const genResponse = await fetch(generateUrl, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ contents: [{ parts: parts }] })
+              body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { temperature: 0.1 } })
             });
 
             if (genResponse.ok) {
@@ -2054,6 +2198,53 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
       }
     }
 
+    // v6.7: đưa kết quả đọc ảnh về các ô, đánh dấu "AI đề xuất - cần xác nhận"
+    function toNumOrNull(v) { const n = parseFloat(v); return (v === null || v === undefined || v === '' || isNaN(n)) ? null : n; }
+    function applyRoadAndNoticeFromOcr(data) {
+      const notes = [];
+      const CONF = { high: 'tin cậy cao', medium: 'tin cậy trung bình', low: 'tin cậy THẤP' };
+      const setField = (inputId, obj, label, legacyValue) => {
+        const v = obj && typeof obj === 'object' ? toNumOrNull(obj.value) : toNumOrNull(legacyValue);
+        const el = document.getElementById(inputId);
+        if (v === null || !el) return;
+        el.value = v; markAiPending(inputId);
+        const conf = obj && obj.confidence ? (CONF[obj.confidence] || obj.confidence) : 'chưa rõ độ tin cậy';
+        notes.push(`${label}: ${v} m (${conf})${obj && obj.evidence ? ' - ' + obj.evidence : ''}`);
+      };
+      setField('targetFrontage', data.frontageRoad, 'Mặt tiền tiếp giáp', data.frontage);
+      setField('targetRoadWidth', data.roadWidthActual, 'Độ rộng đường/lối vào hiện trạng', data.roadWidth);
+      setField('targetRoadWidthPlan', data.roadWidthPlan, 'Lộ giới theo quy hoạch');
+      if (toNumOrNull(data.roadFacingSides) > 1) notes.push(`Thửa giáp đường ở ${data.roadFacingSides} cạnh`);
+      if (data.roadAccessType && data.roadAccessType !== 'unknown') {
+        const acc = document.getElementById('targetAccessType');
+        if (acc) { acc.value = data.roadAccessType; markAiPending('targetAccessType'); }
+      }
+      const src = document.getElementById('targetRoadSource');
+      if (src && !src.value && (toNumOrNull(data.roadWidthActual && data.roadWidthActual.value) !== null)) src.value = 'gcn';
+
+      // Ghi chú trên GCN + diện tích không tính giá (mặc định trừ đất vườn trước, trừ khi sổ ghi rõ loại đất)
+      const noteEl = document.getElementById('targetPlanningNotice');
+      if (noteEl && data.gcnNotes) noteEl.value = String(data.gcnNotes);
+      const planA = toNumOrNull(data.planningAreaM2);
+      const modeSel = document.getElementById('targetPlanningDeductMode');
+      if (modeSel) modeSel.dataset.noteType = (data.planningLandType === 'res' || data.planningLandType === 'agri') ? data.planningLandType : '';
+      if (planA !== null && planA > 0) {
+        document.getElementById('targetPlanningArea').value = planA; markAiPending('targetPlanningArea');
+        const badge = document.getElementById('planningAiBadge');
+        if (badge) {
+          const t = data.planningLandType === 'res' ? 'đất ở' : data.planningLandType === 'agri' ? 'đất vườn/nông nghiệp' : 'không rõ loại đất, mặc định trừ đất vườn trước';
+          badge.textContent = `AI đề xuất ${planA} m² (${t})${data.planningEvidence ? ' - "' + data.planningEvidence + '"' : ''}. Cần đối chiếu sổ gốc.`;
+          badge.classList.remove('hidden');
+        }
+      }
+      const ev = document.getElementById('roadEvidenceNote');
+      if (ev) {
+        if (notes.length) { ev.textContent = 'AI đọc từ ảnh sổ (cần xác nhận): ' + notes.join(' | '); ev.classList.remove('hidden'); }
+        else { ev.classList.add('hidden'); }
+      }
+      onPlanningNoticeInput();
+    }
+
     function applyParsedData(data) {
       if (data.owner) {
         window.currentOwnerName = data.owner;
@@ -2075,10 +2266,9 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
         document.getElementById('targetAgriArea').value = (totalA - resA).toFixed(1);
       }
 
-      if (data.frontage) document.getElementById('targetFrontage').value = data.frontage;
       if (data.depth) document.getElementById('targetDepth').value = data.depth;
       if (data.roadType) document.getElementById('targetPosType').value = data.roadType;
-      if (data.roadWidth) document.getElementById('targetRoadWidth').value = data.roadWidth;
+      applyRoadAndNoticeFromOcr(data);
       if (data.buildingType) document.getElementById('targetBuildingType').value = data.buildingType;
       if (data.buildingArea) document.getElementById('targetBuildingArea').value = data.buildingArea;
       if (data.buildingCost) document.getElementById('targetBuildingCost').value = data.buildingCost;
@@ -2306,6 +2496,161 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       setTimeout(() => { fitAllMarkersSafe(); }, 400);
     }
 
+    // =========================================================================
+    // v6.7: GHI CHÚ GCN / QUY HOẠCH, CẢNH BÁO, XÁC NHẬN SỐ DO AI ĐỀ XUẤT, TÊN FILE PDF
+    // =========================================================================
+    function escHtml(t) {
+      return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function valStr(id) { const el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; }
+    function valNum(id) { const n = parseFloat(valStr(id)); return isNaN(n) ? 0 : n; }
+
+    // Đánh dấu ô do AI đề xuất (nền vàng) cho tới khi người dùng sửa hoặc bấm Xác nhận
+    function markAiPending(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.dataset.aiPending = '1';
+      el.classList.add('ai-pending');
+    }
+    function clearAiPending(el) {
+      if (!el) return;
+      delete el.dataset.aiPending;
+      el.classList.remove('ai-pending');
+    }
+    function countAiPending() { return document.querySelectorAll('[data-ai-pending="1"]').length; }
+    function confirmAiSuggestions() {
+      document.querySelectorAll('[data-ai-pending="1"]').forEach(clearAiPending);
+      const ev = document.getElementById('roadEvidenceNote'); if (ev) ev.classList.add('hidden');
+      const bd = document.getElementById('planningAiBadge'); if (bd) bd.classList.add('hidden');
+      recalculateTargetValues();
+      showToast('Đã xác nhận các thông tin do AI đề xuất.');
+    }
+    // Người dùng tự sửa ô nào thì ô đó hết trạng thái "AI đề xuất"
+    document.addEventListener('input', e => {
+      if (e.target && e.target.dataset && e.target.dataset.aiPending) clearAiPending(e.target);
+    });
+
+    // Quét ghi chú: gợi ý diện tích (m²) và nhận diện loại rủi ro bằng từ khóa
+    const NOTICE_RULES = [
+      { re: /thế chấp|đã thế chấp|đang thế chấp/i, level: 'red',   text: 'Ghi chú nhắc việc THẾ CHẤP: kiểm tra tình trạng giải chấp / thế chấp ngân hàng khác.' },
+      { re: /tranh chấp|kê biên|cấm giao dịch|ngăn chặn|hạn chế quyền|phong tỏa/i, level: 'red', text: 'Ghi chú nhắc TRANH CHẤP / KÊ BIÊN / HẠN CHẾ GIAO DỊCH: cần làm rõ trước khi nhận tài sản.' },
+      { re: /hành lang|lưới điện|đường dây|an toàn điện/i, level: 'amber', text: 'Ghi chú có HÀNH LANG AN TOÀN / LƯỚI ĐIỆN: phần diện tích này thường không tính giá.' },
+      { re: /quy hoạch|chỉ giới|giải tỏa|thu hồi/i,         level: 'amber', text: 'Ghi chú có QUY HOẠCH / CHỈ GIỚI / THU HỒI: kiểm tra phần diện tích bị ảnh hưởng.' },
+      { re: /lưu không|lấn chiếm|đất công|giao thông/i,      level: 'amber', text: 'Ghi chú có LƯU KHÔNG / GIAO THÔNG / LẤN CHIẾM: phần diện tích này thường không được công nhận.' }
+    ];
+    function scanNoticeAreas(text) {
+      const out = []; const re = /(\d+(?:[.,]\d+)?)\s*(?:m2|m²|mét vuông)/gi; let m;
+      while ((m = re.exec(text)) !== null) out.push(parseFloat(m[1].replace(',', '.')));
+      return out;
+    }
+    function onPlanningNoticeInput() {
+      const hint = document.getElementById('planningHint');
+      const text = valStr('targetPlanningNotice');
+      if (hint) {
+        hint.textContent = '';
+        const areas = scanNoticeAreas(text);
+        if (areas.length && !valNum('targetPlanningArea')) {
+          hint.appendChild(document.createTextNode('Phát hiện trong ghi chú: ' + areas.map(a => a + ' m²').join(', ') + ' — '));
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'underline text-indigo-700 font-semibold';
+          b.textContent = 'Áp dụng ' + areas[0] + ' m² làm diện tích không tính giá';
+          b.onclick = () => { document.getElementById('targetPlanningArea').value = areas[0]; recalculateTargetValues(); onPlanningNoticeInput(); };
+          hint.appendChild(b);
+        }
+      }
+      recalculateTargetValues();
+    }
+
+    // Trừ diện tích quy hoạch/hành lang khỏi diện tích tính giá (mặc định trừ đất vườn trước, trừ khi sổ ghi rõ là đất ở)
+    function computePlanningDeduction(resArea, agriArea) {
+      const P = Math.max(0, valNum('targetPlanningArea'));
+      let mode = valStr('targetPlanningDeductMode') || 'auto';
+      const noteType = (document.getElementById('targetPlanningDeductMode') || {}).dataset ? document.getElementById('targetPlanningDeductMode').dataset.noteType : '';
+      if (mode === 'auto') mode = (noteType === 'res') ? 'res_first' : 'agri_first';
+      let dedRes = 0, dedAgri = 0;
+      const cap = resArea + agriArea;
+      const eff = Math.min(P, cap);
+      if (mode === 'prorata') {
+        dedRes = cap > 0 ? eff * resArea / cap : 0; dedAgri = eff - dedRes;
+      } else if (mode === 'res_first') {
+        dedRes = Math.min(eff, resArea); dedAgri = eff - dedRes;
+      } else {
+        dedAgri = Math.min(eff, agriArea); dedRes = eff - dedAgri;
+      }
+      return { P, eff, over: P > cap + 0.0001, mode, dedRes, dedAgri, resEff: Math.max(0, resArea - dedRes), agriEff: Math.max(0, agriArea - dedAgri) };
+    }
+
+    // Danh sách cảnh báo/chú ý (dùng chung cho giao diện và báo cáo in)
+    function computeAlerts(ded) {
+      const alerts = [];
+      const add = (level, text) => alerts.push({ level, text });
+      const notice = valStr('targetPlanningNotice');
+      if (ded && ded.P > 0) {
+        const where = [];
+        if (ded.dedAgri > 0) where.push(`${ded.dedAgri.toFixed(1)} m² đất vườn`);
+        if (ded.dedRes > 0) where.push(`${ded.dedRes.toFixed(1)} m² đất ở`);
+        add('red', `Có ${ded.P} m² thuộc quy hoạch / hành lang / lưu không: KHÔNG tính giá (0 đ)` + (where.length ? `, đã trừ vào ${where.join(' và ')}.` : '.'));
+        if (ded.over) add('red', 'Diện tích không tính giá lớn hơn tổng diện tích đất đã nhập: kiểm tra lại số liệu.');
+      }
+      NOTICE_RULES.forEach(r => { if (notice && r.re.test(notice)) add(r.level, r.text); });
+      const rw = valNum('targetRoadWidth'), rwPlan = valNum('targetRoadWidthPlan'), fr = valNum('targetFrontage');
+      if (rw > 0 && rw < 2) add('red', `Lối vào / đường rộng ${rw} m (dưới 2 m): rủi ro lớn về thanh khoản, nhiều ngân hàng không nhận làm tài sản bảo đảm.`);
+      else if (rw >= 2 && rw < 3) add('amber', `Lối vào / đường rộng ${rw} m (dưới 3 m): ô tô khó vào, ảnh hưởng thanh khoản và giá.`);
+      if (rwPlan > 0 && rw > 0 && rwPlan > rw) add('amber', `Quy hoạch mở rộng đường lên ${rwPlan} m (hiện trạng ${rw} m): thửa có thể bị thu hồi một phần, cần kiểm tra.`);
+      if (fr > 0 && fr < 3) add('amber', `Mặt tiền tiếp giáp đường chỉ ${fr} m: hẹp, ảnh hưởng thanh khoản.`);
+      const access = valStr('targetAccessType');
+      if (access === 'borrowed') add('red', 'Đi nhờ qua thửa đất khác: cần có thỏa thuận lối đi hợp pháp, rủi ro khi xử lý tài sản.');
+      else if (access === 'shared') add('amber', 'Lối đi chung: kiểm tra quyền sử dụng chung và thể hiện trên hồ sơ pháp lý.');
+      const pending = countAiPending();
+      if (pending > 0) add('amber', `Có ${pending} thông tin do AI đọc từ ảnh GCN đang chờ xác nhận (ô nền vàng): cần đối chiếu với bản gốc.`);
+      return alerts;
+    }
+    function renderAlerts(ded) {
+      const alerts = computeAlerts(ded);
+      const box = document.getElementById('alertsBox'), list = document.getElementById('alertsList');
+      const btn = document.getElementById('btnConfirmAi');
+      if (btn) btn.classList.toggle('hidden', countAiPending() === 0);
+      if (!box || !list) return alerts;
+      list.innerHTML = '';
+      alerts.forEach(a => {
+        const li = document.createElement('li');
+        li.className = a.level === 'red' ? 'text-rose-800 font-semibold' : 'text-amber-900';
+        li.textContent = (a.level === 'red' ? '⛔ ' : '⚠ ') + a.text;
+        list.appendChild(li);
+      });
+      box.classList.toggle('hidden', alerts.length === 0);
+      return alerts;
+    }
+    // Ghi mục "Lưu ý pháp lý" vào báo cáo in (textContent: an toàn với nội dung do AI/người dùng nhập)
+    function syncAlertsToReport(ded) {
+      const notice = valStr('targetPlanningNotice');
+      const n = document.getElementById('pPlanningNotice'); if (n) n.textContent = notice || 'Chưa nhập / không có ghi chú trên GCN.';
+      const ul = document.getElementById('pAlertsList'); if (!ul) return;
+      ul.innerHTML = '';
+      const alerts = computeAlerts(ded);
+      if (alerts.length === 0) {
+        const li = document.createElement('li'); li.style.fontSize = '10pt'; li.textContent = 'Không có cảnh báo từ các thông tin đã nhập.'; ul.appendChild(li);
+      }
+      alerts.forEach(a => {
+        const li = document.createElement('li');
+        li.style.cssText = 'font-size:10pt; margin-bottom:3px; color:' + (a.level === 'red' ? '#b91c1c' : '#92400e') + (a.level === 'red' ? '; font-weight:600;' : ';');
+        li.textContent = (a.level === 'red' ? '[QUAN TRỌNG] ' : '[Chú ý] ') + a.text;
+        ul.appendChild(li);
+      });
+    }
+
+    // Tên file PDF mặc định: BC giá sơ bộ_Tên chủ sở hữu (hoặc Thửa đất xxx)_Xã/Phường_DDMMYYHHMM
+    function buildPdfFileName() {
+      const owner = valStr('targetOwnerNameInput') || (window.currentOwnerName || '').trim();
+      const lot = valStr('targetLot');
+      const who = owner || (lot ? (/^thửa/i.test(lot) ? lot : 'Thửa đất ' + lot) : '');
+      const ward = valStr('targetWard');
+      const d = new Date(), p2 = n => String(n).padStart(2, '0');
+      const stamp = p2(d.getDate()) + p2(d.getMonth() + 1) + p2(d.getFullYear() % 100) + p2(d.getHours()) + p2(d.getMinutes());
+      return ['BC giá sơ bộ', who, ward, stamp].filter(Boolean).join('_')
+        .replace(/[\\/]+/g, '-').replace(/[:*?"<>|\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
     // === TÍNH TOÁN ĐỊNH GIÁ ĐA CƠ CẤU (ĐẤT Ở + ĐẤT VƯỜN + CTXD) ===
     function recalculateTargetValues() {
       const totalArea = parseFloat(document.getElementById('targetArea').value) || 0;
@@ -2314,6 +2659,10 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
 
       if (isNaN(resArea)) resArea = totalArea > 0 ? Math.min(totalArea, 100) : 0;
       if (isNaN(agriArea)) agriArea = Math.max(0, totalArea - resArea);
+
+      // v6.7: trừ phần diện tích dính quy hoạch / hành lang / lưu không (tính 0 đ)
+      const ded = computePlanningDeduction(resArea, agriArea);
+      renderAlerts(ded);
 
       const bldArea = parseFloat(document.getElementById('targetBuildingArea').value) || 0;
       const bldCost = parseFloat(document.getElementById('targetBuildingCost').value) || 0;
@@ -2337,6 +2686,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         document.getElementById('statAssetBreakdown').innerText = `Chưa có dữ liệu định giá`;
         document.getElementById('statMaxLoanLimit').innerHTML = `-- <span class="text-xs font-normal text-slate-300">Tỷ</span>`;
         // Báo cáo in: xoá số liệu định giá của tài sản trước
+        const pr = document.getElementById('pPlanningRow'); if (pr) pr.style.display = 'none';
         ['pLandArea','pLandUnitPrice','pLandTotalVal','pAgriArea','pAgriUnitPrice','pAgriTotalVal',
          'pBldArea','pBldUnitPrice','pBldTotalVal','pGrandTotalVal','pMaxLoanVal'].forEach(id => {
           const el = document.getElementById(id);
@@ -2408,8 +2758,8 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       const rawAvgAgriPrice = customAgriUnitPrice / (1 - discountPercent / 100);
 
       // 3. THÀNH TIỀN TỪNG CẤU PHẦN
-      const totalResLandValue = resArea > 0 ? (resArea * (avgDiscountedResPrice * 1000000)) / 1000000000 : 0;
-      const totalAgriLandValue = agriArea > 0 ? (agriArea * (customAgriUnitPrice * 1000000)) / 1000000000 : 0;
+      const totalResLandValue = ded.resEff > 0 ? (ded.resEff * (avgDiscountedResPrice * 1000000)) / 1000000000 : 0;
+      const totalAgriLandValue = ded.agriEff > 0 ? (ded.agriEff * (customAgriUnitPrice * 1000000)) / 1000000000 : 0;
       const totalLandValue = totalResLandValue + totalAgriLandValue;
       const grandTotalAsset = totalLandValue + bldTotalValue;
       const maxLoan = grandTotalAsset * ltvRate;
@@ -2427,20 +2777,25 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
 
       // Cập nhật Bảng Phân Rã Chi Tiết
       document.getElementById('breakdownValRes').innerText = `${totalResLandValue.toFixed(2)} Tỷ`;
-      document.getElementById('breakdownDescRes').innerText = `DT: ${resArea.toFixed(1)} m² × ${avgDiscountedResPrice.toFixed(2)} tr/m²`;
+      document.getElementById('breakdownDescRes').innerText = `DT: ${ded.resEff.toFixed(1)} m²${ded.dedRes > 0 ? ' (đã trừ ' + ded.dedRes.toFixed(1) + ' m² QH)' : ''} × ${avgDiscountedResPrice.toFixed(2)} tr/m²`;
 
       document.getElementById('breakdownValAgri').innerText = `${totalAgriLandValue.toFixed(2)} Tỷ`;
-      document.getElementById('breakdownDescAgri').innerText = `DT: ${agriArea.toFixed(1)} m² × ${customAgriUnitPrice.toFixed(2)} tr/m²`;
+      document.getElementById('breakdownDescAgri').innerText = `DT: ${ded.agriEff.toFixed(1)} m²${ded.dedAgri > 0 ? ' (đã trừ ' + ded.dedAgri.toFixed(1) + ' m² QH)' : ''} × ${customAgriUnitPrice.toFixed(2)} tr/m²`;
 
       document.getElementById('breakdownValBld').innerText = `${bldTotalValue.toFixed(2)} Tỷ`;
       document.getElementById('breakdownDescBld').innerText = bldArea > 0 ? `DT sàn: ${bldArea} m² (CLCL: ${bldQuality}%)` : "Không có / Đất trống";
 
       // Cập nhật số liệu vào Bảng định giá Mục IV báo cáo in
-      document.getElementById('pLandArea').innerText = `${resArea.toFixed(1)} m²`;
+      document.getElementById('pLandArea').innerText = `${ded.resEff.toFixed(1)} m²` + (ded.dedRes > 0 ? ` (đã trừ ${ded.dedRes.toFixed(1)} m² quy hoạch)` : '');
       document.getElementById('pLandUnitPrice').innerText = `${avgDiscountedResPrice.toFixed(2)} tr/m²`;
       document.getElementById('pLandTotalVal').innerText = `${totalResLandValue.toFixed(2)} Tỷ`;
 
-      document.getElementById('pAgriArea').innerText = `${agriArea.toFixed(1)} m²`;
+      document.getElementById('pAgriArea').innerText = `${ded.agriEff.toFixed(1)} m²` + (ded.dedAgri > 0 ? ` (đã trừ ${ded.dedAgri.toFixed(1)} m² quy hoạch)` : '');
+      const planRow = document.getElementById('pPlanningRow');
+      if (planRow) {
+        planRow.style.display = ded.eff > 0 ? '' : 'none';
+        document.getElementById('pPlanningArea').innerText = `${ded.eff.toFixed(1)} m²`;
+      }
       document.getElementById('pAgriUnitPrice').innerText = `${customAgriUnitPrice.toFixed(2)} tr/m²`;
       document.getElementById('pAgriTotalVal').innerText = `${totalAgriLandValue.toFixed(2)} Tỷ`;
 
@@ -2582,6 +2937,12 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       document.getElementById('targetFrontage').value = '';
       document.getElementById('targetDepth').value = '';
       document.getElementById('targetRoadWidth').value = '';
+      ['targetRoadWidthPlan','targetPlanningNotice','targetPlanningArea'].forEach(id => { const e = document.getElementById(id); if (e) { e.value = ''; clearAiPending(e); } });
+      ['targetFrontage','targetRoadWidth','targetAccessType'].forEach(id => clearAiPending(document.getElementById(id)));
+      ['targetRoadSource','targetAccessType'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+      const pm = document.getElementById('targetPlanningDeductMode'); if (pm) { pm.value = 'auto'; delete pm.dataset.noteType; }
+      ['roadEvidenceNote','planningAiBadge'].forEach(id => { const e = document.getElementById(id); if (e) e.classList.add('hidden'); });
+      const ph = document.getElementById('planningHint'); if (ph) ph.textContent = '';
       document.getElementById('targetBuildingType').value = '';
       document.getElementById('targetBuildingArea').value = '';
       document.getElementById('targetBuildingValueDisplay').innerText = '0.00 Tỷ VNĐ';
