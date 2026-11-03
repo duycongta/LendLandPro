@@ -2,7 +2,7 @@
 import csv, re, unicodedata
 from pathlib import Path
 
-PREFIXES = ("thanh pho", "thi xa", "thi tran", "phuong", "huyen", "quan", "xa", "tp.", "tp", "tinh")
+PREFIXES = ("thanh pho", "thi xa", "thi tran", "khu pho", "khu vuc", "phuong", "huyen", "quan", "thon", "xom", "xa", "tp.", "tp", "tinh", "ap")
 
 def strip_accents(s: str) -> str:
     s = s.replace("đ", "d").replace("Đ", "D")
@@ -46,3 +46,29 @@ class AdminMap:
 
 def contains_phrase(haystack_norm: str, phrase_norm: str) -> bool:
     return bool(phrase_norm) and re.search(rf"(?<![a-z0-9]){re.escape(phrase_norm)}(?![a-z0-9])", haystack_norm) is not None
+
+
+# 63 tỉnh/thành trước sáp nhập (đã chuẩn hoá) - dùng để phát hiện tin thuộc tỉnh khác
+PROVINCES = {norm(x) for x in (
+    "An Giang", "Bà Rịa Vũng Tàu", "Bắc Giang", "Bắc Kạn", "Bạc Liêu", "Bắc Ninh", "Bến Tre", "Bình Định", "Bình Dương", "Bình Phước",
+    "Bình Thuận", "Cà Mau", "Cần Thơ", "Cao Bằng", "Đà Nẵng", "Đắk Lắk", "Đắk Nông", "Điện Biên", "Đồng Nai", "Đồng Tháp", "Gia Lai",
+    "Hà Giang", "Hà Nam", "Hà Nội", "Hà Tĩnh", "Hải Dương", "Hải Phòng", "Hậu Giang", "Hòa Bình", "Hưng Yên", "Khánh Hòa", "Kiên Giang",
+    "Kon Tum", "Lai Châu", "Lâm Đồng", "Lạng Sơn", "Lào Cai", "Long An", "Nam Định", "Nghệ An", "Ninh Bình", "Ninh Thuận", "Phú Thọ",
+    "Phú Yên", "Quảng Bình", "Quảng Nam", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sóc Trăng", "Sơn La", "Tây Ninh", "Thái Bình",
+    "Thái Nguyên", "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang", "Hồ Chí Minh", "Trà Vinh", "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc",
+    "Yên Bái", "Vũng Tàu")}
+# Gia Lai (mới) = Gia Lai cũ + Bình Định cũ
+PROVINCE_MERGES = [{"gia lai", "binh dinh"}]
+
+def province_aliases(admin: "AdminMap", tinh: str) -> set:
+    if not (tinh or "").strip():
+        return set()
+    a = set(admin.aliases(tinh))
+    for grp in PROVINCE_MERGES:
+        if a & grp:
+            a |= grp
+    return a
+
+def province_conflict(hay_norm: str, allowed: set) -> bool:
+    """True nếu văn bản nhắc một tỉnh KHÁC với tỉnh của tài sản."""
+    return any(contains_phrase(hay_norm, p) for p in PROVINCES if p not in allowed)

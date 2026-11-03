@@ -765,6 +765,7 @@
             <button onclick="testBackendConnection()" type="button" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 rounded-lg">Kiểm tra</button>
           </div>
           <label class="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" id="chkAlwaysAi"> Luôn chạy thêm AI gợi ý (tin chưa kiểm chứng) sau khi lấy tin thật</label>
+          <label class="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" id="chkExpandDistrict"> Mở rộng sang tin cùng huyện (khác xã) khi thiếu tin: chỉ đưa vào Hàng chờ, không tự tính giá</label>
           <div id="backendTestResult" class="text-[11px] text-slate-600"></div>
         </div>
         <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
@@ -977,8 +978,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.12";
+    const APP_VERSION = "6.13";
     const APP_CHANGELOG = {
+      "6.13": "Tin so sánh phải CÙNG xã/phường và đúng tỉnh (cùng thôn/xóm, cùng đường xếp trước); khác xã chỉ hiện khi bật \"mở rộng sang cùng huyện\" và chỉ vào Hàng chờ; loại tin không rõ loại tài sản (khách sạn, nhà xưởng...); gắn nhãn mức khớp địa danh.",
       "6.12": "Gộp app Python vào thư mục server/ của repo; nhắc cách chạy (cd server) trong thông báo lỗi kết nối; có thể mở giao diện qua http://localhost:8000/lendland.",
       "6.11": "Nối máy chủ khảo giá (Python): khi bấm Khảo sát, app lấy TIN THẬT có link (Chợ Tốt, Alonhadat, Batdongsan...) đưa lên bảng chính; AI chỉ gợi ý thêm vào Hàng chờ. Có cấu hình địa chỉ máy chủ và nút kiểm tra kết nối ở mục Quản trị.",
       "6.10": "Chống tin giả: tin do AI tạo chỉ vào Hàng chờ (gắn nhãn \"AI tạo - chưa kiểm chứng\", phải xác nhận mới đưa lên bảng); bỏ số mặc định (100 m², 5 m, 20 m, 1,5 tỷ, 6 tr/m²); bỏ vị trí bản đồ ngẫu nhiên; không còn gán link theo thứ tự; báo rõ khi Google Search lỗi; bỏ 2 cảnh báo hành lang/lưu không.",
@@ -1175,7 +1177,7 @@
             <td class="py-2 px-3">
               <div class="font-medium text-slate-800 leading-snug">${escHtml(c.address)}</div>
               <div class="text-[10px] text-slate-500">${escHtml(c.roadDesc)} (MT ${fmtMaybe(c.frontage, 'm')})</div>
-              <div class="mt-1 flex flex-wrap items-center gap-1">${originBadgeHtml(c)} ${compLinkHtml(c)}</div>
+              <div class="mt-1 flex flex-wrap items-center gap-1">${originBadgeHtml(c)} ${matchBadgeHtml(c)} ${compLinkHtml(c)}</div>
             </td>
             <td class="py-2 px-2 text-center text-slate-600 whitespace-nowrap">${escHtml(c.postedDate || '--')}</td>
             <td class="py-2 px-2 text-center font-semibold">${fmtMaybe(c.area)}</td>
@@ -1435,6 +1437,7 @@
         if (elKey) elKey.value = masterKey;
         const elBe = document.getElementById('backendUrlInput'); if (elBe) elBe.value = getBackendUrl();
         const elAi = document.getElementById('chkAlwaysAi'); if (elAi) elAi.checked = localStorage.getItem('llp_always_ai') === 'true';
+        const elEx = document.getElementById('chkExpandDistrict'); if (elEx) elEx.checked = localStorage.getItem('llp_expand_district') === 'true';
 
         const radioP = document.getElementById('radioModePayg');
         const radioF = document.getElementById('radioModeFree');
@@ -1469,6 +1472,7 @@
       try {
         localStorage.setItem('llp_backend_url', valStr('backendUrlInput'));
         localStorage.setItem('llp_always_ai', document.getElementById('chkAlwaysAi').checked ? 'true' : 'false');
+        localStorage.setItem('llp_expand_district', document.getElementById('chkExpandDistrict').checked ? 'true' : 'false');
       } catch (e) {}
 
       const mode = localStorage.getItem('gemini_api_mode') || 'free';
@@ -1731,7 +1735,7 @@
             <td class="text-right font-semibold whitespace-nowrap">${comp.rawPrice > 0 ? Number(comp.rawPrice).toFixed(2) + ' Tỷ' : '--'}</td>
             <td class="text-right font-bold text-emerald-700 whitespace-nowrap">${okc ? discountedUnitPrice.toFixed(2) + ' tr/m²' : 'không tính'}</td>
             <td class="text-center font-bold">${okc ? score + '%' : '--'}</td>
-            <td class="text-center">${escHtml(comp.sourceName)}<br><span style="font-size:8px; color:#64748b;">(${escHtml(originLabel(comp))})</span>${realLink ? '<br><span style="font-size:8px; color:#64748b; word-break:break-all;">' + escHtml(realLink) + '</span>' : ''}</td>
+            <td class="text-center">${escHtml(comp.sourceName)}<br><span style="font-size:8px; color:#64748b;">(${escHtml(originLabel(comp))}${comp.matchLevel ? '; ' + MATCH_LABEL[comp.matchLevel] : ''})</span>${realLink ? '<br><span style="font-size:8px; color:#64748b; word-break:break-all;">' + escHtml(realLink) + '</span>' : ''}</td>
           `;
           printTbody.appendChild(ptr);
         });
@@ -2606,6 +2610,12 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       if (c.origin === 'backend') return '<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Tin thật · có link</span>';
       return '<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300">Nhập tay</span>';
     }
+    const MATCH_LABEL = { thon: 'Cùng thôn/xóm', xa: 'Cùng xã/phường', huyen: 'Cùng huyện · KHÁC xã' };
+    function matchBadgeHtml(c) {
+      if (!c.matchLevel || !MATCH_LABEL[c.matchLevel]) return '';
+      const cls = c.matchLevel === 'thon' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : c.matchLevel === 'xa' ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-amber-50 text-amber-800 border-amber-300';
+      return `<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold border ${cls}">${MATCH_LABEL[c.matchLevel]}</span>`;
+    }
     function safeHttpUrl(u) { try { const x = new URL(String(u)); return (x.protocol === 'http:' || x.protocol === 'https:') ? x.href : ''; } catch (e) { return ''; } }
     function verifySearchUrl(c) {
       return 'https://www.google.com/search?q=' + encodeURIComponent(`${c.address || ''} bán ${c.area ? c.area + 'm2' : ''} ${c.rawPrice ? c.rawPrice + ' tỷ' : ''}`.trim());
@@ -2657,7 +2667,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
     function mapBackendItem(it, i) {
       const price = Number(it.price_vnd) > 0 ? Math.round(Number(it.price_vnd) / 1e6) / 1000 : null;   // tỷ đồng, 3 chữ số
       return {
-        id: 'b' + i, origin: 'backend', userConfirmed: true, kind: it.kind || '',
+        id: 'b' + i, origin: 'backend', userConfirmed: true, kind: it.kind || '', matchLevel: it.match_level || '',
         address: it.address || it.title || '(không có địa chỉ)', roadDesc: it.title || '',
         postedDate: fmtIsoDate(it.posted_at), roadType: '',
         area: Number(it.area_m2) > 0 ? Number(it.area_m2) : null,
@@ -2693,7 +2703,8 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       const params = new URLSearchParams({
         xa: valStr('targetWard'), duong: cleanStreetName(valStr('targetStreet')),
         area: String(valNum('targetArea') || 0), kind: valNum('targetBuildingArea') > 0 ? '' : 'dat',
-        months: '12', tol: '100', live: '1', maxn: '100', limit: '60'
+        thon: valStr('targetHamlet'), scope: localStorage.getItem('llp_expand_district') === 'true' ? 'district' : 'ward',
+        months: '12', tol: '50', live: '1', maxn: '100', limit: '60'
       });
       const dp = splitDistrictProvince(valStr('targetDistrictProvince'));
       params.set('huyen', dp.huyen); params.set('tinh', dp.tinh);
@@ -2710,19 +2721,27 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         return { ok: false, usable: 0, error: msg };
       }
       const mapped = (data.items || []).map(mapBackendItem);
-      const usableList = mapped.filter(compIsValid), unusable = mapped.filter(c => !compIsValid(c));
-      const top = usableList.slice(0, 5), rest = usableList.slice(5).concat(unusable);
+      // Bảng chính CHỈ nhận tin cùng xã/phường (thôn trước); tin cùng huyện khác xã (nếu bật mở rộng) chỉ vào Hàng chờ
+      const inWard = mapped.filter(c => c.matchLevel !== 'huyen');
+      const districtOnly = mapped.filter(c => c.matchLevel === 'huyen');
+      const usableList = inWard.filter(compIsValid), unusable = inWard.filter(c => !compIsValid(c));
+      const top = usableList.slice(0, 5), rest = usableList.slice(5).concat(unusable).concat(districtOnly);
       // giữ tin nhập tay đang có; thay các tin lấy từ máy chủ lần trước
       currentComps = currentComps.filter(c => c.origin !== 'backend').concat(top);
       backupCompsPool = rest.concat(backupCompsPool.filter(c => c.origin === 'ai'));
+      const mc = data.match_counts || {};
+      const hints = [];
+      if (usableList.length === 0) hints.push('Không có tin nào CÙNG xã/phường (đúng tỉnh) đủ giá và diện tích. Hãy bấm Khảo sát lại để thu thập thêm, dán tin thủ công, hoặc bật "Mở rộng sang cùng huyện" ở Quản trị.');
+      else if (usableList.length < 3) hints.push(`Chỉ có ${usableList.length} tin cùng xã/phường: ít mẫu, kết quả định giá có độ tin cậy thấp.`);
+      if (data.extra_district_available > 0 && !districtOnly.length) hints.push(`Có thêm ${data.extra_district_available} tin cùng huyện (khác xã): bật "Mở rộng sang cùng huyện" ở Quản trị để xem trong Hàng chờ.`);
       showBackendLog([
-        `Máy chủ khảo giá: khớp ${data.total_matched} tin (cùng đường: ${data.same_street}); đưa ${top.length} tin lên bảng chính, ${rest.length} tin vào Hàng chờ.`,
-        ...(data.fetchlog || []).slice(0, 12), ...(data.errors || []).slice(0, 6).map(e => 'Lỗi nguồn: ' + e)
+        `Máy chủ khảo giá: cùng thôn/xóm ${mc.thon || 0} tin, cùng xã/phường ${mc.xa || 0} tin${districtOnly.length ? ', cùng huyện khác xã ' + districtOnly.length + ' tin (Hàng chờ)' : ''}; đưa ${top.length} tin lên bảng chính.`,
+        ...hints, ...(data.fetchlog || []).slice(0, 12), ...(data.errors || []).slice(0, 6).map(e => 'Lỗi nguồn: ' + e)
       ]);
       renderMapElements(); recalculateTargetValues(); renderPoolListUI();
       setTimeout(() => { fitAllMarkersSafe(); }, 400);
       setFloatingStatus('success', `Đã lấy ${top.length} tin thật lên bảng chính`);
-      if (usableList.length === 0) showToast('Máy chủ không tìm thấy tin nào đủ giá và diện tích cho khu vực này.');
+      if (usableList.length === 0) showToast('Không có tin nào cùng xã/phường đủ giá và diện tích. Xem gợi ý ở ô nhật ký phía trên bảng.');
       return { ok: true, usable: usableList.length };
     }
 
@@ -2794,7 +2813,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
           <td class="py-3 px-3" style="min-width: 250px; max-width: 320px;">
             <div class="font-medium text-slate-800 leading-snug whitespace-normal">${escHtml(comp.address)}</div>
             <div class="text-[11px] text-slate-500 mt-0.5 whitespace-normal">${escHtml(comp.roadDesc)}</div>
-            <div class="mt-1">${originBadgeHtml(comp)}</div>
+            <div class="mt-1 flex flex-wrap gap-1">${originBadgeHtml(comp)} ${matchBadgeHtml(comp)}</div>
           </td>
           <td class="py-3 px-2 text-center text-slate-600 font-medium whitespace-nowrap">${escHtml(comp.postedDate || '--')}</td>
           <td class="py-3 px-2 text-center font-semibold">${fmtMaybe(comp.area)}</td>

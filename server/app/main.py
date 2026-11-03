@@ -7,7 +7,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import store
-from .search import build_keywords, location_terms, filter_listings, same_street, rank
+from .search import build_keywords, location_terms, filter_listings, same_street, rank, select_comps
 from .sources import SOURCES, parse_manual_text
 from .sources.googlesearch import build_queries
 from .parse import KIND_LABEL
@@ -198,23 +198,35 @@ def api_health():
     return {"ok": True, "sources": list(SOURCES)}
 
 @app.get("/api/comps")
-def api_comps(duong: str = "", xa: str = "", huyen: str = "", tinh: str = "Gia Lai", area: float = 0, kind: str = "",
-              land_type: str = "", months: int = 12, tol: float = 100, need: int = 1, discount: float = 10,
+def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", tinh: str = "Gia Lai", area: float = 0, kind: str = "",
+              land_type: str = "", months: int = 12, tol: float = 50, discount: float = 10, scope: str = "ward",
               live: int = 0, maxn: int = 100, limit: int = 60, src: str = ""):
-    """Trả danh sách tin so sánh THẬT (có link) đã lọc/xếp hạng theo địa danh, đường, diện tích, loại tài sản.
-    live=1: thu thập mới từ các trang rao trước (mất vài phút)."""
-    q = qdict(xa, huyen, tinh, area, land_type, discount, need, duong, months, tol, kind)
+    """Tin so sánh THẬT (có link). Bắt buộc cùng xã/phường (và không thuộc tỉnh khác); cùng thôn/xóm, cùng đường được xếp lên trước.
+    scope=district: thêm tin cùng huyện khác xã (match_level='huyen'). live=1: thu thập mới từ các trang rao trước (mất vài phút)."""
+    q = qdict(xa, huyen, tinh, area, land_type, discount, 1, duong, months, tol, kind)
     q["maxn"] = maxn
     q["fetchlog"] = []
     errors = []
     if live:
         chosen = [x for x in src.split(",") if x.strip()]
         collect_live(q, xa, huyen, tinh, duong, land_type, months, maxn, chosen, errors)
-    items, res, ss, basis = evaluate(q)
+    allr = store.load_all()
+    rec = recent(allr, months)
+    picked = select_comps(rec, admin, xa, huyen, tinh, thon, "district", area or None, tol / 100, land_type, kind, duong)
+    extra_district = sum(1 for _, lv in picked if lv == "huyen")
+    if scope != "district":
+        picked = [(l, lv) for l, lv in picked if lv != "huyen"]
+    counts = {lv: sum(1 for _, x in picked if x == lv) for lv in ("thon", "xa", "huyen")}
+    core = [l for l, lv in picked if lv in ("thon", "xa")]
+    res = summarize(core, discount=discount / 100)
+    out = []
+    for l, lv in picked[:limit]:
+        d = listing_to_api(l); d["match_level"] = lv; out.append(d)
     return {
-        "items": [listing_to_api(l) for l in items[:limit]],
-        "total_matched": len(items),
-        "same_street": len(ss),
+        "items": out, "total_matched": len(picked), "match_counts": counts, "extra_district_available": extra_district,
+        "same_street": sum(1 for l, _ in picked if duong and same_street(l, duong)),
         "stats": {"n_used": res.n_used, "median_per_m2": res.median, "p25": res.p25, "p75": res.p75, "warning": res.warning},
-        "funnel": q.get("funnel", []), "fetchlog": q["fetchlog"], "errors": errors,
+        "funnel": [("Tổng số tin đã lưu", len(allr)), (f"Sau lọc thời gian ({months} tháng)", len(rec)),
+                   ("Cùng xã/phường, đúng tỉnh, đúng loại, diện tích phù hợp", counts["thon"] + counts["xa"])],
+        "fetchlog": q["fetchlog"], "errors": errors,
     }

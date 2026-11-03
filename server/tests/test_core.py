@@ -212,3 +212,36 @@ def test_lendland_page_served():
     import app.main as m
     r = TestClient(m.app).get("/lendland")
     assert r.status_code == 200 and "LendLand Pro" in r.text and "APP_VERSION" in r.text
+
+
+def test_api_strict_location_levels(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+    import app.main as m, app.store as store
+    monkeypatch.setattr(store, "DB", tmp_path / "loc.sqlite")
+    def mk(n, addr, title="Bán đất", kind="dat", desc="", src="chotot"):
+        l = Listing(src, f"https://x/{n}", title, address=addr, description=desc, price_vnd=1e9 + ord(n) * 1e6, area_m2=150, kind=kind)
+        return l
+    store.save([
+        mk("A", "Thôn Vinh Thạnh 1, Xã Phước Lộc, Huyện Tuy Phước, Bình Định"),
+        mk("B", "Xã Phước Lộc, Huyện Tuy Phước, Bình Định, Gia Lai"),
+        mk("G", "Xã Phước Lộc", src="alonhadat"),                                   # tin không nhắc tỉnh: vẫn nhận
+        mk("C", "Xã Phước An, Huyện Tuy Phước, Bình Định"),                         # cùng huyện khác xã
+        mk("D", "Xã Hoài Hải, Thị xã Hoài Nhơn, Bình Định"),                        # khác xã & huyện
+        mk("E", "Xã Phước Lộc, Huyện Tam Kỳ, Quảng Ngãi"),                          # trùng tên xã nhưng tỉnh khác
+        mk("F", "TP. Quy Nhơn (P. Quy Nhơn Đông mới)", src="batdongsan"),
+        mk("H", "Xã Phước Lộc, Huyện Tuy Phước, Bình Định", title="Bán khách sạn mặt tiền", kind=""),   # không rõ loại
+        mk("I", "Xã Tuy Phước Tây, Huyện Tuy Phước, Bình Định", desc="cách Phước Lộc 3km"),            # chỉ nhắc xã trong mô tả
+    ])
+    c = TestClient(m.app)
+    p = {"xa": "Xã Phước Lộc", "huyen": "Huyện Tuy Phước", "tinh": "Bình Định", "thon": "Thôn Vinh Thạnh 1", "area": 147, "kind": "dat"}
+    r = c.get("/api/comps", params=p).json()
+    got = {i["url"].split("/")[-1]: i["match_level"] for i in r["items"]}
+    assert got == {"A": "thon", "B": "xa", "G": "xa"}, got
+    assert r["items"][0]["url"].endswith("/A")                               # cùng thôn lên đầu
+    assert r["extra_district_available"] == 2 and r["match_counts"]["huyen"] == 0      # C và I: cùng huyện, khác xã
+    r2 = c.get("/api/comps", params={**p, "scope": "district"}).json()
+    got2 = {i["url"].split("/")[-1]: i["match_level"] for i in r2["items"]}
+    assert got2 == {"A": "thon", "B": "xa", "G": "xa", "C": "huyen", "I": "huyen"} and r2["items"][-1]["match_level"] == "huyen"
+    # Gia Lai (mới) và Bình Định (cũ) là một: nhập tỉnh nào cũng nhận tin nhắc tỉnh còn lại
+    r3 = c.get("/api/comps", params={**p, "tinh": "Gia Lai"}).json()
+    assert {i["url"].split("/")[-1] for i in r3["items"]} == {"A", "B", "G"}
