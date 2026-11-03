@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import store
 from .search import build_keywords, location_terms, filter_listings, same_street, rank, select_comps
+from .learn import learn_pairs
 from .quality import dedupe_semantic, recency_tier, price_bounds, source_weight, source_weights, weighted_median
 from .sources import SOURCES, parse_manual_text
 from .sources.googlesearch import build_queries
@@ -97,7 +98,7 @@ def collect_live(q, xa, huyen, tinh, duong, land_type, months, maxn, src, errors
                 errors.append(f"Nguồn {name}: {e}")
         if hasattr(source, "fetch_area"):
             try:
-                store.save(source.fetch_area(tinh or "Gia Lai", maxn, 30 * months or None, q["fetchlog"]))
+                store.save(source.fetch_area(tinh or "Gia Lai", maxn, 30 * months or None, q["fetchlog"], huyen=huyen))
             except Exception as e:
                 errors.append(f"Nguồn {name}: {e}")
         if not source.keyword_search:
@@ -105,11 +106,20 @@ def collect_live(q, xa, huyen, tinh, duong, land_type, months, maxn, src, errors
         if hasattr(source, "discover_regions"):
             # Lọc theo khu vực (đầy đủ hơn tìm theo từ khoá, vì nhiều tin không ghi địa danh trong tiêu đề)
             try:
-                regs = source.discover_regions([x for x in (xa, huyen, tinh) if x.strip()])
+                from .textnorm import province_aliases
+                regs = source.discover_regions([x for x in (xa, huyen, tinh) if x.strip()], allowed=province_aliases(admin, tinh))
                 for code, rname in regs.items():
                     got = source.search_region(code, limit=maxn, max_age_days=30 * months or None)
                     store.save(got)
-                    q["fetchlog"].append(f"{name} · toàn bộ đất khu vực '{rname}' (mã {code}): lấy về {len(got)} tin")
+                    q["fetchlog"].append(f"{name} · toàn bộ khu vực '{rname}' (mã {code}): lấy về {len(got)} tin mới nhất")
+                    # Lấy sâu theo đúng phường/xã và huyện (mã Chợ Tốt) để không bỏ sót tin của khu vực tài sản
+                    wards, areas = source.discover_codes(code, admin.aliases(xa) if xa.strip() else set(), admin.aliases(huyen) if huyen.strip() else set())
+                    for area_c, ward_c in sorted(wards):
+                        got = source.search_codes(code, area_c, ward_c, limit=maxn, max_age_days=30 * months or None)
+                        store.save(got); q["fetchlog"].append(f"{name} · theo phường/xã (mã {ward_c}): lấy về {len(got)} tin")
+                    for area_c in sorted(areas - {a for a, _ in wards}):
+                        got = source.search_codes(code, area_c, None, limit=maxn, max_age_days=30 * months or None)
+                        store.save(got); q["fetchlog"].append(f"{name} · theo huyện (mã {area_c}): lấy về {len(got)} tin")
                 if not regs:
                     q["fetchlog"].append(f"{name}: không xác định được mã khu vực từ địa danh đã nhập")
             except Exception as e:
@@ -220,8 +230,10 @@ def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", ti
         collect_live(q, xa, huyen, tinh, duong, land_type, months, maxn, chosen, errors)
     weights = source_weights()
     allr = store.load_all()
+    learned = learn_pairs(allr)
+    admin_eff = admin.with_pairs(learned)        # bảng ánh xạ cũ-mới: file CSV + các cặp học từ dữ liệu tin
     rec = [l for l in allr if recency_tier(l) == 3 or (l.posted_at and (recency_tier(l) <= 2 and _within(l, months)))]
-    pairs = select_comps(rec, admin, xa, huyen, tinh, thon, "district", area or None, tol / 100, land_type, kind, duong)
+    pairs = select_comps(rec, admin_eff, xa, huyen, tinh, thon, "district", area or None, tol / 100, land_type, kind, duong)
     deduped, merged = dedupe_semantic(pairs, weights)
     extra_district = sum(1 for _, lv, _ in deduped if lv == "huyen")
     if scope != "district":
@@ -256,7 +268,7 @@ def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", ti
         "api_version": API_VERSION,
         "items": out, "total_matched": len(rows), "match_counts": counts, "extra_district_available": extra_district,
         "same_street": sum(1 for r in rows if duong and same_street(r[0], duong)),
-        "quality": {"merged_duplicates": merged, "outliers": sum(1 for r in rows if r[5] == "outlier"),
+        "quality": {"learned_admin_pairs": len(learned), "merged_duplicates": merged, "outliers": sum(1 for r in rows if r[5] == "outlier"),
                     "no_date": sum(1 for r in rows if r[5] == "no_date"), "eligible": len(ok_rows),
                     "price_bounds": list(bounds) if bounds else None},
         "stats": {"n_used": res.n_used, "median_per_m2": res.median, "weighted_median_per_m2": wmed, "p25": res.p25, "p75": res.p75, "warning": res.warning},

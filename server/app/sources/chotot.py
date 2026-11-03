@@ -9,7 +9,7 @@ import requests
 from .base import Source
 from ..models import Listing
 from ..parse import parse_frontage, guess_land_type, guess_kind
-from ..textnorm import norm
+from ..textnorm import norm, contains_phrase
 
 API = "https://gateway.chotot.com/v1/public/ad-listing"
 CATEGORY_LAND = 1000      # 1000 = toàn bộ BĐS (1040 đất, 1020 nhà ở, 1010 căn hộ)
@@ -63,9 +63,10 @@ class Chotot(Source):
     def search(self, keywords: str, limit: int = 50, max_age_days: int | None = None) -> list[Listing]:
         return self._paged(limit, max_age_days, q=keywords)
 
-    def discover_regions(self, names: list[str]) -> dict[int, str]:
-        """Từ tên địa danh người dùng nhập, tìm mã tỉnh (region_v2) Chợ Tốt dùng:
-        tìm theo từ khoá rồi lấy mã tỉnh của các tin mà tên cũ/mới của tỉnh/huyện/phường khớp địa danh đó."""
+    def discover_regions(self, names: list[str], allowed: set | None = None) -> dict[int, str]:
+        """Từ tên địa danh người dùng nhập, tìm mã tỉnh (region_v2) Chợ Tốt dùng: tìm theo từ khoá rồi lấy mã tỉnh của các tin mà tên
+        cũ/mới của tỉnh/huyện/phường khớp địa danh đó. `allowed`: tên các tỉnh hợp lệ (đã chuẩn hoá); tỉnh khác bị bỏ
+        (tránh lấy nhầm cả tỉnh khác chỉ vì có xã trùng tên)."""
         found: dict[int, str] = {}
         for name in names:
             n = norm(name)
@@ -74,10 +75,37 @@ class Chotot(Source):
             for a in self._page(q=name):
                 fields = (a.get("region_name"), a.get("region_name_v3"), a.get("area_name"),
                           a.get("area_name_v3"), a.get("ward_name"), a.get("ward_name_v3"))
-                if any(n in norm(f or "") for f in fields) and a.get("region_v2"):
-                    found[a["region_v2"]] = a.get("region_name") or str(a["region_v2"])
+                if not (any(n in norm(f or "") for f in fields) and a.get("region_v2")):
+                    continue
+                if allowed:
+                    rn = norm((a.get("region_name") or "") + " " + (a.get("region_name_v3") or ""))
+                    if not any(contains_phrase(rn, x) for x in allowed):
+                        continue
+                found[a["region_v2"]] = a.get("region_name") or str(a["region_v2"])
             time.sleep(1.0)
         return found
+
+    def discover_codes(self, region_v2: int, ward_aliases: set, district_aliases: set):
+        """Tìm mã huyện (area_v2) và phường/xã (ward) của Chợ Tốt từ các tin có tên khớp. -> ({(area_v2, ward)}, {area_v2})"""
+        wards, areas = set(), set()
+        for name in sorted(ward_aliases | district_aliases):
+            for a in self._page(q=name, region_v2=region_v2):
+                wn = norm((a.get("ward_name") or "") + " | " + (a.get("ward_name_v3") or ""))
+                an = norm((a.get("area_name") or "") + " | " + (a.get("area_name_v3") or ""))
+                if ward_aliases and any(contains_phrase(wn, w) for w in ward_aliases) and a.get("area_v2") and a.get("ward"):
+                    wards.add((a["area_v2"], a["ward"]))
+                if district_aliases and any(contains_phrase(an, d) for d in district_aliases) and a.get("area_v2"):
+                    areas.add(a["area_v2"])
+            time.sleep(1.0)
+        return wards, areas
+
+    def search_codes(self, region_v2: int, area_v2=None, ward=None, limit: int = 100, max_age_days: int | None = None):
+        f = {"region_v2": region_v2}
+        if area_v2:
+            f["area_v2"] = area_v2
+        if ward:
+            f["ward"] = ward
+        return self._paged(limit, max_age_days, **f)
 
     def search_region(self, region_v2: int, limit: int, max_age_days: int | None = None) -> list[Listing]:
         return self._paged(limit, max_age_days, region_v2=region_v2)

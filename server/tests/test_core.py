@@ -337,3 +337,74 @@ def test_api_version_and_user_scenario(monkeypatch, tmp_path):
     r = c.get("/api/comps", params={"xa": "Xã Phước Sơn", "huyen": "Huyện Tuy Phước", "tinh": "Tỉnh Bình Định", "thon": "Thôn Xuân Phương", "area": 751.4, "kind": "dat", "tol": 50}).json()
     assert r["api_version"] == 3
     assert [i["url"].split("/")[-1] for i in r["items"]] == ["6"] and r["items"][0]["match_level"] == "thon"
+
+
+def test_learned_admin_mapping_matches_new_name_listing(monkeypatch, tmp_path):
+    """Tin chỉ ghi tên MỚI (kiểu Batdongsan) vẫn khớp khi người dùng nhập tên CŨ, nhờ cặp cũ-mới học từ tin Chợ Tốt."""
+    from fastapi.testclient import TestClient
+    import app.main as m, app.store as store
+    from app.learn import learn_pairs
+    monkeypatch.setattr(store, "DB", tmp_path / "l.sqlite")
+    ct = Listing("chotot", "https://x/ct", "Đất Phước Sơn", address="Xã Phước Sơn, Huyện Tuy Phước, Bình Định, Xã Tuy Phước Đông, Gia Lai", price_vnd=1e9, area_m2=100, kind="dat", posted_at=_ago(5))
+    ct.raw = {"ward_name": "Xã Phước Sơn", "ward_name_v3": "Xã Tuy Phước Đông", "area_name": "Huyện Tuy Phước"}
+    bd = Listing("batdongsan", "https://x/bd", "Bán đất nền sổ riêng đường bê tông", address="H. Tuy Phước (X. Tuy Phước Đông mới)", price_vnd=1.1e9, area_m2=110, kind="dat", posted_at=_ago(6))
+    other = Listing("batdongsan", "https://x/ot", "Bán đất thị trấn", address="H. Tuy Phước (X. Tuy Phước Tây mới)", price_vnd=1.2e9, area_m2=120, kind="dat", posted_at=_ago(7))
+    store.save([ct, bd, other])
+    assert ("Xã Phước Sơn", "Xã Tuy Phước Đông") in learn_pairs([ct])
+    r = TestClient(m.app).get("/api/comps", params={"xa": "Xã Phước Sơn", "huyen": "Huyện Tuy Phước", "tinh": "Bình Định", "area": 105, "kind": "dat"}).json()
+    assert {i["url"].split("/")[-1] for i in r["items"]} == {"ct", "bd"} and r["quality"]["learned_admin_pairs"] == 1
+
+
+def test_webscrape_district_urls_and_pagination(monkeypatch):
+    import app.sources.webscrape as ws
+    assert ws.unit_slug("Huyện Tuy Phước") == ("tuy-phuoc", ("huyen", 486))
+    assert ws.unit_slug("Thành phố Quy Nhơn")[1] == ("thanh-pho", 479) and ws.unit_slug("Xã Phước Sơn") is None
+    assert ws.Alonhadat().district_first_url("Huyện Tuy Phước") == "https://alonhadat.com.vn/nha-dat/can-ban/nha-dat/binh-dinh/486/huyen-tuy-phuoc.html"
+    assert ws.Thuviennhadat().district_first_url("Huyện Tuy Phước") == "https://thuviennhadat.vn/ban-nha-dat-huyen-tuy-phuoc"
+    assert ws.Batdongsan().district_first_url("Huyện Tuy Phước") == "https://batdongsan.com.vn/nha-dat-ban-tuy-phuoc-bdd"
+    assert ws.Batdongsan().district_first_url("Huyện Phù Mỹ") is None
+    html = '<a href="/x/trang-1">1</a><a href="https://alonhadat.com.vn/x/trang-2">2</a><a href="/x/trang-3">3</a>'
+    assert ws.next_page_url(html, "https://alonhadat.com.vn/x") == "https://alonhadat.com.vn/x/trang-2"
+    assert ws.next_page_url(html, "https://alonhadat.com.vn/x/trang-2") == "https://alonhadat.com.vn/x/trang-3"
+    assert ws.next_page_url("<a href='/y'>a</a>", "https://alonhadat.com.vn/x") is None
+    assert ws.next_page_url('<a href="?trang=2">2</a>', "https://thuviennhadat.vn/ban-nha-dat-huyen-tuy-phuoc") == "https://thuviennhadat.vn/ban-nha-dat-huyen-tuy-phuoc?trang=2"
+    # fetch_district đi theo liên kết phân trang có trong trang
+    pages = {"https://alonhadat.com.vn/nha-dat/can-ban/nha-dat/binh-dinh/486/huyen-tuy-phuoc.html": ALO + '<a href="/nha-dat/can-ban/nha-dat/binh-dinh/486/huyen-tuy-phuoc/trang-2">2</a>',
+             "https://alonhadat.com.vn/nha-dat/can-ban/nha-dat/binh-dinh/486/huyen-tuy-phuoc/trang-2": ALO.replace("18961528", "18961529")}
+    class R:
+        status_code = 200
+        def __init__(s, t): s.text = t
+        def raise_for_status(s): pass
+    seen = []
+    monkeypatch.setattr(ws.requests, "get", lambda url, **k: (seen.append(url), R(pages[url]))[1]); monkeypatch.setattr(ws.time, "sleep", lambda x: None)
+    log = []
+    got = ws.Alonhadat().fetch_area("Bình Định", 100, None, log, huyen="Huyện Tuy Phước")
+    assert len(seen) == 2 and len(got) == 4 and "trang huyện" in log[0]                    # ALO có 2 thẻ tin/trang, 2 trang
+    seen.clear(); ws.Alonhadat().fetch_area("Bình Định", 20, None, [], huyen="Xã Phước Sơn")          # không phải đơn vị đã biết -> lấy trang tỉnh
+    assert seen and "binh-dinh" in seen[0] and "huyen-" not in seen[0]
+
+
+def test_chotot_province_filter_and_codes(monkeypatch):
+    import app.sources.chotot as ct
+    calls = []
+    class R:
+        status_code = 200
+        def __init__(s, ads): s.ads = ads
+        def raise_for_status(s): pass
+        def json(s): return {"ads": s.ads}
+    def ad(region, rv2, ward, ward_v3, area_v2=704301, wcode=7340):
+        return {"list_id": 1, "region_name": region, "region_name_v3": "Gia Lai" if region == "Bình Định" else region, "region_v2": rv2, "area_name": "Huyện Tuy Phước", "area_v2": area_v2,
+                "ward_name": ward, "ward_name_v3": ward_v3, "ward": wcode, "subject": "x"}
+    def fake(url, params=None, headers=None, timeout=None):
+        calls.append(dict(params)); q = params.get("q", "")
+        if "region_v2" not in params:
+            return R([ad("Ninh Thuận", 7045, "Xã Phước Sơn", "Xã Phước Sơn"), ad("Bình Định", 7043, "Xã Phước Sơn", "Xã Tuy Phước Đông")])
+        return R([ad("Bình Định", 7043, "Xã Phước Sơn", "Xã Tuy Phước Đông")]) if params.get("o", 0) == 0 else R([])
+    monkeypatch.setattr(ct.requests, "get", fake); monkeypatch.setattr(ct.time, "sleep", lambda x: None)
+    c = ct.Chotot()
+    assert c.discover_regions(["Xã Phước Sơn"], allowed={"binh dinh", "gia lai"}) == {7043: "Bình Định"}          # bỏ Ninh Thuận (trùng tên xã)
+    assert set(c.discover_regions(["Xã Phước Sơn"])) == {7043, 7045}                                                 # không giới hạn tỉnh thì lấy cả hai
+    wards, areas = c.discover_codes(7043, {"phuoc son", "tuy phuoc dong"}, {"tuy phuoc"})
+    assert wards == {(704301, 7340)} and areas == {704301}
+    calls.clear(); got = c.search_codes(7043, 704301, 7340, limit=20)
+    assert calls[0]["region_v2"] == 7043 and calls[0]["area_v2"] == 704301 and calls[0]["ward"] == 7340 and len(got) == 1

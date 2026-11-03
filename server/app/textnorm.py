@@ -37,6 +37,18 @@ class AdminMap:
                 self.old2new.setdefault(o, set()).add(n)
                 self.new2old.setdefault(n, set()).add(o)
 
+    def with_pairs(self, pairs) -> "AdminMap":
+        """Bản sao có thêm các cặp (tên cũ, tên mới) học được từ dữ liệu tin (Chợ Tốt, Alonhadat ghi cả hai tên)."""
+        m = AdminMap.__new__(AdminMap)
+        m.old2new = {k: set(v) for k, v in self.old2new.items()}
+        m.new2old = {k: set(v) for k, v in self.new2old.items()}
+        for old, new in pairs:
+            o, n = core_name(old), core_name(new)
+            if o and n and o != n:
+                m.old2new.setdefault(o, set()).add(n)
+                m.new2old.setdefault(n, set()).add(o)
+        return m
+
     def aliases(self, name: str) -> set[str]:
         """Tên người dùng nhập + mọi tên cũ/mới tương ứng (dạng đã chuẩn hoá)."""
         c = core_name(name)

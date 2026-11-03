@@ -4,7 +4,7 @@ CHƯA CHẠY THỬ TRỰC TIẾP (môi trường phát triển bị chặn mạn
 Các trang này có thể chặn truy cập tự động (403/captcha): khi đó app báo rõ lý do và phần còn lại vẫn chạy.
 Tuân thủ điều khoản sử dụng của từng trang; tần suất gọi được giới hạn (nghỉ giữa các trang).
 """
-import datetime as dt, math, time
+import datetime as dt, math, re, time
 import requests
 from .base import Source
 from ..models import Listing
@@ -28,6 +28,38 @@ def slugs_for(tinh: str) -> list[str]:
     c = core_name(tinh)
     return PROVINCE_SLUGS.get(c, [norm(tinh).replace(" ", "-")] if c else [])
 
+# Huyện/thị xã/thành phố của Bình Định (cũ): tên chuẩn hoá -> (tiền tố trong địa chỉ, mã Alonhadat). Lấy từ các trang người dùng đã lưu.
+BINH_DINH_UNITS = {
+    "an lao": ("huyen", 480), "hoai an": ("huyen", 482), "phu cat": ("huyen", 484), "phu my": ("huyen", 485), "tay son": ("huyen", 487),
+    "tuy phuoc": ("huyen", 486), "van canh": ("huyen", 488), "vinh thanh": ("huyen", 489), "quy nhon": ("thanh-pho", 479),
+    "an nhon": ("thi-xa", 481), "hoai nhon": ("thi-xa", 483),
+}
+BDS_DISTRICT_SLUGS = {"quy nhon", "phu cat", "an nhon", "tuy phuoc"}      # Batdongsan: chỉ các trang đã thấy trong file người dùng lưu
+
+def unit_slug(huyen: str):
+    """'Huyện Tuy Phước' -> ('tuy-phuoc', ('huyen', 486)) hoặc None nếu không phải đơn vị đã biết."""
+    from ..textnorm import core_name
+    c = core_name(huyen)
+    return (c.replace(" ", "-"), BINH_DINH_UNITS[c]) if c in BINH_DINH_UNITS else None
+
+PAGE_TOKEN = re.compile(r"(?:[?&](?:page|trang)=|/trang[-_]{1,2}|/p)(\d+)(?=\.html|/|$|\?|&)")
+
+def page_number(url: str) -> int:
+    m = PAGE_TOKEN.search(url)
+    return int(m.group(1)) if m else 1
+
+def next_page_url(html: str, current_url: str):
+    """Tìm đường dẫn trang kế tiếp trong chính trang vừa tải (không đoán mẫu địa chỉ phân trang)."""
+    from urllib.parse import urljoin, urlparse
+    from bs4 import BeautifulSoup
+    cur = page_number(current_url)
+    host = urlparse(current_url).netloc
+    for a in BeautifulSoup(html, "html.parser").select("a[href]"):
+        u = urljoin(current_url, a["href"])
+        if urlparse(u).netloc == host and PAGE_TOKEN.search(u) and page_number(u) == cur + 1:
+            return u
+    return None
+
 class WebSource(Source):
     keyword_search = False
     parser = staticmethod(lambda html, only_land=True: [])
@@ -48,7 +80,43 @@ class WebSource(Source):
             raise Blocked("trang trả về màn hình kiểm tra bot/captcha")
         return r.text
 
-    def fetch_area(self, tinh: str, limit: int, max_age_days: int | None, log: list[str]) -> list[Listing]:
+    def district_first_url(self, huyen: str):
+        return None
+
+    def fetch_district(self, huyen: str, limit: int, max_age_days: int | None, log: list[str]):
+        """Lấy tin theo trang của huyện/thị xã/thành phố (đủ sâu hơn trang cấp tỉnh). None nếu chưa hỗ trợ huyện này."""
+        url = self.district_first_url(huyen)
+        if not url:
+            return None
+        out, visited, pages = [], set(), max(1, math.ceil(limit / PER_PAGE))
+        cutoff = (dt.date.today() - dt.timedelta(days=max_age_days)).isoformat() if max_age_days else None
+        n = 0
+        for _ in range(pages):
+            visited.add(url)
+            try:
+                html = self._get(url)
+            except Blocked as e:
+                log.append(f"{self.name}: {e} — {url}"); return out
+            except Exception as e:
+                log.append(f"{self.name}: lỗi {e} — {url}"); break
+            cards = self.parser(html, only_land=False)
+            for l in cards:
+                l.kind = guess_kind(l.url, l.title)
+            out.extend(cards); n += len(cards)
+            time.sleep(self.min_delay)
+            if not cards or (cutoff and all(l.posted_at and l.posted_at < cutoff for l in cards if l.posted_at)):
+                break
+            url = next_page_url(html, url)
+            if not url or url in visited:
+                break
+        log.append(f"{self.name} · trang huyện '{huyen}': lấy về {n} tin")
+        return out
+
+    def fetch_area(self, tinh: str, limit: int, max_age_days: int | None, log: list[str], huyen: str = "") -> list[Listing]:
+        if huyen.strip():
+            got = self.fetch_district(huyen, limit, max_age_days, log)
+            if got is not None:                    # có trang riêng của huyện: đủ sâu hơn trang cấp tỉnh nên không lấy thêm trang tỉnh
+                return got
         out, pages = [], max(1, math.ceil(limit / PER_PAGE))
         cutoff = (dt.date.today() - dt.timedelta(days=max_age_days)).isoformat() if max_age_days else None
         for slug in slugs_for(tinh):
@@ -79,6 +147,9 @@ class WebSource(Source):
 class Alonhadat(WebSource):
     name = "alonhadat"
     parser = staticmethod(hi.parse_alonhadat)
+    def district_first_url(self, huyen):
+        u = unit_slug(huyen)
+        return f"https://alonhadat.com.vn/nha-dat/can-ban/nha-dat/binh-dinh/{u[1][1]}/{u[1][0]}-{u[0]}.html" if u else None
     def page_urls(self, slug, page):
         base = f"https://alonhadat.com.vn/can-ban-nha-dat/{slug}"
         return [base if page == 1 else f"{base}/trang-{page}"]
@@ -87,12 +158,18 @@ class Batdongsan(WebSource):
     name = "batdongsan"
     parser = staticmethod(hi.parse_batdongsan)
     min_delay = 3.0
+    def district_first_url(self, huyen):
+        u = unit_slug(huyen)
+        return f"https://batdongsan.com.vn/nha-dat-ban-{u[0]}-bdd" if u and u[0].replace("-", " ") in BDS_DISTRICT_SLUGS else None
     def page_urls(self, slug, page):
         return [f"https://batdongsan.com.vn/nha-dat-ban-{slug}" + ("" if page == 1 else f"/p{page}")]
 
 class Thuviennhadat(WebSource):
     name = "thuviennhadat"
     parser = staticmethod(hi.parse_thuviennhadat)
+    def district_first_url(self, huyen):
+        u = unit_slug(huyen)
+        return f"https://thuviennhadat.vn/ban-nha-dat-{u[1][0]}-{u[0]}" if u else None
     def page_urls(self, slug, page):
         return [f"https://thuviennhadat.vn/ban-nha-dat-tinh-{slug}?trang={page}"]
 

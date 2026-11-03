@@ -765,7 +765,7 @@
             <button onclick="testBackendConnection()" type="button" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 rounded-lg">Kiểm tra</button>
           </div>
           <label class="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" id="chkAlwaysAi"> Luôn chạy thêm AI gợi ý (tin chưa kiểm chứng) sau khi lấy tin thật</label>
-          <label class="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" id="chkExpandDistrict"> Mở rộng sang tin cùng huyện (khác xã) khi thiếu tin: chỉ đưa vào Hàng chờ, không tự tính giá</label>
+          <label class="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" id="chkExpandDistrict"> Hiển thị thêm tin cùng huyện (khác xã) trong Hàng chờ để tham khảo; không bao giờ tự đưa lên bảng chính hay tính giá</label>
           <div id="backendTestResult" class="text-[11px] text-slate-600"></div>
         </div>
         <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
@@ -978,8 +978,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.15";
+    const APP_VERSION = "6.16";
     const APP_CHANGELOG = {
+      "6.16": "Thu thập sâu hơn theo đúng phường/xã và huyện (Chợ Tốt theo mã khu vực; Alonhadat/Thuviennhadat theo trang huyện); tự học bảng tên cũ-mới từ dữ liệu tin; mặc định bật hiển thị tin cùng huyện (khác xã) trong Hàng chờ; thu thập tối đa 200 tin/nguồn.",
       "6.15": "Kiểm tra phiên bản máy chủ khảo giá: nếu đang chạy bản cũ (thiếu bộ lọc địa danh) thì KHÔNG dùng kết quả và báo rõ cách cập nhật; nút Kiểm tra hiện phiên bản API và thư mục đang chạy.",
       "6.14": "Bộ lọc chất lượng tin so sánh: gộp tin trùng (cùng SĐT/nội dung), tin ngoại lai về đơn giá (IQR) và tin không rõ ngày đăng chỉ vào Hàng chờ, ưu tiên tin 3-6 tháng; đơn giá bình quân có trọng số theo độ tin cậy của nguồn.",
       "6.13": "Tin so sánh phải CÙNG xã/phường và đúng tỉnh (cùng thôn/xóm, cùng đường xếp trước); khác xã chỉ hiện khi bật \"mở rộng sang cùng huyện\" và chỉ vào Hàng chờ; loại tin không rõ loại tài sản (khách sạn, nhà xưởng...); gắn nhãn mức khớp địa danh.",
@@ -1440,7 +1441,7 @@
         if (elKey) elKey.value = masterKey;
         const elBe = document.getElementById('backendUrlInput'); if (elBe) elBe.value = getBackendUrl();
         const elAi = document.getElementById('chkAlwaysAi'); if (elAi) elAi.checked = localStorage.getItem('llp_always_ai') === 'true';
-        const elEx = document.getElementById('chkExpandDistrict'); if (elEx) elEx.checked = localStorage.getItem('llp_expand_district') === 'true';
+        const elEx = document.getElementById('chkExpandDistrict'); if (elEx) elEx.checked = localStorage.getItem('llp_expand_district') !== 'false';
 
         const radioP = document.getElementById('radioModePayg');
         const radioF = document.getElementById('radioModeFree');
@@ -2719,8 +2720,8 @@ const okVer = j && Number(j.api_version) >= REQUIRED_API_VERSION;
       const params = new URLSearchParams({
         xa: valStr('targetWard'), duong: cleanStreetName(valStr('targetStreet')),
         area: String(valNum('targetArea') || 0), kind: valNum('targetBuildingArea') > 0 ? '' : 'dat',
-        thon: valStr('targetHamlet'), scope: localStorage.getItem('llp_expand_district') === 'true' ? 'district' : 'ward',
-        months: '6', tol: '50', live: '1', maxn: '100', limit: '60'
+        thon: valStr('targetHamlet'), scope: localStorage.getItem('llp_expand_district') !== 'false' ? 'district' : 'ward',
+        months: '6', tol: '50', live: '1', maxn: '200', limit: '60'
       });
       const dp = splitDistrictProvince(valStr('targetDistrictProvince'));
       params.set('huyen', dp.huyen); params.set('tinh', dp.tinh);
@@ -2754,9 +2755,9 @@ const okVer = j && Number(j.api_version) >= REQUIRED_API_VERSION;
       backupCompsPool = rest.concat(backupCompsPool.filter(c => c.origin === 'ai'));
       const mc = data.match_counts || {};
       const hints = [];
-      if (usableList.length === 0) hints.push('Không có tin nào CÙNG xã/phường (đúng tỉnh) đủ giá và diện tích. Hãy bấm Khảo sát lại để thu thập thêm, dán tin thủ công, hoặc bật "Mở rộng sang cùng huyện" ở Quản trị.');
+      if (usableList.length === 0) hints.push('Không có tin nào CÙNG xã/phường (đúng tỉnh) đủ giá và diện tích' + (districtOnly.length ? `; có ${districtOnly.length} tin cùng huyện (khác xã) trong Hàng chờ để tham khảo` : '') + '. Xã nhỏ thường có rất ít tin rao online: hãy dán thêm tin thủ công (Facebook/Zalo) hoặc dùng giá tham khảo khu vực lân cận.');
       else if (usableList.length < 3) hints.push(`Chỉ có ${usableList.length} tin cùng xã/phường: ít mẫu, kết quả định giá có độ tin cậy thấp.`);
-      if (data.extra_district_available > 0 && !districtOnly.length) hints.push(`Có thêm ${data.extra_district_available} tin cùng huyện (khác xã): bật "Mở rộng sang cùng huyện" ở Quản trị để xem trong Hàng chờ.`);
+      if (data.extra_district_available > 0 && !districtOnly.length) hints.push(`Có thêm ${data.extra_district_available} tin cùng huyện (khác xã): bật "Hiển thị thêm tin cùng huyện" ở Quản trị để xem trong Hàng chờ.`);
       showBackendLog([
         ...(data.quality ? [`Bộ lọc chất lượng: gộp ${data.quality.merged_duplicates} tin trùng; ${data.quality.outliers} tin ngoại lai đơn giá và ${data.quality.no_date} tin không rõ ngày đăng được đưa vào Hàng chờ (không tính giá); ${data.quality.eligible} tin đạt chuẩn.`] : []),
         `Máy chủ khảo giá: cùng thôn/xóm ${mc.thon || 0} tin, cùng xã/phường ${mc.xa || 0} tin${districtOnly.length ? ', cùng huyện khác xã ' + districtOnly.length + ' tin (Hàng chờ)' : ''}; đưa ${top.length} tin lên bảng chính.`,
