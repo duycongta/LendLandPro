@@ -632,6 +632,7 @@
           <span id="compsCountBadge" class="text-[11px] sm:text-xs text-slate-500">Chưa có tài sản so sánh</span>
         </div>
 
+        <div id="backendLogBox" class="hidden px-3.5 sm:px-4 py-2 text-[11px] text-slate-600 bg-slate-50 border-b border-slate-100 whitespace-pre-line"></div>
         <div class="overflow-x-auto w-full" style="-webkit-overflow-scrolling: touch;">
           <table class="w-full text-left text-xs" style="min-width: 1040px;">
             <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 uppercase tracking-wider text-[11px]">
@@ -757,6 +758,15 @@
           </label>
         </div>
 
+        <div class="border border-emerald-200 rounded-xl p-3 bg-emerald-50/40 space-y-2">
+          <div class="font-bold text-slate-800 text-xs flex items-center gap-1"><i class="ph-bold ph-database text-emerald-600"></i> Máy chủ khảo giá (Python) - tin so sánh thật</div>
+          <div class="flex gap-2">
+            <input type="text" id="backendUrlInput" placeholder="http://localhost:8000" class="flex-grow border border-slate-300 rounded-lg p-2 font-mono text-[11px] bg-white">
+            <button onclick="testBackendConnection()" type="button" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 rounded-lg">Kiểm tra</button>
+          </div>
+          <label class="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" id="chkAlwaysAi"> Luôn chạy thêm AI gợi ý (tin chưa kiểm chứng) sau khi lấy tin thật</label>
+          <div id="backendTestResult" class="text-[11px] text-slate-600"></div>
+        </div>
         <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
           <div class="font-bold text-slate-800 text-xs flex items-center gap-1">
             <i class="ph-bold ph-cloud text-indigo-600"></i> Cấu Hình JSONBin.io (Đã Mặc Định)
@@ -967,8 +977,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.10";
+    const APP_VERSION = "6.11";
     const APP_CHANGELOG = {
+      "6.11": "Nối máy chủ khảo giá (Python): khi bấm Khảo sát, app lấy TIN THẬT có link (Chợ Tốt, Alonhadat, Batdongsan...) đưa lên bảng chính; AI chỉ gợi ý thêm vào Hàng chờ. Có cấu hình địa chỉ máy chủ và nút kiểm tra kết nối ở mục Quản trị.",
       "6.10": "Chống tin giả: tin do AI tạo chỉ vào Hàng chờ (gắn nhãn \"AI tạo - chưa kiểm chứng\", phải xác nhận mới đưa lên bảng); bỏ số mặc định (100 m², 5 m, 20 m, 1,5 tỷ, 6 tr/m²); bỏ vị trí bản đồ ngẫu nhiên; không còn gán link theo thứ tự; báo rõ khi Google Search lỗi; bỏ 2 cảnh báo hành lang/lưu không.",
       "6.9": "Đơn giản hóa: chỉ giữ ghi chú GCN (trang 2) + diện tích không tính giá/loại đất trừ; bỏ khối lối vào-lộ giới quy hoạch và dòng nhắc quyền riêng tư; thêm bản quyền ở màn hình PIN.",
       "6.8": "Màn hình khóa: đổi dòng tiêu đề thành \"Tiện ích khảo sát giá BĐS tín dụng (Vx.x)\".",
@@ -1421,6 +1432,8 @@
         const elKey = document.getElementById('vaultMasterKeyInput');
         if (elBin) elBin.value = binId;
         if (elKey) elKey.value = masterKey;
+        const elBe = document.getElementById('backendUrlInput'); if (elBe) elBe.value = getBackendUrl();
+        const elAi = document.getElementById('chkAlwaysAi'); if (elAi) elAi.checked = localStorage.getItem('llp_always_ai') === 'true';
 
         const radioP = document.getElementById('radioModePayg');
         const radioF = document.getElementById('radioModeFree');
@@ -1452,6 +1465,10 @@
       if (kp) localStorage.setItem('gemini_api_key_payg', kp);
       if (binId) localStorage.setItem('llp_vault_bin', binId);
       if (masterKey) localStorage.setItem('llp_vault_key', masterKey);
+      try {
+        localStorage.setItem('llp_backend_url', valStr('backendUrlInput'));
+        localStorage.setItem('llp_always_ai', document.getElementById('chkAlwaysAi').checked ? 'true' : 'false');
+      } catch (e) {}
 
       const mode = localStorage.getItem('gemini_api_mode') || 'free';
       const activeKey = mode === 'payg' ? kp : kf;
@@ -2230,6 +2247,11 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
     async function generateSmartCompsForArea(target) {
       updateMultiChannelSearchLinks(target.ward, target.districtProvince);
 
+      // v6.11: ưu tiên TIN THẬT từ máy chủ khảo giá (Python). Đủ tin thì không cần gọi AI (trừ khi bật "luôn chạy AI")
+      const real = await fetchRealComps();
+      const alwaysAi = localStorage.getItem('llp_always_ai') === 'true';
+      if (real.ok && real.usable >= 3 && !alwaysAi) return;
+
       const apiKey = getActiveApiKey();
       const apiMode = localStorage.getItem('gemini_api_mode') || 'free';
       const enableGrounding = localStorage.getItem('gemini_search_grounding') !== 'false';
@@ -2607,6 +2629,102 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       });
     }
 
+    // =========================================================================
+    // v6.11: MÁY CHỦ KHẢO GIÁ (PYTHON) - TIN SO SÁNH THẬT CÓ LINK
+    // =========================================================================
+    const BACKEND_URL_DEFAULT = 'http://localhost:8000';
+    function getBackendUrl() {
+      let u = '';
+      try { u = (localStorage.getItem('llp_backend_url') || '').trim(); } catch (e) {}
+      return (u || BACKEND_URL_DEFAULT).replace(/\/+$/, '');
+    }
+    // "124 Hùng Vương / Hẻm 3m" -> "Hùng Vương"; bỏ giá trị mặc định chung chung
+    function cleanStreetName(raw) {
+      let t = String(raw || '').split(/[\/,;(]/)[0].trim();
+      t = t.replace(/^(số\s*)?\d+[a-zA-Z]?\s*/i, '').replace(/^(đường|phố|hẻm|kiệt)\s+/i, '').trim();
+      return /^tuyến đường chính$/i.test(t) ? '' : t;
+    }
+    function splitDistrictProvince(dp) {
+      const parts = String(dp || '').split(',').map(x => x.trim()).filter(Boolean);
+      if (parts.length >= 2) return { huyen: parts.slice(0, -1).join(', '), tinh: parts[parts.length - 1] };
+      return { huyen: parts[0] || '', tinh: '' };
+    }
+    function fmtIsoDate(iso) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+      return m ? `${m[3]}/${m[2]}/${m[1]}` : '--';
+    }
+    function mapBackendItem(it, i) {
+      const price = Number(it.price_vnd) > 0 ? Math.round(Number(it.price_vnd) / 1e6) / 1000 : null;   // tỷ đồng, 3 chữ số
+      return {
+        id: 'b' + i, origin: 'backend', userConfirmed: true, kind: it.kind || '',
+        address: it.address || it.title || '(không có địa chỉ)', roadDesc: it.title || '',
+        postedDate: fmtIsoDate(it.posted_at), roadType: '',
+        area: Number(it.area_m2) > 0 ? Number(it.area_m2) : null,
+        frontage: Number(it.frontage_m) > 0 ? Number(it.frontage_m) : null, depth: null,
+        rawPrice: price, link: it.url || '', sourceType: it.source || 'khac', sourceName: it.source_label || it.source || 'Tin rao',
+        distanceMeters: null,
+        lat: typeof it.lat === 'number' ? it.lat : null, lng: typeof it.lng === 'number' ? it.lng : null
+      };
+    }
+    function showBackendLog(lines) {
+      const box = document.getElementById('backendLogBox'); if (!box) return;
+      const ls = lines.filter(Boolean).map(l => (l.length > 200 ? l.slice(0, 200) + '…' : l));   // rút gọn dòng lỗi dài
+      box.textContent = ls.join('\n'); box.classList.toggle('hidden', ls.length === 0);
+    }
+    async function testBackendConnection() {
+      const out = document.getElementById('backendTestResult'); if (!out) return;
+      const base = (valStr('backendUrlInput') || BACKEND_URL_DEFAULT).replace(/\/+$/, '');
+      out.textContent = 'Đang kiểm tra...'; out.className = 'text-[11px] text-slate-600';
+      try {
+        const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 6000);
+        const r = await fetch(base + '/api/health', { signal: ctrl.signal }); clearTimeout(t);
+        const j = await r.json();
+        out.textContent = j && j.ok ? 'Kết nối được. Nguồn: ' + (j.sources || []).join(', ') : 'Máy chủ trả lời lạ, kiểm tra địa chỉ.';
+        out.className = 'text-[11px] ' + (j && j.ok ? 'text-emerald-700' : 'text-rose-700');
+      } catch (e) {
+        out.textContent = 'Không kết nối được. Hãy chạy app Python trên máy (python -m uvicorn app.main:app --port 8000); Chrome có thể hỏi quyền truy cập mạng cục bộ: chọn Cho phép.';
+        out.className = 'text-[11px] text-rose-700';
+      }
+    }
+    // Lấy tin THẬT từ máy chủ Python; trả về {ok, usable, error}
+    async function fetchRealComps() {
+      const base = getBackendUrl();
+      const params = new URLSearchParams({
+        xa: valStr('targetWard'), duong: cleanStreetName(valStr('targetStreet')),
+        area: String(valNum('targetArea') || 0), kind: valNum('targetBuildingArea') > 0 ? '' : 'dat',
+        months: '12', tol: '100', live: '1', maxn: '100', limit: '60'
+      });
+      const dp = splitDistrictProvince(valStr('targetDistrictProvince'));
+      params.set('huyen', dp.huyen); params.set('tinh', dp.tinh);
+      setFloatingStatus('survey', 'Đang thu thập tin thật từ các trang rao (có thể mất vài phút)...');
+      let data;
+      try {
+        const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 8 * 60 * 1000);
+        const r = await fetch(`${base}/api/comps?${params.toString()}`, { signal: ctrl.signal }); clearTimeout(t);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        data = await r.json();
+      } catch (err) {
+        const msg = `Không kết nối được máy chủ khảo giá (${base}): ${err.message}. Hãy chạy app Python trên máy rồi thử lại.`;
+        showBackendLog([msg]); showToast(msg);
+        return { ok: false, usable: 0, error: msg };
+      }
+      const mapped = (data.items || []).map(mapBackendItem);
+      const usableList = mapped.filter(compIsValid), unusable = mapped.filter(c => !compIsValid(c));
+      const top = usableList.slice(0, 5), rest = usableList.slice(5).concat(unusable);
+      // giữ tin nhập tay đang có; thay các tin lấy từ máy chủ lần trước
+      currentComps = currentComps.filter(c => c.origin !== 'backend').concat(top);
+      backupCompsPool = rest.concat(backupCompsPool.filter(c => c.origin === 'ai'));
+      showBackendLog([
+        `Máy chủ khảo giá: khớp ${data.total_matched} tin (cùng đường: ${data.same_street}); đưa ${top.length} tin lên bảng chính, ${rest.length} tin vào Hàng chờ.`,
+        ...(data.fetchlog || []).slice(0, 12), ...(data.errors || []).slice(0, 6).map(e => 'Lỗi nguồn: ' + e)
+      ]);
+      renderMapElements(); recalculateTargetValues(); renderPoolListUI();
+      setTimeout(() => { fitAllMarkersSafe(); }, 400);
+      setFloatingStatus('success', `Đã lấy ${top.length} tin thật lên bảng chính`);
+      if (usableList.length === 0) showToast('Máy chủ không tìm thấy tin nào đủ giá và diện tích cho khu vực này.');
+      return { ok: true, usable: usableList.length };
+    }
+
     // === TÍNH TOÁN ĐỊNH GIÁ ĐA CƠ CẤU (ĐẤT Ở + ĐẤT VƯỜN + CTXD) ===
     function recalculateTargetValues() {
       const totalArea = parseFloat(document.getElementById('targetArea').value) || 0;
@@ -2918,6 +3036,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       backupCompsPool = [];
       lastGroundingSources = [];
       renderGroundingSources();
+      showBackendLog([]);
       document.getElementById('aiSummaryP1').innerText = 'Hệ thống đang sẵn sàng. Vui lòng nhập địa chỉ xã/phường hoặc nạp Giấy chứng nhận quyền sử dụng đất để nhận định giá trị thị trường và gợi ý định giá an toàn.';
       document.getElementById('aiSummaryTips').classList.add('hidden');
 
