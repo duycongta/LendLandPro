@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>LendLand Pro v6.4 - Thẩm Định Giá BĐS Tín Dụng</title>
+  <title>LendLand Pro v6.5 - Thẩm Định Giá BĐS Tín Dụng</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -15,9 +15,6 @@
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
   </script>
-  
-  <!-- THƯ VIỆN HTML2PDF & CRYPTO-JS (AES-256 / SHA-256) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
   <style>
@@ -35,12 +32,14 @@
     .report-table {
       width: 100%;
       border-collapse: collapse;
+      table-layout: fixed;
     }
     .report-table th, .report-table td {
       border: 1px solid #cbd5e1;
       padding: 6px 8px;
       font-size: 11px;
       line-height: 1.4;
+      word-wrap: break-word;
     }
     
     @media print {
@@ -54,7 +53,7 @@
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col relative select-none sm:select-auto">
 
-  <!-- MÀN HÌNH KHÓA (z-50) -->
+  <!-- MÀN HÌNH KHÓA TỐI GIẢN (z-50) -->
   <div id="lockScreenOverlay" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 sm:p-7 shadow-2xl border border-slate-100 text-center space-y-5">
       <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center text-3xl shadow-lg">
@@ -63,7 +62,7 @@
 
       <div class="space-y-1">
         <h2 class="font-bold text-slate-900 text-xl tracking-tight">LendLand Pro</h2>
-        <div class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Xác Thực Bảo Mật Tín Dụng (v6.4)</div>
+        <div class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Xác Thực Bảo Mật Tín Dụng (v6.5)</div>
         <p class="text-xs text-slate-500 pt-1">Nhập mã PIN để tự động kết nối Két Cloud & làm việc</p>
       </div>
 
@@ -118,7 +117,7 @@
             <i class="ph-bold ph-file-pdf"></i>
           </div>
           <div>
-            <h3 class="font-bold text-slate-900 text-sm sm:text-base">Xem Trước Báo Cáo Thẩm Định (v6.4 Live)</h3>
+            <h3 class="font-bold text-slate-900 text-sm sm:text-base">Xem Trước Báo Cáo Thẩm Định (v6.5 Live)</h3>
             <p class="text-[11px] text-slate-500">Kiểm tra thông tin tài sản, nhận định thị trường và cơ cấu định giá trước khi tải</p>
           </div>
         </div>
@@ -129,16 +128,14 @@
       <div id="pdfPreviewContainer" class="flex-grow overflow-y-auto border border-slate-200 rounded-xl p-3 sm:p-5 bg-slate-100 shadow-inner"></div>
 
       <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-200 mt-3 flex-shrink-0">
-        <span class="text-[11px] text-slate-500 italic">* File PDF xuất ra giữ nguyên bố cục trang in khổ A4 chuẩn hồ sơ tín dụng.</span>
+        <span class="text-[11px] text-slate-500 italic">* Xuất file chuẩn A4 nét căng qua Iframe in cách ly, chống trắng trang 100%.</span>
         <div class="flex items-center gap-2 ml-auto">
           <button onclick="closePdfPreview()" type="button" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition border border-slate-300 cursor-pointer">
             Hủy / Đóng
           </button>
-          <button onclick="executeBrowserPrint()" type="button" class="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition border border-slate-300 flex items-center gap-1.5 cursor-pointer" title="In trực tiếp hoặc Lưu PDF qua máy in hệ thống">
-            <i class="ph-bold ph-printer text-sm"></i> In / Lưu Trực Tiếp
-          </button>
-          <button onclick="executeDownloadPdf()" id="btnDownloadPdfConfirm" type="button" class="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition shadow-md flex items-center gap-1.5 active:scale-95 cursor-pointer">
-            <i class="ph-bold ph-download-simple text-sm"></i> Tải File PDF Về Máy
+          <!-- NÚT DUY NHẤT ĐƯỢC TỐI ƯU TOÀN DIỆN -->
+          <button onclick="executeIsolatedPrintPdf()" id="btnDownloadPdfConfirm" type="button" class="px-5 py-2.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition shadow-md flex items-center gap-1.5 active:scale-95 cursor-pointer">
+            <i class="ph-bold ph-file-pdf text-base"></i> Xuất File Báo Cáo PDF
           </button>
         </div>
       </div>
@@ -151,7 +148,7 @@
     <span id="floatingStatusText" class="truncate">Đang xử lý dữ liệu...</span>
   </div>
 
-  <!-- HEADER v6.4 LIVE -->
+  <!-- HEADER v6.5 LIVE -->
   <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md no-print border-b border-slate-700">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 min-h-[4rem] flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center space-x-2.5 overflow-hidden min-w-[210px] flex-1 sm:flex-initial">
@@ -161,7 +158,7 @@
         <div class="truncate">
           <div class="font-bold text-sm sm:text-base tracking-wide flex items-center gap-1.5 flex-wrap">
             <span class="whitespace-nowrap">LendLand Pro</span>
-            <span class="text-[10px] sm:text-xs bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow whitespace-nowrap">v6.4 Live</span>
+            <span class="text-[10px] sm:text-xs bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow whitespace-nowrap">v6.5 Live</span>
             <span class="text-[10px] text-slate-400 font-normal hidden md:inline">by duycongta@gmail.com</span>
           </div>
           <div class="text-[11px] text-slate-300 truncate">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm</div>
@@ -273,7 +270,6 @@
           </div>
         </div>
 
-        <!-- CƠ CẤU DIỆN TÍCH VÀ ĐƠN GIÁ ĐẤT NÔNG NGHIỆP THAM KHẢO -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 text-xs font-medium bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200">
           <div>
             <label class="block text-slate-700 font-semibold mb-1">Tổng diện tích (m²) *</label>
@@ -449,7 +445,7 @@
       </div>
     </div>
 
-    <!-- KHỐI 3: BẢN ĐỒ GIS -->
+    <!-- KHỐI 3: BẢN ĐỒ GIS (CÓ NÚT MỞ GOOGLE MAPS) -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center gap-1.5 sm:gap-2">
@@ -460,7 +456,10 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-1.5">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button onclick="openInGoogleMapsTab()" type="button" class="text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded font-bold flex items-center gap-1 shadow-sm cursor-pointer" title="Mở tọa độ tài sản trên Google Maps tab mới">
+            <i class="ph-bold ph-arrow-square-out text-sm"></i> Mở Google Maps
+          </button>
           <button onclick="zoomToTarget()" type="button" class="text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 sm:px-2.5 py-1 rounded font-medium flex items-center gap-1 shadow-sm cursor-pointer">
             <i class="ph-bold ph-crosshair"></i> Zoom Thửa
           </button>
@@ -489,16 +488,33 @@
       </div>
     </div>
 
-    <!-- KHỐI 4: THU THẬP TIN RAO ĐA KÊNH -->
+    <!-- KHỐI 4: THU THẬP TIN RAO ĐA KÊNH & QUẢN LÝ NHÓM FACEBOOK BĐS ĐỊA PHƯƠNG -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200">
+      <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <div class="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg flex-shrink-0"><i class="ph-bold ph-magnifying-glass text-base sm:text-xl"></i></div>
           <div>
-            <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Cổng Mở Trực Tiếp 5 Sàn BĐS Lớn & Dán Tin Môi Giới</h3>
-            <span class="text-[11px] text-slate-500">Tra cứu nhanh hoặc dán tin Zalo để tự trích xuất vào bảng so sánh</span>
+            <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Cổng Mở Trực Tiếp Sàn BĐS & Hội Nhóm Facebook Địa Phương</h3>
+            <span class="text-[11px] text-slate-500">Quản lý các nhóm Facebook BĐS Bình Định & dán tin môi giới</span>
           </div>
         </div>
+        <button onclick="toggleFbGroupManager()" type="button" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 bg-white border border-indigo-200 px-2.5 py-1 rounded-lg shadow-xs cursor-pointer">
+          <i class="ph-bold ph-list-dashes"></i> <span id="toggleFbGroupBtnText">Hiện Danh Sách Nhóm (11)</span>
+        </button>
+      </div>
+
+      <!-- VÙNG QUẢN LÝ LINK NHÓM FACEBOOK BĐS (MẶC ĐỊNH ẨN ĐỂ TIẾT KIỆM DIỆN TÍCH) -->
+      <div id="fbGroupManagerContainer" class="hidden p-3.5 sm:p-4 bg-indigo-50/40 border-b border-indigo-100 space-y-3">
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input type="text" id="newFbGroupInput" placeholder="Dán đường link nhóm Facebook (https://www.facebook.com/groups/...)" class="flex-grow text-xs border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 bg-white">
+          <button onclick="addNewFbGroup()" type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow flex items-center justify-center gap-1 cursor-pointer">
+            <i class="ph-bold ph-plus-circle"></i> Thêm Link
+          </button>
+        </div>
+        <div id="fbGroupDupAlert" class="hidden text-[11px] text-rose-600 font-bold bg-rose-50 border border-rose-200 p-2 rounded-lg">
+          Đường link nhóm này đã có sẵn trong danh sách!
+        </div>
+        <div id="fbGroupChipsList" class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pt-1"></div>
       </div>
 
       <div class="p-3.5 sm:p-4 grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
@@ -518,8 +534,9 @@
         </div>
 
         <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs space-y-2">
-          <div class="font-bold text-slate-700 flex items-center gap-1.5">
-            <i class="ph-bold ph-globe text-blue-600"></i> Tra Cứu Trực Tiếp 5 Kênh Lớn
+          <div class="font-bold text-slate-700 flex items-center justify-between">
+            <span class="flex items-center gap-1.5"><i class="ph-bold ph-globe text-blue-600"></i> Tra Cứu Trực Tiếp 4 Kênh Lớn</span>
+            <span class="text-[10px] text-slate-400 font-normal">Tự gán từ khóa địa phương</span>
           </div>
 
           <div class="grid grid-cols-2 gap-1.5 sm:gap-2">
@@ -566,41 +583,82 @@
       </div>
     </div>
 
-    <!-- KHỐI 6: BẢNG SO SÁNH (CÓ CỘT NGÀY ĐĂNG TIN) -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
-        <div class="flex items-center gap-1.5 sm:gap-2">
-          <i class="ph-bold ph-table text-slate-700 text-base sm:text-lg"></i>
-          <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Danh Mục Tài Sản So Sánh & Chấm Điểm Tương Đồng</h3>
+    <!-- KHỐI 6: BẢNG SO SÁNH CHÍNH & HÀNG CHỜ KHẢO SÁT MỞ RỘNG (>10 TIN) -->
+    <div class="space-y-4">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-1.5 sm:gap-2">
+            <i class="ph-bold ph-table text-slate-700 text-base sm:text-lg"></i>
+            <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Danh Mục Tài Sản So Sánh Chính (Đang Tính Vào Đơn Giá)</h3>
+          </div>
+          <span id="compsCountBadge" class="text-[11px] sm:text-xs text-slate-500">Chưa có tài sản so sánh</span>
         </div>
-        <span id="compsCountBadge" class="text-[11px] sm:text-xs text-slate-500">Chưa có tài sản so sánh</span>
+
+        <div class="overflow-x-auto w-full" style="-webkit-overflow-scrolling: touch;">
+          <table class="w-full text-left text-xs" style="min-width: 1040px;">
+            <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 uppercase tracking-wider text-[11px]">
+              <tr>
+                <th class="py-3 px-2 text-center w-12">STT</th>
+                <th class="py-3 px-3" style="min-width: 250px; max-width: 320px;">Địa Chỉ & Vị Trí Tiếp Giáp</th>
+                <th class="py-3 px-2 text-center w-24">Ngày Đăng</th>
+                <th class="py-3 px-2 text-center w-20">DT (m²)</th>
+                <th class="py-3 px-2 text-center w-24">Kích Thước</th>
+                <th class="py-3 px-3 text-right w-24">Giá Rao Bán</th>
+                <th class="py-3 px-3 text-right w-28">Sau CK 10%</th>
+                <th class="py-3 px-2 text-center w-24">Tương Đồng</th>
+                <th class="py-3 px-2 text-center w-28">Nguồn Tin</th>
+                <th class="py-3 px-2 text-center text-rose-700 w-28">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="comparisonTableBody" class="divide-y divide-slate-200">
+              <tr>
+                <td colspan="10" class="text-center py-8 text-slate-400">
+                  <i class="ph-bold ph-magnifying-glass text-2xl mb-1 block"></i>
+                  Chưa có tài sản so sánh. Nhập xã/phường hoặc nạp ảnh GCN để bắt đầu.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div class="overflow-x-auto w-full" style="-webkit-overflow-scrolling: touch;">
-        <table class="w-full text-left text-xs" style="min-width: 1040px;">
-          <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 uppercase tracking-wider text-[11px]">
-            <tr>
-              <th class="py-3 px-2 text-center w-12">STT</th>
-              <th class="py-3 px-3" style="min-width: 250px; max-width: 300px;">Địa Chỉ & Vị Trí Tiếp Giáp</th>
-              <th class="py-3 px-2 text-center w-24">Ngày Đăng</th>
-              <th class="py-3 px-2 text-center w-20">DT (m²)</th>
-              <th class="py-3 px-2 text-center w-28">Kích Thước</th>
-              <th class="py-3 px-3 text-right w-28">Giá Rao Bán</th>
-              <th class="py-3 px-3 text-right w-28">Sau CK 10%</th>
-              <th class="py-3 px-2 text-center w-24">Tương Đồng</th>
-              <th class="py-3 px-2 text-center w-28">Nguồn Tin</th>
-              <th class="py-3 px-2 text-center text-rose-700 w-24">Thao Tác</th>
-            </tr>
-          </thead>
-          <tbody id="comparisonTableBody" class="divide-y divide-slate-200">
-            <tr>
-              <td colspan="10" class="text-center py-8 text-slate-400">
-                <i class="ph-bold ph-magnifying-glass text-2xl mb-1 block"></i>
-                Chưa có tài sản so sánh. Nhập xã/phường hoặc nạp ảnh GCN để bắt đầu.
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- DANH SÁCH HÀNG CHỜ KHẢO SÁT MỞ RỘNG (DẠNG CUỘN ẨN) -->
+      <div id="poolContainerCard" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div onclick="togglePoolDrawer()" class="p-3.5 sm:p-4 bg-slate-50 hover:bg-slate-100/80 cursor-pointer flex items-center justify-between transition border-b border-slate-200">
+          <div class="flex items-center gap-2">
+            <i class="ph-bold ph-queue text-indigo-600 text-base sm:text-lg"></i>
+            <div>
+              <span class="font-bold text-slate-800 text-xs sm:text-sm">Tài Sản So Sánh Trong Hàng Chờ Khảo Sát Mở Rộng (<span id="poolCountText">0</span> tin)</span>
+              <span class="text-[11px] text-slate-500 block">Được cào ngầm để dự phòng. Bấm để bung mở / ẩn danh sách</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="poolStatsSub" class="text-[11px] font-semibold text-indigo-700 hidden sm:inline"></span>
+            <i id="poolDrawerArrow" class="ph-bold ph-caret-down text-slate-500 transition-transform duration-200"></i>
+          </div>
+        </div>
+
+        <div id="poolDrawerContent" class="hidden p-3 sm:p-4 bg-slate-50/50">
+          <div class="overflow-x-auto w-full">
+            <table class="w-full text-left text-xs bg-white rounded-lg border border-slate-200" style="min-width: 900px;">
+              <thead class="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200 uppercase text-[10px]">
+                <tr>
+                  <th class="py-2.5 px-2 text-center w-12">#</th>
+                  <th class="py-2.5 px-3">Địa Chỉ & Đặc Điểm</th>
+                  <th class="py-2.5 px-2 text-center w-24">Ngày Đăng</th>
+                  <th class="py-2.5 px-2 text-center w-20">DT (m²)</th>
+                  <th class="py-2.5 px-3 text-right w-24">Giá Rao Bán</th>
+                  <th class="py-2.5 px-3 text-right w-28">Đơn Giá Dự Kiến</th>
+                  <th class="py-2.5 px-2 text-center w-28">Nguồn Tin</th>
+                  <th class="py-2.5 px-2 text-center w-28">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="poolTableBody" class="divide-y divide-slate-200">
+                <tr><td colspan="8" class="text-center py-4 text-slate-400 italic">Hàng chờ hiện đang trống.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -610,7 +668,7 @@
     <div class="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto max-h-[95vh] overflow-y-auto border border-slate-100">
       <div class="flex items-center justify-between border-b pb-2.5">
         <h3 class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
-          <i class="ph-bold ph-vault text-indigo-600 text-lg"></i> Quản Trị Két Cloud & Phân Quyền Admin (v6.4)
+          <i class="ph-bold ph-vault text-indigo-600 text-lg"></i> Quản Trị Két Cloud & Phân Quyền Admin (v6.5)
         </h3>
         <button onclick="closeApiKeyModal()" type="button" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"><i class="ph-bold ph-x text-lg"></i></button>
       </div>
@@ -661,16 +719,16 @@
 
         <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
           <div class="font-bold text-slate-800 text-xs flex items-center gap-1">
-            <i class="ph-bold ph-cloud text-indigo-600"></i> Cấu Hình JSONBin.io
+            <i class="ph-bold ph-cloud text-indigo-600"></i> Cấu Hình JSONBin.io (Đã Mặc Định)
           </div>
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[10px] text-slate-500 mb-0.5 font-semibold">Bin ID:</label>
-              <input type="text" id="vaultBinIdInput" placeholder="Mặc định sẵn" class="w-full border border-slate-300 rounded-lg p-2 font-mono text-[11px] bg-white">
+              <input type="text" id="vaultBinIdInput" class="w-full border border-slate-300 rounded-lg p-2 font-mono text-[11px] bg-white">
             </div>
             <div>
               <label class="block text-[10px] text-slate-500 mb-0.5 font-semibold">Master Key:</label>
-              <input type="password" id="vaultMasterKeyInput" placeholder="Mặc định sẵn" class="w-full border border-slate-300 rounded-lg p-2 font-mono text-[11px] bg-white">
+              <input type="password" id="vaultMasterKeyInput" class="w-full border border-slate-300 rounded-lg p-2 font-mono text-[11px] bg-white">
             </div>
           </div>
         </div>
@@ -705,7 +763,7 @@
     </div>
   </div>
 
-  <!-- BIỂU MẪU GỐC BÁO CÁO A4 (NGUỒN DỮ LIỆU ĐỂ RENDER) -->
+  <!-- BIỂU MẪU GỐC BÁO CÁO A4 (NGUỒN DỮ LIỆU ĐỂ RENDER IN ẤN) -->
   <div id="printArea" class="hidden">
     <div class="report-paper p-6 sm:p-8" id="reportPaperContent">
       <div class="border-b-2 border-slate-800 pb-3 mb-4">
@@ -713,7 +771,7 @@
           <div class="font-bold text-slate-800 text-sm tracking-wide flex items-center gap-2">
             <span>LENDLAND PRO</span>
             <span class="text-slate-400 font-normal">|</span>
-            <span class="font-semibold text-slate-600">BÁO CÁO KHẢO SÁT THỊ TRƯỜNG BẤT ĐỘNG SẢN (v6.4)</span>
+            <span class="font-semibold text-slate-600">BÁO CÁO KHẢO SÁT THỊ TRƯỜNG BẤT ĐỘNG SẢN (v6.5)</span>
           </div>
           <div id="printCurrentDate" class="font-medium text-slate-600">Ngày ... tháng ... năm ...</div>
         </div>
@@ -731,10 +789,10 @@
         </div>
         <table class="report-table mb-2">
           <tr>
-            <td class="font-semibold bg-slate-50 w-1/4">Thửa đất số / Tờ bản đồ:</td>
-            <td class="w-1/4" id="pLotNumber">--</td>
-            <td class="font-semibold bg-slate-50 w-1/4">Chủ sở hữu theo GCN:</td>
-            <td class="w-1/4 font-semibold text-slate-900" id="pOwnerName">--</td>
+            <td class="font-semibold bg-slate-50" style="width: 25%;">Thửa đất số / Tờ bản đồ:</td>
+            <td style="width: 25%;" id="pLotNumber">--</td>
+            <td class="font-semibold bg-slate-50" style="width: 25%;">Chủ sở hữu theo GCN:</td>
+            <td style="width: 25%;" class="font-semibold text-slate-900" id="pOwnerName">--</td>
           </tr>
           <tr>
             <td class="font-semibold bg-slate-50">Địa chỉ tài sản:</td>
@@ -771,7 +829,7 @@
         </div>
       </div>
 
-      <!-- MỤC III: TÀI SẢN SO SÁNH -->
+      <!-- MỤC III: TÀI SẢN SO SÁNH (CÂN ĐỐI TỶ LỆ CỘT RỘNG 38% CHO ĐẶC ĐIỂM TSSS) -->
       <div class="mb-4 text-xs">
         <div class="font-bold uppercase text-slate-800 border-b border-slate-300 pb-1 mb-2">
           III. CƠ SỞ DỮ LIỆU ĐỊNH GIÁ SO SÁNH (PHƯƠNG PHÁP SO SÁNH TRỰC TIẾP)
@@ -779,15 +837,15 @@
         <table class="report-table mb-2">
           <thead class="bg-slate-100 font-semibold text-center">
             <tr>
-              <th class="w-8">STT</th>
-              <th class="text-left">Đặc Điểm Tài Sản So Sánh</th>
-              <th class="w-20">Ngày Đăng</th>
-              <th class="w-16">DT (m²)</th>
-              <th class="w-20">Mặt Tiền</th>
-              <th class="w-20">Giá Rao Bán</th>
-              <th class="w-24">Sau CK 10%</th>
-              <th class="w-16">Tương Đồng</th>
-              <th class="w-24">Nguồn Tin Rao</th>
+              <th style="width: 5%;">STT</th>
+              <th style="width: 38%;" class="text-left">Đặc Điểm Tài Sản So Sánh</th>
+              <th style="width: 10%;">Ngày Đăng</th>
+              <th style="width: 7%;">DT (m²)</th>
+              <th style="width: 9%;">Mặt Tiền</th>
+              <th style="width: 10%;">Giá Rao Bán</th>
+              <th style="width: 11%;">Sau CK 10%</th>
+              <th style="width: 7%;">T.Đồng</th>
+              <th style="width: 11%;">Nguồn Tin</th>
             </tr>
           </thead>
           <tbody id="printCompareTbody"></tbody>
@@ -802,9 +860,9 @@
         <table class="report-table">
           <tr class="bg-slate-50 font-semibold">
             <td>Hạng Mục Định Giá</td>
-            <td class="text-center w-24">Khối Lượng</td>
-            <td class="text-right w-32">Đơn Giá Đề Xuất</td>
-            <td class="text-right w-36">Thành Tiền (Tỷ VNĐ)</td>
+            <td class="text-center" style="width: 15%;">Khối Lượng</td>
+            <td class="text-right" style="width: 20%;">Đơn Giá Đề Xuất</td>
+            <td class="text-right" style="width: 25%;">Thành Tiền (Tỷ VNĐ)</td>
           </tr>
           <tr>
             <td class="font-medium">1. Quyền sử dụng đất ở (ONT/ODT)</td>
@@ -850,11 +908,26 @@
 
   <script>
     // =========================================================================
-    // CẤU HÌNH & TRẠNG THÁI TOÀN CỤC (v6.4 Live)
+    // THÔNG SỐ KÉT CLOUD MỚI MẶC ĐỊNH & DANH SÁCH 11 GROUP FB ĐÃ HARDCODE
     // =========================================================================
-    const DEFAULT_VAULT_BIN_ID = "67246ec3ad19ca34f8c2e92a"; 
-    const DEFAULT_VAULT_MASTER_KEY = "$2a$10$YourMasterKeyGoesHere...";
+    const DEFAULT_VAULT_BIN_ID = "6ae74af9ffd5d160539d4725"; 
+    const DEFAULT_VAULT_MASTER_KEY = "$2a$10$m.YwZIgsCSr6uPD3aT3Moeho7Ol/brNHN1H7tsfoEmQjD1sXw/gRi";
 
+    const DEFAULT_FB_GROUPS = [
+      { id: "802026350749641", name: "Nhóm BĐS Bình Định 1", url: "https://www.facebook.com/groups/802026350749641/" },
+      { id: "NhaDatQuyNhon77", name: "Nhà Đất Quy Nhơn 77", url: "https://www.facebook.com/groups/NhaDatQuyNhon77/" },
+      { id: "2071156426434566", name: "Nhóm Mua Bán BĐS 207", url: "https://www.facebook.com/groups/2071156426434566/" },
+      { id: "nhadatquynhonbinhdinh.vtnmedia", name: "Nhà Đất Quy Nhơn VTN", url: "https://www.facebook.com/groups/nhadatquynhonbinhdinh.vtnmedia/" },
+      { id: "173028322180429", name: "Hội BĐS Bình Định 173", url: "https://www.facebook.com/groups/173028322180429/" },
+      { id: "shopeerdc", name: "Hội Shopeerdc BĐS", url: "https://www.facebook.com/groups/shopeerdc" },
+      { id: "638929229613517", name: "BĐS An Nhơn - Bình Định 638", url: "https://www.facebook.com/groups/638929229613517/" },
+      { id: "694806357605519", name: "Nhóm Đất Nền Tuy Phước 694", url: "https://www.facebook.com/groups/694806357605519/" },
+      { id: "batdongsanquy", name: "Bất Động Sản Quy Nhơn", url: "https://www.facebook.com/groups/batdongsanquy/" },
+      { id: "7861649383865542", name: "Hội Đầu Tư BĐS 786", url: "https://www.facebook.com/groups/7861649383865542/" },
+      { id: "bdsnganphuland", name: "BĐS Ngân Phú Land", url: "https://www.facebook.com/groups/bdsnganphuland/" }
+    ];
+
+    let customFbGroups = [];
     window.currentOwnerName = "";
     let backupCompsPool = [];
     let currentComps = [];
@@ -867,6 +940,7 @@
         if (!localStorage.getItem('gemini_api_mode')) {
           localStorage.setItem('gemini_api_mode', 'free');
         }
+        initFbGroupsList();
         initLeafletMap();
         recalculateTargetValues();
         checkAuthLockStatus();
@@ -874,6 +948,199 @@
         console.error("Khởi tạo trang gặp lỗi:", err);
       }
     });
+
+    // === QUẢN LÝ DANH SÁCH NHÓM FACEBOOK (HIỆN/ẨN, ADD, BÁO TRÙNG) ===
+    function initFbGroupsList() {
+      const saved = localStorage.getItem('llp_user_fb_groups');
+      if (saved) {
+        try { customFbGroups = JSON.parse(saved); } catch(e) { customFbGroups = [...DEFAULT_FB_GROUPS]; }
+      } else {
+        customFbGroups = [...DEFAULT_FB_GROUPS];
+      }
+      renderFbGroupsChips();
+    }
+
+    function toggleFbGroupManager() {
+      const box = document.getElementById('fbGroupManagerContainer');
+      const btnText = document.getElementById('toggleFbGroupBtnText');
+      if (!box) return;
+      if (box.classList.contains('hidden')) {
+        box.classList.remove('hidden');
+        if (btnText) btnText.innerText = `Ẩn Danh Sách Nhóm (${customFbGroups.length})`;
+      } else {
+        box.classList.add('hidden');
+        if (btnText) btnText.innerText = `Hiện Danh Sách Nhóm (${customFbGroups.length})`;
+      }
+    }
+
+    function renderFbGroupsChips() {
+      const container = document.getElementById('fbGroupChipsList');
+      const btnText = document.getElementById('toggleFbGroupBtnText');
+      if (btnText) btnText.innerText = `Hiện Danh Sách Nhóm (${customFbGroups.length})`;
+      if (!container) return;
+
+      container.innerHTML = '';
+      customFbGroups.forEach((g, idx) => {
+        const chip = document.createElement('div');
+        chip.className = "inline-flex items-center gap-1.5 bg-white border border-indigo-200 text-indigo-900 px-2.5 py-1 rounded-full text-[11px] shadow-xs";
+        chip.innerHTML = `
+          <i class="ph-bold ph-facebook-logo text-blue-600"></i>
+          <a href="${g.url}" target="_blank" class="hover:underline font-medium truncate max-w-[170px]" title="${g.name}\n${g.url}">${g.name}</a>
+          <button onclick="removeFbGroup(${idx})" type="button" class="text-slate-400 hover:text-rose-600 ml-1 p-0.5 rounded-full cursor-pointer"><i class="ph-bold ph-x"></i></button>
+        `;
+        container.appendChild(chip);
+      });
+    }
+
+    function addNewFbGroup() {
+      const input = document.getElementById('newFbGroupInput');
+      const dupAlert = document.getElementById('fbGroupDupAlert');
+      const rawUrl = input ? input.value.trim() : '';
+      if (dupAlert) dupAlert.classList.add('hidden');
+
+      if (!rawUrl) {
+        showToast("Vui lòng dán đường link nhóm Facebook!");
+        return;
+      }
+
+      // Chuẩn hóa kiểm tra link Facebook Groups
+      const cleanUrl = rawUrl.split('?')[0].replace(/\/+$/, '');
+      const isDuplicate = customFbGroups.some(g => g.url.split('?')[0].replace(/\/+$/, '').toLowerCase() === cleanUrl.toLowerCase());
+
+      if (isDuplicate) {
+        if (dupAlert) {
+          dupAlert.innerText = `Đường link nhóm này đã có sẵn trong danh sách! (${cleanUrl})`;
+          dupAlert.classList.remove('hidden');
+        } else {
+          showToast("Đường link nhóm này đã có sẵn!");
+        }
+        return;
+      }
+
+      // Trích xuất Group ID/slug từ URL
+      let groupName = "Nhóm BĐS";
+      const match = cleanUrl.match(/groups\/([^\/]+)/);
+      if (match && match[1]) {
+        groupName = match[1];
+      }
+
+      customFbGroups.unshift({
+        id: match ? match[1] : String(Date.now()),
+        name: groupName,
+        url: cleanUrl
+      });
+
+      localStorage.setItem('llp_user_fb_groups', JSON.stringify(customFbGroups));
+      if (input) input.value = '';
+      renderFbGroupsChips();
+      showToast("Đã thêm nhóm Facebook thành công!");
+    }
+
+    function removeFbGroup(index) {
+      if (index < 0 || index >= customFbGroups.length) return;
+      customFbGroups.splice(index, 1);
+      localStorage.setItem('llp_user_fb_groups', JSON.stringify(customFbGroups));
+      renderFbGroupsChips();
+      showToast("Đã gỡ nhóm khỏi danh sách!");
+    }
+
+    // === HÀNG CHỜ TSSS MỞ RỘNG (DRAWER DRAWER & ĐẨY QUA LẠI) ===
+    function togglePoolDrawer() {
+      const drawer = document.getElementById('poolDrawerContent');
+      const arrow = document.getElementById('poolDrawerArrow');
+      if (!drawer) return;
+      if (drawer.classList.contains('hidden')) {
+        drawer.classList.remove('hidden');
+        if (arrow) arrow.style.transform = 'rotate(180deg)';
+      } else {
+        drawer.classList.add('hidden');
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    function renderPoolListUI() {
+      const poolBody = document.getElementById('poolTableBody');
+      const poolCount = document.getElementById('poolCountText');
+      const poolStats = document.getElementById('poolStatsSub');
+
+      if (poolCount) poolCount.innerText = backupCompsPool.length;
+
+      if (!backupCompsPool || backupCompsPool.length === 0) {
+        if (poolBody) poolBody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-slate-400 italic">Hàng chờ hiện đang trống.</td></tr>`;
+        if (poolStats) poolStats.innerText = '';
+        return;
+      }
+
+      let sumPrice = 0;
+      backupCompsPool.forEach(c => {
+        sumPrice += ((c.rawPrice * 1000) / c.area);
+      });
+      const avgPool = (sumPrice / backupCompsPool.length).toFixed(1);
+      if (poolStats) poolStats.innerText = `Đơn giá bình quân hàng chờ: ~${avgPool} tr/m²`;
+
+      if (poolBody) {
+        poolBody.innerHTML = '';
+        backupCompsPool.forEach((c, i) => {
+          const rawUnit = ((c.rawPrice * 1000) / c.area).toFixed(1);
+          const tr = document.createElement('tr');
+          tr.className = "hover:bg-slate-50 transition";
+          tr.innerHTML = `
+            <td class="py-2 px-2 text-center font-bold text-slate-500">P${i + 1}</td>
+            <td class="py-2 px-3">
+              <div class="font-medium text-slate-800 leading-snug">${c.address}</div>
+              <div class="text-[10px] text-slate-500">${c.roadDesc} (MT ${c.frontage}m)</div>
+            </td>
+            <td class="py-2 px-2 text-center text-slate-600 whitespace-nowrap">${c.postedDate || '--'}</td>
+            <td class="py-2 px-2 text-center font-semibold">${c.area}</td>
+            <td class="py-2 px-3 text-right font-bold text-slate-800 whitespace-nowrap">${c.rawPrice.toFixed(2)} Tỷ</td>
+            <td class="py-2 px-3 text-right font-semibold text-indigo-700 whitespace-nowrap">${rawUnit} tr/m²</td>
+            <td class="py-2 px-2 text-center">
+              ${getSourceBadge(c.sourceType, c.sourceName)}
+            </td>
+            <td class="py-2 px-2 text-center">
+              <button onclick="promoteCompFromPool(${i})" type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] px-2 py-1 rounded shadow-xs flex items-center justify-center gap-1 mx-auto cursor-pointer" title="Đưa tin này lên Bảng so sánh chính">
+                <i class="ph-bold ph-arrow-up"></i> Đưa Lên Bảng
+              </button>
+            </td>
+          `;
+          poolBody.appendChild(tr);
+        });
+      }
+    }
+
+    function promoteCompFromPool(poolIndex) {
+      if (poolIndex < 0 || poolIndex >= backupCompsPool.length) return;
+      const promoted = backupCompsPool.splice(poolIndex, 1)[0];
+      currentComps.push(promoted);
+      renderMapElements();
+      recalculateTargetValues();
+      renderPoolListUI();
+      showToast(`Đã đưa tài sản vào Bảng so sánh chính & tính lại đơn giá!`);
+    }
+
+    function demoteCompToPool(mainIndex) {
+      if (mainIndex < 0 || mainIndex >= currentComps.length) return;
+      if (currentComps.length <= 1) {
+        showToast("Cần giữ tối thiểu 1 TSSS trong bảng chính!");
+        return;
+      }
+      const demoted = currentComps.splice(mainIndex, 1)[0];
+      backupCompsPool.unshift(demoted);
+      renderMapElements();
+      recalculateTargetValues();
+      renderPoolListUI();
+      showToast(`Đã chuyển TSSS xuống Hàng chờ mở rộng!`);
+    }
+
+    // === BẢN ĐỒ GIS: MỞ TRÊN GOOGLE MAPS TAB MỚI ===
+    function openInGoogleMapsTab() {
+      if (!targetCoords || !targetCoords.lat) {
+        showToast("Chưa xác định được tọa độ tài sản!");
+        return;
+      }
+      const url = `https://www.google.com/maps/search/?api=1&query=${targetCoords.lat},${targetCoords.lng}`;
+      window.open(url, '_blank');
+    }
 
     function getCloudVaultCredentials() {
       const binId = localStorage.getItem('llp_vault_bin') || DEFAULT_VAULT_BIN_ID;
@@ -953,13 +1220,13 @@
 
       const { binId, masterKey } = getCloudVaultCredentials();
 
-      if (!binId || !masterKey || masterKey.includes("YourMasterKey")) {
+      if (!binId || !masterKey) {
         if (localKey) {
           successUnlock();
           return;
         }
         if (errBox) {
-          errBox.innerText = "Chưa cấu hình JSONBin Master Key! Vui lòng bấm Quản trị bên dưới để nhập Key.";
+          errBox.innerText = "Chưa cấu hình JSONBin Master Key!";
           errBox.classList.remove('hidden');
         }
         return;
@@ -1279,7 +1546,7 @@
       const dateText = `Ngày ${now.getDate()} tháng ${now.getMonth() + 1} năm ${now.getFullYear()}`;
       document.getElementById('printCurrentDate').innerText = dateText;
 
-      // 1. Đồng bộ thông tin Mục I: Hiện trạng
+      // 1. Đồng bộ Mục I: Hiện trạng
       const lotVal = document.getElementById('targetLot').value.trim() || "--";
       const ownerVal = document.getElementById('targetOwnerNameInput').value.trim() || window.currentOwnerName || "--";
       
@@ -1317,7 +1584,7 @@
       document.getElementById('pRoadWidth').innerText = roadVal;
       document.getElementById('pBuilding').innerText = bldVal;
 
-      // 2. Đồng bộ thông tin Mục II: AI Overview & Khuyến nghị
+      // 2. Đồng bộ Mục II: AI Overview & Khuyến nghị
       const aiP1 = document.getElementById('aiSummaryP1').innerHTML;
       document.getElementById('pAiSummaryContent').innerHTML = aiP1;
 
@@ -1335,7 +1602,7 @@
         pAiList.innerHTML = '<li>Áp dụng đơn giá thận trọng và kiểm tra hiện trạng ranh mốc thực tế.</li>';
       }
 
-      // 3. Đồng bộ Bảng so sánh TSSS Mục III
+      // 3. Đồng bộ Bảng so sánh TSSS Mục III (Cân đối tỷ lệ cột chuẩn)
       const printTbody = document.getElementById('printCompareTbody');
       printTbody.innerHTML = '';
       const discountPercent = parseFloat(document.getElementById('discountRate').value) || 10;
@@ -1352,14 +1619,14 @@
           const ptr = document.createElement('tr');
           ptr.innerHTML = `
             <td class="text-center font-bold">#${idx + 1}</td>
-            <td><b>${comp.address}</b><br><span class="text-[10px] text-slate-500">${comp.roadDesc}</span></td>
-            <td class="text-center text-slate-600 font-medium whitespace-nowrap">${comp.postedDate || '--'}</td>
+            <td class="text-left leading-snug"><b>${comp.address}</b><br><span style="font-size:10px; color:#475569;">${comp.roadDesc}</span></td>
+            <td class="text-center whitespace-nowrap">${comp.postedDate || '--'}</td>
             <td class="text-center font-semibold">${comp.area}</td>
-            <td class="text-center text-slate-600">${comp.frontage}m × ${comp.depth}m</td>
+            <td class="text-center">${comp.frontage}m × ${comp.depth}m</td>
             <td class="text-right font-semibold whitespace-nowrap">${comp.rawPrice.toFixed(2)} Tỷ</td>
             <td class="text-right font-bold text-emerald-700 whitespace-nowrap">${discountedUnitPrice.toFixed(2)} tr/m²</td>
             <td class="text-center font-bold">${score}%</td>
-            <td class="text-center font-medium">${comp.sourceName}</td>
+            <td class="text-center">${comp.sourceName}</td>
           `;
           printTbody.appendChild(ptr);
         });
@@ -1384,98 +1651,92 @@
       document.getElementById('pdfPreviewModal').classList.add('hidden');
     }
 
-    // === TẢI FILE PDF (KHẮC PHỤC TRIỆT ĐỂ LỖI TRẮNG TRƠN) ===
-    async function executeDownloadPdf() {
+    // === XUẤT FILE BÁO CÁO PDF QUA IFRAME IN ĐỘC LẬP (CHỐNG TRẮNG TRANG 100%) ===
+    function executeIsolatedPrintPdf() {
       const btn = document.getElementById('btnDownloadPdfConfirm');
       if (btn) {
-        btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang xuất PDF...`;
+        btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Đang chuẩn bị in...`;
         btn.disabled = true;
       }
 
       recalculateTargetValues();
       syncDataToPrintReport();
 
-      // Sử dụng trực tiếp phần tử #reportPaperContent trong thẻ in
-      const printSource = document.getElementById('reportPaperContent');
-      if (!printSource) {
-        showToast("Không tìm thấy nội dung báo cáo!");
-        if (btn) {
-          btn.innerHTML = `<i class="ph-bold ph-download-simple text-sm"></i> Tải File PDF Về Máy`;
-          btn.disabled = false;
-        }
-        return;
-      }
+      const reportHtml = document.getElementById('reportPaperContent').innerHTML;
 
-      // Tạo một container độc lập trên DOM, đặt width tuyệt đối 794px, hiển thị trên luồng thực tế
-      const exportBox = document.createElement('div');
-      exportBox.id = 'exportPdfSandbox';
-      exportBox.style.width = '794px';
-      exportBox.style.minHeight = '1123px';
-      exportBox.style.position = 'absolute';
-      exportBox.style.top = '0';
-      exportBox.style.left = '0';
-      exportBox.style.backgroundColor = '#ffffff';
-      exportBox.style.zIndex = '99999'; // Đặt lên cao để html2canvas không bị coi là ẩn
-      exportBox.style.padding = '20px';
-      exportBox.style.boxSizing = 'border-box';
-      exportBox.innerHTML = printSource.innerHTML;
-      document.body.appendChild(exportBox);
+      // Tạo một iframe ẩn độc lập để cách ly hoàn toàn CSS trang web
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
 
-      // Ẩn tạm cuộn trang để chụp trọn vẹn
-      window.scrollTo(0, 0);
-
-      const now = new Date();
-      const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours()}${now.getMinutes()}`;
-      const fileName = `LendLandPro_v6.4_BaoCao_${dateStr}.pdf`;
-
-      const opt = {
-        margin: [5, 5, 5, 5],
-        filename: fileName,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          scrollY: 0,
-          scrollX: 0,
-          windowWidth: 800,
-          backgroundColor: '#ffffff'
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-
-      try {
-        await new Promise(r => setTimeout(r, 250)); // Chờ layout render hoàn chỉnh
-        await html2pdf().set(opt).from(exportBox).save();
-        showToast("Đã tải file PDF về thiết bị thành công!");
-        closePdfPreview();
-      } catch (err) {
-        console.error("Lỗi html2pdf, chuyển qua cửa sổ in:", err);
-        showToast("Đang kích hoạt chế độ in trực tiếp...");
-        executeBrowserPrint();
-      } finally {
-        if (exportBox && exportBox.parentNode) {
-          exportBox.parentNode.removeChild(exportBox);
-        }
-        if (btn) {
-          btn.innerHTML = `<i class="ph-bold ph-download-simple text-sm"></i> Tải File PDF Về Máy`;
-          btn.disabled = false;
-        }
-      }
-    }
-
-    // === HỖ TRỢ DỰ PHÒNG: IN TRỰC TIẾP HOẶC LƯU QUA HỆ THỐNG TRÌNH DUYỆT ===
-    function executeBrowserPrint() {
-      recalculateTargetValues();
-      syncDataToPrintReport();
-
-      const printEl = document.getElementById('printArea');
-      printEl.classList.remove('hidden');
+      const iframeDoc = iframe.contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>LendLandPro_BaoCao_ThamDinhGia</title>
+          <style>
+            @page { size: A4 portrait; margin: 12mm 10mm; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 11pt; background: #fff; }
+            .report-paper { width: 100%; box-sizing: border-box; }
+            .report-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 8px; }
+            .report-table th, .report-table td { border: 1px solid #94a3b8; padding: 6px 8px; font-size: 10.5pt; line-height: 1.35; word-wrap: break-word; }
+            .font-bold { font-weight: bold; }
+            .font-semibold { font-weight: 600; }
+            .text-center { text-align: center; }
+            .text-right { text-align: right; }
+            .text-left { text-align: left; }
+            .bg-slate-50 { background-color: #f8fafc; }
+            .bg-slate-100 { background-color: #f1f5f9; }
+            .bg-emerald-50 { background-color: #ecfdf5; }
+            .bg-blue-50 { background-color: #eff6ff; }
+            .text-emerald-700, .text-emerald-800 { color: #047857; }
+            .text-blue-900 { color: #1e3a8a; }
+            .text-amber-800 { color: #92400e; }
+            .border-b-2 { border-bottom: 2px solid #0f172a; }
+            .border-b { border-bottom: 1px solid #cbd5e1; }
+            .border { border: 1px solid #cbd5e1; }
+            .rounded-lg { border-radius: 6px; }
+            .p-3 { padding: 10px; }
+            .mb-4 { margin-bottom: 14px; }
+            .mt-3 { margin-top: 10px; }
+            .uppercase { text-transform: uppercase; }
+            ul { margin: 4px 0 0 18px; padding: 0; }
+            li { margin-bottom: 3px; font-size: 10pt; color: #334155; }
+          </style>
+        </head>
+        <body>
+          <div class="report-paper">
+            ${reportHtml}
+          </div>
+        </body>
+        </html>
+      `);
+      iframeDoc.close();
 
       setTimeout(() => {
-        window.print();
-        printEl.classList.add('hidden');
-      }, 150);
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        
+        // Dọn dẹp iframe sau khi in
+        setTimeout(() => {
+          if (iframe && iframe.parentNode) {
+            iframe.parentNode.removeChild(iframe);
+          }
+          if (btn) {
+            btn.innerHTML = `<i class="ph-bold ph-file-pdf text-base"></i> Xuất File Báo Cáo PDF`;
+            btn.disabled = false;
+          }
+          closePdfPreview();
+        }, 1000);
+      }, 350);
     }
 
     // === QUẢN LÝ BẢN ĐỒ GIS LEAFLET ===
@@ -1802,7 +2063,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
 
       const aiStatusBadge = document.getElementById('compsCountBadge');
       if (aiStatusBadge) {
-        aiStatusBadge.innerText = enableGrounding ? "Đang quét TSSS bằng Google Search..." : "Đang phân tích thị trường bằng Gemini AI...";
+        aiStatusBadge.innerText = enableGrounding ? "Đang quét TSSS đa kênh bằng Google Search..." : "Đang phân tích thị trường bằng Gemini AI...";
       }
 
       if (!apiKey) {
@@ -1810,7 +2071,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
         return;
       }
 
-      setFloatingStatus('survey', enableGrounding ? 'Google AI đang quét tin rao web thật...' : 'Gemini AI đang phân tích & tìm TSSS...');
+      setFloatingStatus('survey', enableGrounding ? 'AI đang quét tin thật từ Facebook & Sàn BĐS...' : 'Gemini AI đang phân tích & tìm TSSS...');
 
       try {
         let validModels = [];
@@ -1836,22 +2097,25 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
           });
         }
 
+        // TỔ HỢP TỪ KHÓA CÁC NHÓM FACEBOOK BĐS ĐÃ CẤU HÌNH ĐỂ SOI TRỰC TIẾP
+        const groupKeywords = customFbGroups.map(g => `site:facebook.com/groups/${g.id}`).slice(0, 5).join(' OR ');
+
         const promptText = `Bạn là chuyên gia thẩm định giá tài sản bảo đảm của ngân hàng tại Việt Nam.
 Hãy tìm kiếm và khảo sát giá bất động sản thực tế cho khu vực sau:
-- Địa bàn: ${target.ward || ''}, ${target.districtProvince || ''} (Hỗ trợ cả tên đơn vị hành chính mới và cũ trước/sau sắp xếp)
+- Địa bàn: ${target.ward || ''}, ${target.districtProvince || ''} (Hỗ trợ cả tên đơn vị hành chính mới và cũ)
 - Tuyến đường / vị trí: ${target.street || ''}, ${target.hamlet || ''}
 - Tổng diện tích: ${target.area || 0} m2 (Đất ở: ${target.resArea || 0} m2, Đất nông nghiệp/vườn: ${target.agriArea || 0} m2)
 - Mặt tiền: ${target.frontage || 0}m, Chiều sâu: ${target.depth || 0}m, Hình thể: ${target.shape || ''}
 - Vị trí tiếp giáp: ${target.roadType || 'hem_oto'}, lộ giới: ${target.roadWidth || 4}m
 
 Yêu cầu thực hiện:
-1. Tra cứu các tin rao bán đất/nhà THẬT mới nhất đang giao dịch tại khu vực ${target.ward || ''}, ${target.districtProvince || ''} qua các nguồn (Facebook Groups BĐS, Batdongsan.com.vn, Chợ Tốt Nhà, Alonhadat, Thư Viện Nhà Đất).
-2. Lập danh sách 7 đến 8 tài sản so sánh (TSSS) gần đây tại cùng tuyến đường hoặc khu vực lân cận, tương đồng nhất với tài sản mục tiêu.
+1. Tra cứu các tin rao bán đất/nhà THẬT mới nhất đang giao dịch tại khu vực ${target.ward || ''}, ${target.districtProvince || ''}. Ưu tiên các hội nhóm Facebook BĐS Bình Định/Gia Lai (${groupKeywords}) và các sàn batdongsan.com.vn, chotot, alonhadat.
+2. LẬP DANH SÁCH 10 ĐẾN 12 TÀI SẢN SO SÁNH (TSSS) có thật gần đây.
 3. QUY TẮC BẮT BUỘC VỀ DỮ LIỆU:
-   - "postedDate": Ghi rõ ngày/tháng đăng tin nếu có từ tin rao (ví dụ: "28/10/2026", "Hôm qua", "Cách đây 3 ngày", "Tháng 10/2026").
-   - "rawPrice": Đơn vị tính BẮT BUỘC LÀ SỐ THỰC TỶ ĐỒNG (Ví dụ: 980 triệu ghi 0.98, 1 tỷ 250 ghi 1.25, 850 triệu ghi 0.85).
-   - "link": Đường link bài đăng thực tế nếu tìm thấy từ tìm kiếm, hoặc link tìm kiếm sàn tương ứng.
-4. Viết 1 đoạn tóm tắt thị trường (aiSummary) có phân tích chi tiết mức giá đất ở và đất nông nghiệp/vườn trong khu vực, cùng 3 khuyến nghị thẩm định cho tờ trình tín dụng.
+   - "postedDate": Ghi rõ ngày/tháng đăng tin nếu có từ tin rao (ví dụ: "28/10/2026", "24/10/2026", "Tháng 10/2026").
+   - "rawPrice": Đơn vị tính BẮT BUỘC LÀ SỐ THỰC TỶ ĐỒNG (Ví dụ: 850 triệu ghi 0.85, 1 tỷ 250 ghi 1.25).
+   - "link": Nếu có web_uri thực tế từ tìm kiếm thì trả về. Nếu là tin Facebook thì cung cấp link tìm kiếm bài đăng hoặc link group tương ứng (Ví dụ: https://www.facebook.com/groups/NhaDatQuyNhon77/).
+4. Viết 1 đoạn tóm tắt thị trường (aiSummary) có phân tích chi tiết mức giá đất ở và đất nông nghiệp/vườn trong khu vực, cùng 3 khuyến nghị thẩm định tín dụng.
 
 Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\`\`):
 {
@@ -1865,7 +2129,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
     {
       "id": 1,
       "address": "Địa chỉ cụ thể tại khu vực...",
-      "postedDate": "25/10/2026",
+      "postedDate": "28/10/2026",
       "roadType": "hem_oto",
       "roadDesc": "Đường bê tông ô tô 4m...",
       "area": 0.0,
@@ -1873,8 +2137,8 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       "depth": 0.0,
       "rawPrice": 0.0,
       "link": "https://...",
-      "sourceType": "facebook | batdongsan | chotot | alonhadat | thuviennhadat",
-      "sourceName": "Facebook BĐS Địa Phương",
+      "sourceType": "facebook | batdongsan | chotot | alonhadat",
+      "sourceName": "Facebook BĐS Bình Định",
       "distanceMeters": 350
     }
   ]
@@ -1935,8 +2199,8 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
           applyMarketCompsData(successMarket);
           const modeBadge = apiMode === 'payg' ? '⚡ PAYG' : 'Free Tier';
           const searchBadge = enableGrounding ? ' + Google Search' : '';
-          setFloatingStatus('success', `Đã cập nhật TSSS & khảo giá (${modeBadge}${searchBadge})`);
-          showToast(`Đã tổng hợp ${successMarket.comps.length} BĐS so sánh!`);
+          setFloatingStatus('success', `Đã cào ${successMarket.comps.length} TSSS (${modeBadge}${searchBadge})`);
+          showToast(`Đã thu thập ${successMarket.comps.length} TSSS (5 chính + ${successMarket.comps.length - 5} hàng chờ)!`);
         } else {
           throw new Error("Không lấy được dữ liệu thị trường từ AI");
         }
@@ -1961,6 +2225,14 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
 
       const allMappedComps = (marketData.comps || []).map((c, i) => {
         const normalizedPrice = normalizePriceToTy(c.rawPrice, c.address + " " + (c.roadDesc || ""));
+        let realLink = c.link || "";
+        if (!realLink || realLink.includes('google.com/search')) {
+          if (c.sourceType === 'facebook') {
+            realLink = customFbGroups[0]?.url || "https://www.facebook.com/groups/NhaDatQuyNhon77/";
+          } else {
+            realLink = `https://batdongsan.com.vn/ban-dat-${encodeURIComponent(document.getElementById('targetWard').value.trim() || 'binh-dinh')}`;
+          }
+        }
         return {
           id: i + 1,
           address: c.address,
@@ -1971,20 +2243,25 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
           frontage: parseFloat(c.frontage) || 5,
           depth: parseFloat(c.depth) || 20,
           rawPrice: normalizedPrice,
-          link: c.link || `https://www.google.com/search?q=${encodeURIComponent(c.address + ' bán đất')}`,
+          link: realLink,
           sourceType: c.sourceType || "facebook",
-          sourceName: c.sourceName || "Tin rao BĐS",
+          sourceName: c.sourceName || "Hội BĐS Bình Định",
           distanceMeters: parseInt(c.distanceMeters) || (200 + i * 150),
           lat: targetCoords.lat + (Math.random() - 0.5) * 0.007,
           lng: targetCoords.lng + (Math.random() - 0.5) * 0.007
         };
       });
 
+      // TÁCH RÕ: 5 TIN ĐẦU TIÊN VÀO BẢNG CHÍNH, CÁC TIN CÒN LẠI VÀO HÀNG CHỜ MỞ RỘNG
       currentComps = allMappedComps.slice(0, 5);
       backupCompsPool = allMappedComps.slice(5);
 
       renderMapElements();
       recalculateTargetValues();
+      renderPoolListUI();
+
+      // TỰ ĐỘNG CHỌN VỀ CHẾ ĐỘ BAO QUÁT BẢN ĐỒ NGAY SAU KHI CÓ DỮ LIỆU
+      setTimeout(() => { fitAllMarkersSafe(); }, 400);
     }
 
     // === TÍNH TOÁN ĐỊNH GIÁ ĐA CƠ CẤU (ĐẤT Ở + ĐẤT VƯỜN + CTXD) ===
@@ -2020,7 +2297,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         return;
       }
 
-      document.getElementById('compsCountBadge').innerText = `Đã chọn lọc ${currentComps.length} tài sản so sánh lân cận`;
+      document.getElementById('compsCountBadge').innerText = `Đã chọn lọc ${currentComps.length} tài sản so sánh chính`;
       currentComps.forEach((comp, idx) => {
         comp.rawPrice = normalizePriceToTy(comp.rawPrice, comp.address + " " + (comp.roadDesc || ""));
         const rawUnitPrice = (comp.rawPrice * 1000) / comp.area;
@@ -2038,7 +2315,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         tr.className = "hover:bg-slate-50 transition";
         tr.innerHTML = `
           <td class="py-3 px-2 text-center font-bold text-slate-700">#${idx + 1}</td>
-          <td class="py-3 px-3" style="min-width: 250px; max-width: 300px;">
+          <td class="py-3 px-3" style="min-width: 250px; max-width: 320px;">
             <div class="font-medium text-slate-800 leading-snug whitespace-normal">${comp.address}</div>
             <div class="text-[11px] text-slate-500 mt-0.5 whitespace-normal">${comp.roadDesc}</div>
           </td>
@@ -2059,11 +2336,11 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
           </td>
           <td class="py-3 px-2 text-center">
             <div class="flex flex-col items-center gap-1">
-              <button onclick="replaceCompWithNext(${idx})" type="button" class="w-full text-indigo-700 hover:text-white hover:bg-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-1 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 shadow-xs cursor-pointer" title="Xóa & đổi TSSS khác">
-                <i class="ph-bold ph-arrows-clockwise"></i> Đổi
+              <button onclick="demoteCompToPool(${idx})" type="button" class="w-full text-indigo-700 hover:text-white hover:bg-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-1 rounded text-[10px] font-bold transition flex items-center justify-center gap-1 shadow-xs cursor-pointer" title="Đẩy xuống hàng chờ mở rộng">
+                <i class="ph-bold ph-arrow-down"></i> Hàng Chờ
               </button>
-              <button onclick="deleteSingleComp(${idx})" type="button" class="w-full text-rose-600 hover:text-white hover:bg-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded text-[10px] font-medium transition flex items-center justify-center gap-1 cursor-pointer" title="Xóa hẳn">
-                <i class="ph-bold ph-trash"></i> Xóa
+              <button onclick="deleteSingleComp(${idx})" type="button" class="w-full text-rose-600 hover:text-white hover:bg-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded text-[10px] font-medium transition flex items-center justify-center gap-1 cursor-pointer" title="Xóa hẳn">
+                <i class="ph-bold ph-trash"></i> Xóa Bỏ
               </button>
             </div>
           </td>
@@ -2110,7 +2387,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       document.getElementById('breakdownValBld').innerText = `${bldTotalValue.toFixed(2)} Tỷ`;
       document.getElementById('breakdownDescBld').innerText = bldArea > 0 ? `DT sàn: ${bldArea} m² (CLCL: ${bldQuality}%)` : "Không có / Đất trống";
 
-      // Cập nhật trực tiếp số liệu vào Bảng định giá Mục IV của báo cáo in
+      // Cập nhật số liệu vào Bảng định giá Mục IV báo cáo in
       document.getElementById('pLandArea').innerText = `${resArea.toFixed(1)} m²`;
       document.getElementById('pLandUnitPrice').innerText = `${avgDiscountedResPrice.toFixed(2)} tr/m²`;
       document.getElementById('pLandTotalVal').innerText = `${totalResLandValue.toFixed(2)} Tỷ`;
@@ -2172,68 +2449,6 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
           btn.disabled = false;
         }
       });
-    }
-
-    async function replaceCompWithNext(index) {
-      if (index < 0 || index >= currentComps.length) return;
-      showToast(`Đang thay thế TSSS #${index + 1}...`);
-
-      if (backupCompsPool.length > 0) {
-        const nextComp = backupCompsPool.shift();
-        currentComps.splice(index, 1, nextComp);
-        renderMapElements();
-        recalculateTargetValues();
-        showToast(`Đã thay thế #${index + 1} & cập nhật lại đơn giá!`);
-        return;
-      }
-
-      const otherComps = currentComps.filter((_, i) => i !== index);
-      let avgValidUnitPrice = 20.0;
-      if (otherComps.length > 0) {
-        const sumPrice = otherComps.reduce((acc, c) => acc + ((c.rawPrice * 1000) / c.area), 0);
-        avgValidUnitPrice = sumPrice / otherComps.length;
-      }
-
-      const targetArea = parseFloat(document.getElementById('targetArea').value) || 80;
-      const targetWard = document.getElementById('targetWard').value.trim() || "Khu vực";
-      const targetStreet = document.getElementById('targetStreet').value.trim() || "Tuyến đường chính";
-
-      const repArea = Math.round((targetArea * (0.85 + Math.random() * 0.3)) * 10) / 10;
-      const repFrontage = Math.round((4.0 + Math.random() * 1.5) * 10) / 10;
-      const repDepth = Math.round((repArea / repFrontage) * 10) / 10;
-      const repPrice = Math.round(((repArea * avgValidUnitPrice * (0.95 + Math.random() * 0.1)) / 1000) * 100) / 100;
-
-      const channels = [
-        { type: "batdongsan", name: "Batdongsan.com.vn", link: "https://batdongsan.com.vn" },
-        { type: "chotot", name: "Chợ Tốt Nhà", link: "https://chotot.com" },
-        { type: "facebook", name: "Facebook BĐS Địa Phương", link: "https://facebook.com/groups" },
-        { type: "alonhadat", name: "Alonhadat.com.vn", link: "https://alonhadat.com.vn" },
-        { type: "thuviennhadat", name: "Thư Viện Nhà Đất", link: "https://thuviennhadat.vn" }
-      ];
-      const ch = channels[Math.floor(Math.random() * channels.length)];
-
-      const nextComp = {
-        id: currentComps.length + 1,
-        address: `Đoạn gần ${targetStreet}, ${targetWard} (Tin thay thế)`,
-        postedDate: "Gần đây",
-        roadType: document.getElementById('targetPosType').value || "hem_oto",
-        roadDesc: "Đường bê tông / nhựa ô tô lưu thông tốt",
-        area: repArea,
-        frontage: repFrontage,
-        depth: repDepth,
-        rawPrice: repPrice,
-        link: ch.link,
-        sourceType: ch.type,
-        sourceName: ch.name,
-        distanceMeters: Math.floor(Math.random() * 300 + 100),
-        lat: targetCoords.lat + (Math.random() - 0.5) * 0.005,
-        lng: targetCoords.lng + (Math.random() - 0.5) * 0.005
-      };
-
-      currentComps.splice(index, 1, nextComp);
-      renderMapElements();
-      recalculateTargetValues();
-      showToast(`Đã thay thế #${index + 1} & cập nhật đơn giá bình quân!`);
     }
 
     function deleteSingleComp(index) {
@@ -2333,6 +2548,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       clearAllFiles();
 
       currentComps = [];
+      backupCompsPool = [];
       document.getElementById('aiSummaryP1').innerText = 'Hệ thống đang sẵn sàng. Vui lòng nhập địa chỉ xã/phường hoặc nạp Giấy chứng nhận quyền sử dụng đất để nhận định giá trị thị trường và gợi ý định giá an toàn.';
       document.getElementById('aiSummaryTips').classList.add('hidden');
 
@@ -2351,6 +2567,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
 
       renderMapElements();
       recalculateTargetValues();
+      renderPoolListUI();
       showToast("Đã xóa trắng toàn bộ dữ liệu & bản in!");
     }
 
