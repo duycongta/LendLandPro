@@ -69,8 +69,16 @@ PROVINCES = {norm(x) for x in (
     "Phú Yên", "Quảng Bình", "Quảng Nam", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sóc Trăng", "Sơn La", "Tây Ninh", "Thái Bình",
     "Thái Nguyên", "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang", "Hồ Chí Minh", "Trà Vinh", "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc",
     "Yên Bái", "Vũng Tàu")}
-# Gia Lai (mới) = Gia Lai cũ + Bình Định cũ
-PROVINCE_MERGES = [{"gia lai", "binh dinh"}]
+# Gộp tỉnh từ 01/07/2025 (63 -> 34 tỉnh/thành): mỗi nhóm = các tỉnh cũ nay cùng một tỉnh mới. Tin đăng có thể ghi tên cũ hoặc tên mới.
+# Cần đối chiếu với nghị quyết sáp nhập khi cập nhật.
+PROVINCE_MERGES = [{norm(x) for x in grp} for grp in (
+    ("Hà Giang", "Tuyên Quang"), ("Yên Bái", "Lào Cai"), ("Bắc Kạn", "Thái Nguyên"), ("Vĩnh Phúc", "Hòa Bình", "Phú Thọ"),
+    ("Bắc Giang", "Bắc Ninh"), ("Thái Bình", "Hưng Yên"), ("Hải Dương", "Hải Phòng"), ("Hà Nam", "Nam Định", "Ninh Bình"),
+    ("Quảng Bình", "Quảng Trị"), ("Quảng Nam", "Đà Nẵng"), ("Kon Tum", "Quảng Ngãi"), ("Bình Định", "Gia Lai"),
+    ("Ninh Thuận", "Khánh Hòa"), ("Đắk Nông", "Bình Thuận", "Lâm Đồng"), ("Phú Yên", "Đắk Lắk"),
+    ("Bình Dương", "Bà Rịa Vũng Tàu", "Vũng Tàu", "Hồ Chí Minh"), ("Bình Phước", "Đồng Nai"), ("Long An", "Tây Ninh"),
+    ("Sóc Trăng", "Hậu Giang", "Cần Thơ"), ("Bến Tre", "Trà Vinh", "Vĩnh Long"), ("Tiền Giang", "Đồng Tháp"),
+    ("Bạc Liêu", "Cà Mau"), ("Kiên Giang", "An Giang"), ("Thừa Thiên Huế", "Huế"))]
 
 def province_aliases(admin: "AdminMap", tinh: str) -> set:
     if not (tinh or "").strip():

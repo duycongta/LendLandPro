@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import store
 from .search import build_keywords, location_terms, filter_listings, same_street, rank, select_comps, select_near, listing_coords, haversine_m
 from . import geo
-from .textnorm import core_name
+from .textnorm import core_name, norm, province_aliases, province_conflict
 from .learn import learn_pairs
 from .quality import dedupe_semantic, recency_tier, price_bounds, source_weight, source_weights, weighted_median
 from .sources import SOURCES, parse_manual_text
@@ -206,7 +206,7 @@ def listing_to_api(l):
         "lat": lat if ok_coord else None, "lng": lng if ok_coord else None,
     }
 
-API_VERSION = 5     # 5: thêm /api/reverse. 4: thêm /api/resolve, /api/admin_names, lat/lng/radius_m + distance_m. 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
+API_VERSION = 6     # 6: thêm diagnostics trong /api/comps. 5: thêm /api/reverse. 4: thêm /api/resolve, /api/admin_names, lat/lng/radius_m + distance_m. 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
 
 @app.get("/api/health")
 def api_health():
@@ -238,6 +238,7 @@ def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", ti
     rec = [l for l in allr if recency_tier(l) == 3 or (l.posted_at and (recency_tier(l) <= 2 and _within(l, months)))]
     pairs = select_comps(rec, admin_eff, xa, huyen, tinh, thon, "district", area or None, tol / 100, land_type, kind, duong)
     deduped, merged = dedupe_semantic(pairs, weights)
+    diag = diagnose(allr, rec, admin_eff, xa, huyen, tinh, thon, len(pairs))
     extra_district = sum(1 for _, lv, _ in deduped if lv == "huyen")
     if scope != "district":
         deduped = [t for t in deduped if t[1] != "huyen"]
@@ -285,6 +286,7 @@ def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", ti
                     "no_date": sum(1 for r in rows if r[5] == "no_date"), "eligible": len(ok_rows),
                     "price_bounds": list(bounds) if bounds else None},
         "stats": {"n_used": res.n_used, "median_per_m2": res.median, "weighted_median_per_m2": wmed, "p25": res.p25, "p75": res.p75, "warning": res.warning},
+        "diagnostics": diag,
         "fetchlog": q["fetchlog"], "errors": errors,
     }
 
@@ -347,3 +349,24 @@ def api_reverse(lat: float, lng: float):
     return {"ok": True, "ward": a.get("suburb") or a.get("village") or a.get("quarter") or a.get("neighbourhood") or a.get("hamlet") or "",
             "district": a.get("county") or a.get("city_district") or a.get("town") or a.get("city") or "",
             "province": a.get("state") or a.get("province") or "", "source": "OpenStreetMap (qua máy chủ)"}
+
+
+def diagnose(allr, rec, admin_eff, xa, huyen, tinh, thon, n_after_filters):
+    """Giải thích vì sao ít/không có tin: số tin đã lưu theo nguồn, bị loại do khác tỉnh, khớp xã/phường, còn lại sau lọc diện tích/loại."""
+    from collections import Counter
+    from .search import classify_location
+    allowed = province_aliases(admin_eff, tinh)
+    other_prov = ward_hit = district_hit = 0
+    for l in rec:
+        hay = norm(l.address + " " + l.title + ("" if l.address else " " + l.description))
+        if allowed and province_conflict(hay, allowed):
+            other_prov += 1
+            continue
+        lv = classify_location(l, admin_eff, xa, huyen, tinh, thon, "district")
+        if lv in ("thon", "xa"):
+            ward_hit += 1
+        elif lv == "huyen":
+            district_hit += 1
+    return {"stored": len(allr), "stored_by_source": dict(Counter(l.source for l in allr)), "recent": len(rec),
+            "other_province": other_prov, "same_ward": ward_hit, "same_district_other_ward": district_hit,
+            "after_filters": n_after_filters, "province_names_accepted": sorted(allowed)}

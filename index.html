@@ -1013,8 +1013,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.20";
+    const APP_VERSION = "6.21";
     const APP_CHANGELOG = {
+      "6.21": "Sửa nhầm loại tin theo tỉnh sau sáp nhập 2025 (vd sổ Phú Yên cũ: tin đăng ghi Đắk Lắk bị loại): máy chủ có đủ bảng gộp 34 tỉnh (API v6). Khi không có tin đạt chuẩn, ô nhật ký nêu rõ lý do (số tin đã lưu theo nguồn, bị loại do khác tỉnh, cùng xã/phường...). Thanh trạng thái \"đang đọc ảnh\" chuyển thành \"Đã đọc xong ảnh\" rồi tự tắt.",
       "6.20": "Sau khi AI đọc ảnh GCN, KHÔNG tự tìm tin nữa: hiện hộp xác nhận \"Đã đọc được thông tin tài sản từ ảnh, kiểm tra lại và xác nhận tìm tin TSSS\" (Xác nhận / Trở lại). Tự điền địa danh từ tọa độ: nếu trình duyệt bị chặn OpenStreetMap thì thử qua máy chủ khảo giá (API v5) và báo lỗi rõ hơn.",
       "6.19": "Máy chủ mở được link Google Maps rút gọn (maps.app.goo.gl); tìm tin trong bán kính 1 km quanh vị trí thửa đất (tin phường/xã lân cận có tọa độ thật chỉ vào Hàng chờ, kèm khoảng cách, không tính giá); hiện tên cũ / tên mới của xã phường học từ chính dữ liệu tin (cần máy chủ API v4).",
       "6.18": "Vị trí thửa đất: nhập link Google Maps (dài) hoặc tọa độ (độ-phút-giây, thập phân), nút Dùng vị trí hiện tại (GPS điện thoại, hiện sai số), ghim thật trên bản đồ, chạm bản đồ để dời ghim, tự điền Xã/Huyện/Tỉnh từ tọa độ (Google nếu có khóa, OpenStreetMap dự phòng; nền vàng cần xác nhận), báo cáo ghi tọa độ.",
@@ -2019,6 +2020,7 @@
       const text = document.getElementById('floatingStatusText');
 
       if (!bar) return;
+      if (window._floatHideTimer) { clearTimeout(window._floatHideTimer); window._floatHideTimer = null; }   // trạng thái mới huỷ lệnh tự tắt của trạng thái cũ
       if (state === 'hide') {
         bar.classList.add('hidden');
         return;
@@ -2032,11 +2034,11 @@
       } else if (state === 'success') {
         bar.className = "fixed bottom-16 right-4 sm:right-6 z-40 px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md bg-emerald-950/90 border-emerald-500 text-white max-w-xs sm:max-w-sm";
         if (icon) icon.innerHTML = `<i class="ph-bold ph-check-circle text-emerald-400 text-base"></i>`;
-        setTimeout(() => bar.classList.add('hidden'), 3500);
+        window._floatHideTimer = setTimeout(() => bar.classList.add('hidden'), 3500);
       } else if (state === 'error') {
         bar.className = "fixed bottom-16 right-4 sm:right-6 z-40 px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md bg-rose-950/90 border-rose-500 text-white max-w-xs sm:max-w-sm";
         if (icon) icon.innerHTML = `<i class="ph-bold ph-warning-circle text-rose-400 text-base"></i>`;
-        setTimeout(() => bar.classList.add('hidden'), 4000);
+        window._floatHideTimer = setTimeout(() => bar.classList.add('hidden'), 4000);
       }
     }
 
@@ -2202,6 +2204,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
 
         if (parsedData) {
           applyParsedData(parsedData, { confirmSurvey: true });
+          setFloatingStatus('success', 'Đã đọc xong ảnh tài sản - kiểm tra thông tin rồi xác nhận tìm tin');
           statusBox.className = "mt-3 p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs flex items-start gap-2.5 shadow-sm";
           statusBox.innerHTML = `
             <i class="ph-fill ph-check-circle text-emerald-600 text-xl flex-shrink-0"></i>
@@ -2834,6 +2837,12 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       }
       const mc = data.match_counts || {};
       const hints = [];
+      const dg = data.diagnostics;
+      if (dg && usableList.length === 0) {
+        const bySrc = Object.entries(dg.stored_by_source || {}).map(([k, v]) => `${k} ${v}`).join(', ') || 'chưa có';
+        hints.push(`Chẩn đoán: đã lưu ${dg.stored} tin (${bySrc}); trong ${6} tháng gần đây ${dg.recent}; bị loại vì khác tỉnh ${dg.other_province}; cùng xã/phường ${dg.same_ward}; cùng huyện khác xã ${dg.same_district_other_ward}; còn lại sau lọc diện tích/loại tài sản ${dg.after_filters}. Tỉnh được chấp nhận: ${(dg.province_names_accepted || []).join(', ') || '(không nhập tỉnh)'}.`);
+        if (!dg.stored) hints.push('Máy chủ chưa lưu tin nào: có thể các nguồn bị chặn hoặc chưa thu được tin cho khu vực này, xem các dòng nhật ký nguồn bên dưới.');
+      }
       if (usableList.length === 0) hints.push('Không có tin nào CÙNG xã/phường (đúng tỉnh) đủ giá và diện tích' + (districtOnly.length ? `; có ${districtOnly.length} tin cùng huyện (khác xã) trong Hàng chờ để tham khảo` : '') + '. Xã nhỏ thường có rất ít tin rao online: hãy dán thêm tin thủ công (Facebook/Zalo) hoặc dùng giá tham khảo khu vực lân cận.');
       else if (usableList.length < 3) hints.push(`Chỉ có ${usableList.length} tin cùng xã/phường: ít mẫu, kết quả định giá có độ tin cậy thấp.`);
       if (data.extra_district_available > 0 && !districtOnly.length) hints.push(`Có thêm ${data.extra_district_available} tin cùng huyện (khác xã): bật "Hiển thị thêm tin cùng huyện" ở Quản trị để xem trong Hàng chờ.`);
