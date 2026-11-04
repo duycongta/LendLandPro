@@ -98,6 +98,21 @@ class Chotot(Source):
                 if district_aliases and any(contains_phrase(an, d) for d in district_aliases) and a.get("area_v2"):
                     areas.add(a["area_v2"])
             cancel.sleep(1.0)
+        # Xã/phường trùng tên nhiều nơi: nếu đã xác định được huyện, chỉ giữ phường thuộc huyện đó
+        if areas:
+            wards = {(a, w) for a, w in wards if a in areas}
+        # quét thêm tin của chính huyện đã tìm thấy để lấy đúng mã phường trong huyện đó
+        if ward_aliases and areas:
+            for area_c in sorted(areas):
+                for offset in (0, 20, 40):
+                    ads = self._page(region_v2=region_v2, area_v2=area_c, o=offset)
+                    for a in ads:
+                        wn = norm((a.get("ward_name") or "") + " | " + (a.get("ward_name_v3") or ""))
+                        if a.get("ward") and any(contains_phrase(wn, w) for w in ward_aliases):
+                            wards.add((area_c, a["ward"]))
+                    if len(ads) < 20:
+                        break
+                    cancel.sleep(1.0)
         return wards, areas
 
     def search_codes(self, region_v2: int, area_v2=None, ward=None, limit: int = 100, max_age_days: int | None = None):

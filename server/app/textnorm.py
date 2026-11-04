@@ -81,9 +81,12 @@ PROVINCE_MERGES = [{norm(x) for x in grp} for grp in (
     ("Bạc Liêu", "Cà Mau"), ("Kiên Giang", "An Giang"), ("Thừa Thiên Huế", "Huế"))]
 
 def province_aliases(admin: "AdminMap", tinh: str) -> set:
+    """Tên tỉnh được chấp nhận = tên người dùng nhập + các tỉnh cùng nhóm sáp nhập. KHÔNG trộn bảng đối chiếu xã/phường
+    (bảng đó học từ dữ liệu tin và có thể chứa tên xã, làm danh sách tỉnh sai)."""
     if not (tinh or "").strip():
         return set()
-    a = set(admin.aliases(tinh))
+    c = core_name(tinh)
+    a = {c} if c else set()
     for grp in PROVINCE_MERGES:
         if a & grp:
             a |= grp

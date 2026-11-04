@@ -549,3 +549,27 @@ def test_cancel_not_swallowed_by_except_exception():
         pass
     finally:
         cancel.finish(tok, "J3")
+
+
+def test_province_aliases_ignore_ward_pairs():
+    import app.main as m
+    from app.textnorm import province_aliases
+    adm = m.admin.with_pairs({("Phú Yên", "Phú Đông"), ("Phú Thạnh", "Phú Yên")})      # cặp học nhầm từ dữ liệu
+    assert province_aliases(adm, "Tỉnh Phú Yên") == {"phu yen", "dak lak"}
+    assert province_aliases(adm, "") == set()
+
+def test_chotot_ward_scan_limits_to_district(monkeypatch):
+    from app.sources.chotot import Chotot
+    import app.cancel as cancel
+    monkeypatch.setattr(cancel, "sleep", lambda s: None)
+    def ad(area, ward, wname, an): return {"area_v2": area, "ward": ward, "ward_name": wname, "ward_name_v3": wname, "area_name": an, "area_name_v3": an}
+    c = Chotot()
+    def fake_page(**p):
+        if "q" in p:                        # tìm theo từ khóa: có Xuân Phú ở huyện khác (mã 111) và tin của Sông Cầu (mã 704602)
+            return [ad(111, 9001, "Phường Xuân Phú", "Thành phố Tuy Hòa"), ad(704602, 5, "Phường Xuân Thành", "Thị xã Sông Cầu")]
+        if p.get("area_v2") == 704602:     # quét huyện Sông Cầu: có phường Xuân Phú mã 77
+            return [ad(704602, 77, "Phường Xuân Phú", "Thị xã Sông Cầu")] + [ad(704602, 5, "Phường Xuân Thành", "Thị xã Sông Cầu")] * 3
+        return []
+    monkeypatch.setattr(c, "_page", fake_page)
+    wards, areas = c.discover_codes(7046, {"xuan phu"}, {"song cau"})
+    assert areas == {704602} and wards == {(704602, 77)}
