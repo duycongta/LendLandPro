@@ -4,6 +4,7 @@ CHƯA CHẠY THỬ TRỰC TIẾP (môi trường phát triển bị chặn mạn
 Các trang này có thể chặn truy cập tự động (403/captcha): khi đó app báo rõ lý do và phần còn lại vẫn chạy.
 Tuân thủ điều khoản sử dụng của từng trang; tần suất gọi được giới hạn (nghỉ giữa các trang).
 """
+from .. import cancel
 import datetime as dt, math, re, time
 import requests
 from .base import Source
@@ -103,7 +104,7 @@ class WebSource(Source):
             for l in cards:
                 l.kind = guess_kind(l.url, l.title)
             out.extend(cards); n += len(cards)
-            time.sleep(self.min_delay)
+            cancel.sleep(self.min_delay)
             if not cards or (cutoff and all(l.posted_at and l.posted_at < cutoff for l in cards if l.posted_at)):
                 break
             url = next_page_url(html, url)
@@ -138,7 +139,7 @@ class WebSource(Source):
                     if cutoff and allr and all(l.posted_at and l.posted_at < cutoff for l in allr if l.posted_at):
                         stop = True
                     out.extend(land); n_slug += len(land)
-                    time.sleep(self.min_delay)
+                    cancel.sleep(self.min_delay)
                 if stop or got_cards == 0:
                     break
             log.append(f"{self.name} · '{slug}': lấy về {n_slug} tin")

@@ -6,6 +6,7 @@ Tuân thủ điều khoản sử dụng của nguồn; hạn chế tần suất 
 """
 import datetime as dt, time
 import requests
+from .. import cancel
 from .base import Source
 from ..models import Listing
 from ..parse import parse_frontage, guess_land_type, guess_kind
@@ -57,7 +58,7 @@ class Chotot(Source):
                     break
                 out.append(_to_listing(a, self.name, now))
             offset += len(ads)
-            time.sleep(1.5)   # lịch sự với máy chủ nguồn
+            cancel.sleep(1.5)   # lịch sự với máy chủ nguồn
         return out[:limit]
 
     def search(self, keywords: str, limit: int = 50, max_age_days: int | None = None) -> list[Listing]:
@@ -82,7 +83,7 @@ class Chotot(Source):
                     if not any(contains_phrase(rn, x) for x in allowed):
                         continue
                 found[a["region_v2"]] = a.get("region_name") or str(a["region_v2"])
-            time.sleep(1.0)
+            cancel.sleep(1.0)
         return found
 
     def discover_codes(self, region_v2: int, ward_aliases: set, district_aliases: set):
@@ -96,7 +97,7 @@ class Chotot(Source):
                     wards.add((a["area_v2"], a["ward"]))
                 if district_aliases and any(contains_phrase(an, d) for d in district_aliases) and a.get("area_v2"):
                     areas.add(a["area_v2"])
-            time.sleep(1.0)
+            cancel.sleep(1.0)
         return wards, areas
 
     def search_codes(self, region_v2: int, area_v2=None, ward=None, limit: int = 100, max_age_days: int | None = None):

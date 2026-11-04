@@ -333,9 +333,9 @@ def test_api_version_and_user_scenario(monkeypatch, tmp_path):
     ]
     store.save([Listing("chotot", f"https://x/{n}", t, address=a, price_vnd=pr, area_m2=ar, kind="dat", posted_at=_ago(10)) for n, a, t, pr, ar in rows])
     c = TestClient(m.app)
-    assert c.get("/api/health").json()["api_version"] == 6 and "folder" in c.get("/api/health").json()
+    assert c.get("/api/health").json()["api_version"] == 7 and "folder" in c.get("/api/health").json()
     r = c.get("/api/comps", params={"xa": "Xã Phước Sơn", "huyen": "Huyện Tuy Phước", "tinh": "Tỉnh Bình Định", "thon": "Thôn Xuân Phương", "area": 751.4, "kind": "dat", "tol": 50}).json()
-    assert r["api_version"] == 6
+    assert r["api_version"] == 7
     assert [i["url"].split("/")[-1] for i in r["items"]] == ["6"] and r["items"][0]["match_level"] == "thon"
 
 
@@ -514,3 +514,38 @@ def test_province_merge_phu_yen_dak_lak(monkeypatch, tmp_path):
     assert [i["url"].split("/")[-1] for i in r["items"]] == ["1"]
     d = r["diagnostics"]
     assert d["stored"] == 3 and d["other_province"] == 1 and d["same_ward"] == 1 and d["same_district_other_ward"] == 1 and d["stored_by_source"] == {"chotot": 3}
+
+
+def test_cancel_stops_live_collection(monkeypatch, tmp_path):
+    import threading, time as _t
+    from fastapi.testclient import TestClient
+    import app.main as m, app.store as store, app.cancel as cancel
+    monkeypatch.setattr(store, "DB", tmp_path / "c.sqlite")
+    started = threading.Event(); steps = []
+    def slow_collect(q, *a, **k):
+        started.set()
+        for i in range(200):
+            steps.append(i); cancel.sleep(0.05)       # mô phỏng nguồn chờ giữa các trang
+    monkeypatch.setattr(m, "collect_live", slow_collect)
+    c = TestClient(m.app); res = {}
+    th = threading.Thread(target=lambda: res.update(r=c.get("/api/comps", params={"xa": "Xã A", "tinh": "Bình Định", "live": 1, "job": "J1"}).json()))
+    th.start(); assert started.wait(5); _t.sleep(0.2)
+    assert c.get("/api/cancel", params={"job": "J1"}).json()["ok"]
+    th.join(5); assert not th.is_alive()
+    assert res["r"]["cancelled"] is True and res["r"]["items"] == [] and len(steps) < 50
+    assert "J1" not in cancel._cancelled                                   # đã dọn
+    # job khác không bị ảnh hưởng
+    cancel.cancel("OTHER"); tok = cancel.start("J2"); cancel.check(); cancel.finish(tok, "J2"); cancel._cancelled.discard("OTHER")
+
+def test_cancel_not_swallowed_by_except_exception():
+    import app.cancel as cancel
+    tok = cancel.start("J3"); cancel.cancel("J3")
+    try:
+        try:
+            cancel.check()
+        except Exception:
+            assert False, "Cancelled bị nuốt"
+    except cancel.Cancelled:
+        pass
+    finally:
+        cancel.finish(tok, "J3")

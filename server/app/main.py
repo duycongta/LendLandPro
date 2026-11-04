@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import store
 from .search import build_keywords, location_terms, filter_listings, same_street, rank, select_comps, select_near, listing_coords, haversine_m
-from . import geo
+from . import geo, cancel
 from .textnorm import core_name, norm, province_aliases, province_conflict
 from .learn import learn_pairs
 from .quality import dedupe_semantic, recency_tier, price_bounds, source_weight, source_weights, weighted_median
@@ -206,7 +206,7 @@ def listing_to_api(l):
         "lat": lat if ok_coord else None, "lng": lng if ok_coord else None,
     }
 
-API_VERSION = 6     # 6: thêm diagnostics trong /api/comps. 5: thêm /api/reverse. 4: thêm /api/resolve, /api/admin_names, lat/lng/radius_m + distance_m. 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
+API_VERSION = 7     # 7: thêm job + /api/cancel (dừng khảo sát). 6: thêm diagnostics trong /api/comps. 5: thêm /api/reverse. 4: thêm /api/resolve, /api/admin_names, lat/lng/radius_m + distance_m. 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
 
 @app.get("/api/health")
 def api_health():
@@ -216,7 +216,7 @@ def api_health():
 def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", tinh: str = "Gia Lai", area: float = 0, kind: str = "",
               land_type: str = "", months: int = 6, tol: float = 50, discount: float = 10, scope: str = "ward",
               live: int = 0, maxn: int = 100, limit: int = 60, src: str = "",
-              lat: float = 0, lng: float = 0, radius_m: float = 1000):
+              lat: float = 0, lng: float = 0, radius_m: float = 1000, job: str = ""):
     """Tin so sánh THẬT (có link), đã qua các bộ lọc chất lượng:
     - bắt buộc cùng xã/phường và không thuộc tỉnh khác; cùng thôn/xóm, cùng đường xếp trước (scope=district: thêm tin cùng huyện, khác xã);
     - gộp tin trùng (cùng SĐT+diện tích+giá, hoặc nội dung giống nhau), giữ bản từ nguồn tin cậy hơn;
@@ -230,7 +230,13 @@ def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", ti
     errors = []
     if live:
         chosen = [x for x in src.split(",") if x.strip()]
-        collect_live(q, xa, huyen, tinh, duong, land_type, months, maxn, chosen, errors)
+        tok = cancel.start(job)
+        try:
+            collect_live(q, xa, huyen, tinh, duong, land_type, months, maxn, chosen, errors)
+        except cancel.Cancelled:
+            return {"api_version": API_VERSION, "cancelled": True, "items": [], "fetchlog": q["fetchlog"], "errors": errors}
+        finally:
+            cancel.finish(tok, job)
     weights = source_weights()
     allr = store.load_all()
     learned = learn_pairs(allr)
@@ -370,3 +376,10 @@ def diagnose(allr, rec, admin_eff, xa, huyen, tinh, thon, n_after_filters):
     return {"stored": len(allr), "stored_by_source": dict(Counter(l.source for l in allr)), "recent": len(rec),
             "other_province": other_prov, "same_ward": ward_hit, "same_district_other_ward": district_hit,
             "after_filters": n_after_filters, "province_names_accepted": sorted(allowed)}
+
+
+@app.get("/api/cancel")
+def api_cancel(job: str):
+    """Dừng khảo sát đang thu thập (mã job do giao diện gửi kèm /api/comps)."""
+    cancel.cancel(job)
+    return {"ok": True}

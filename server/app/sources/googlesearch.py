@@ -8,6 +8,7 @@ Nhà cung cấp tìm kiếm (biến môi trường):
   ANTHROPIC_API_KEY                 tuỳ chọn: bật trích xuất bằng AI. ANTHROPIC_MODEL mặc định claude-haiku-5-5.
 Chỉ đọc tiêu đề/đoạn trích do dịch vụ trả về, không mở trang đích. Kết quả AI được đánh dấu "(AI)" để kiểm tra lại.
 """
+from .. import cancel
 import datetime as dt, json, math, os, re, time
 import requests
 from .base import Source
@@ -151,7 +152,7 @@ class GoogleSearch(Source):
                     got += 1
                 if len(items) < 10:
                     break
-                time.sleep(0.5)
+                cancel.sleep(0.5)
             log.append(f"google · '{q}': {got} tin có giá")
         log.append(f"google: dùng {calls} lượt gọi API" + (f", {ai_used} lượt AI" if ai_used else ""))
         return out

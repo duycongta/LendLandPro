@@ -421,6 +421,9 @@
             <button onclick="triggerManualSurvey()" id="btnManualSurvey" type="button" class="flex-2 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-md active:scale-95 cursor-pointer">
               <i class="ph-bold ph-magnifying-glass-plus text-base text-amber-300"></i> Khảo Sát Giá Thị Trường & Tìm TSSS
             </button>
+            <button onclick="stopSurvey()" id="btnStopSurvey" type="button" class="hidden flex-none bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition items-center justify-center gap-1.5 shadow-md active:scale-95 cursor-pointer">
+              <i class="ph-bold ph-stop-circle text-base"></i> Dừng lại
+            </button>
           </div>
         </div>
       </div>
@@ -1013,8 +1016,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.21";
+    const APP_VERSION = "6.22";
     const APP_CHANGELOG = {
+      "6.22": "Nút \"Dừng lại\" cạnh nút Đang khảo sát: dừng hẳn việc thu thập tin (máy chủ API v7 ngừng cào trong vài giây) và hủy, không hiển thị kết quả; bảng giữ nguyên như trước khi khảo sát.",
       "6.21": "Sửa nhầm loại tin theo tỉnh sau sáp nhập 2025 (vd sổ Phú Yên cũ: tin đăng ghi Đắk Lắk bị loại): máy chủ có đủ bảng gộp 34 tỉnh (API v6). Khi không có tin đạt chuẩn, ô nhật ký nêu rõ lý do (số tin đã lưu theo nguồn, bị loại do khác tỉnh, cùng xã/phường...). Thanh trạng thái \"đang đọc ảnh\" chuyển thành \"Đã đọc xong ảnh\" rồi tự tắt.",
       "6.20": "Sau khi AI đọc ảnh GCN, KHÔNG tự tìm tin nữa: hiện hộp xác nhận \"Đã đọc được thông tin tài sản từ ảnh, kiểm tra lại và xác nhận tìm tin TSSS\" (Xác nhận / Trở lại). Tự điền địa danh từ tọa độ: nếu trình duyệt bị chặn OpenStreetMap thì thử qua máy chủ khảo giá (API v5) và báo lỗi rõ hơn.",
       "6.19": "Máy chủ mở được link Google Maps rút gọn (maps.app.goo.gl); tìm tin trong bán kính 1 km quanh vị trí thửa đất (tin phường/xã lân cận có tọa độ thật chỉ vào Hàng chờ, kèm khoảng cách, không tính giá); hiện tên cũ / tên mới của xã phường học từ chính dữ liệu tin (cần máy chủ API v4).",
@@ -2328,6 +2332,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
 
       // v6.11: ưu tiên TIN THẬT từ máy chủ khảo giá (Python). Đủ tin thì không cần gọi AI (trừ khi bật "luôn chạy AI")
       const real = await fetchRealComps();
+      if (real.cancelled) return;
       const alwaysAi = localStorage.getItem('llp_always_ai') === 'true';
       if (real.ok && real.usable >= 3 && !alwaysAi) return;
 
@@ -2787,8 +2792,33 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         out.className = 'text-[11px] text-rose-700';
       }
     }
-    // Lấy tin THẬT từ máy chủ Python; trả về {ok, usable, error}
+    // v6.22: dừng khảo sát. Hủy kết nối, báo máy chủ ngừng cào (API v7) và bỏ toàn bộ kết quả của lần này
+    let surveyRun = null;      // { id, ctrl, cancelled, snapshot }
+    function setSurveyButtons(running) {
+      const stop = document.getElementById('btnStopSurvey');
+      if (stop) { stop.classList.toggle('hidden', !running); stop.classList.toggle('flex', running); }
+    }
+    function stopSurvey() {
+      const run = surveyRun; if (!run || run.cancelled) return;
+      run.cancelled = true;
+      try { run.ctrl && run.ctrl.abort(); } catch (e) {}
+      fetch(`${getBackendUrl()}/api/cancel?job=${encodeURIComponent(run.id)}`).catch(() => {});
+      if (run.snapshot) { currentComps = run.snapshot.cur; backupCompsPool = run.snapshot.pool; }
+      setFloatingStatus('hide'); setSurveyButtons(false);
+      showBackendLog(['Đã dừng khảo sát theo yêu cầu; kết quả lần này không được dùng.']);
+      showToast('Đã dừng khảo sát.');
+      renderMapElements(); recalculateTargetValues(); renderPoolListUI();
+      const btn = document.getElementById('btnManualSurvey');
+      if (btn) { btn.innerHTML = `<i class="ph-bold ph-magnifying-glass-plus text-base text-amber-300"></i> Khảo Sát Giá Thị Trường & Tìm TSSS`; btn.disabled = false; }
+    }
+    // Lấy tin THẬT từ máy chủ Python; trả về {ok, usable, error, cancelled}
     async function fetchRealComps() {
+      const run = surveyRun = { id: 'j' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), ctrl: null, cancelled: false, snapshot: { cur: currentComps.slice(), pool: backupCompsPool.slice() } };
+      setSurveyButtons(true);
+      try { return await fetchRealCompsInner(run); }
+      finally { if (surveyRun === run) { surveyRun = null; setSurveyButtons(false); } }
+    }
+    async function fetchRealCompsInner(run) {
       const base = getBackendUrl();
       const params = new URLSearchParams({
         xa: valStr('targetWard'), duong: cleanStreetName(valStr('targetStreet')),
@@ -2797,21 +2827,23 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         months: '6', tol: '50', live: '1', maxn: '200', limit: '60'
       });
       const dp = splitDistrictProvince(valStr('targetDistrictProvince'));
-      params.set('huyen', dp.huyen); params.set('tinh', dp.tinh);
+      params.set('huyen', dp.huyen); params.set('tinh', dp.tinh); params.set('job', run.id);
       if (targetCoordsKnown) { params.set('lat', String(targetCoords.lat)); params.set('lng', String(targetCoords.lng)); params.set('radius_m', '1000'); }
       setFloatingStatus('survey', 'Đang thu thập tin thật từ các trang rao (có thể mất vài phút)...');
       let data;
       try {
-        const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 8 * 60 * 1000);
+        const ctrl = new AbortController(); run.ctrl = ctrl; const t = setTimeout(() => ctrl.abort(), 8 * 60 * 1000);
         const r = await fetch(`${base}/api/comps?${params.toString()}`, { signal: ctrl.signal }); clearTimeout(t);
         if (!r.ok) throw new Error('HTTP ' + r.status);
         data = await r.json();
+        if (run.cancelled || data.cancelled) return { ok: false, usable: 0, cancelled: true };
         if (!data || !(Number(data.api_version) >= REQUIRED_API_VERSION)) {
           const msg = 'Máy chủ khảo giá đang chạy BẢN CŨ nên trả tin sai khu vực; app KHÔNG dùng kết quả. Tắt cửa sổ máy chủ cũ (Ctrl+C), vào thư mục server của bản LendLandPro mới nhất và chạy lại. Kiểm tra: mở ' + base + '/api/health phải có "api_version":' + REQUIRED_API_VERSION + '.';
           showBackendLog([msg]); showToast('Máy chủ khảo giá là bản cũ: xem hướng dẫn ở ô nhật ký phía trên bảng.');
           return { ok: false, usable: 0, error: msg, outdated: true };
         }
       } catch (err) {
+        if (run.cancelled) return { ok: false, usable: 0, cancelled: true };
         const msg = `Không kết nối được máy chủ khảo giá (${base}): ${err.message}. Hãy chạy app Python (thư mục server, lệnh python -m uvicorn app.main:app --port 8000) rồi thử lại.`;
         showBackendLog([msg]); showToast(msg);
         return { ok: false, usable: 0, error: msg };
@@ -2832,6 +2864,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       if (aiExtractEnabled()) {
         setFloatingStatus('survey', 'Gemini đang trích thông tin từ các tin thật...');
         await enrichCompsWithAi(currentComps.filter(c => c.origin === 'backend').concat(backupCompsPool.filter(c => c.origin === 'backend')));
+        if (run.cancelled) return { ok: false, usable: 0, cancelled: true };
         const notSale = currentComps.filter(c => c.notSale);
         if (notSale.length) { notSale.forEach(c => { c.poolReason = 'not_sale'; }); currentComps = currentComps.filter(c => !c.notSale); backupCompsPool = notSale.concat(backupCompsPool); }
       }
