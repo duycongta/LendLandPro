@@ -288,6 +288,7 @@
           </div>
           <div id="locationStatus" class="hidden text-[11px] leading-snug"></div>
           <div id="geoNote" class="hidden text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 leading-snug"></div>
+          <div id="adminNamesNote" class="hidden text-[11px] leading-snug text-slate-700"></div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 text-xs font-medium bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200">
@@ -1012,8 +1013,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.18";
+    const APP_VERSION = "6.19";
     const APP_CHANGELOG = {
+      "6.19": "Máy chủ mở được link Google Maps rút gọn (maps.app.goo.gl); tìm tin trong bán kính 1 km quanh vị trí thửa đất (tin phường/xã lân cận có tọa độ thật chỉ vào Hàng chờ, kèm khoảng cách, không tính giá); hiện tên cũ / tên mới của xã phường học từ chính dữ liệu tin (cần máy chủ API v4).",
       "6.18": "Vị trí thửa đất: nhập link Google Maps (dài) hoặc tọa độ (độ-phút-giây, thập phân), nút Dùng vị trí hiện tại (GPS điện thoại, hiện sai số), ghim thật trên bản đồ, chạm bản đồ để dời ghim, tự điền Xã/Huyện/Tỉnh từ tọa độ (Google nếu có khóa, OpenStreetMap dự phòng; nền vàng cần xác nhận), báo cáo ghi tọa độ.",
       "6.17": "Tận dụng Gemini (khóa trả phí) ĐÚNG CHỖ: AI chỉ TRÍCH XUẤT thông tin từ tin rao thật/tin dán (mặt tiền, đường vào, loại đất, pháp lý, thôn/đường) kèm kiểm tra chống bịa, không tự tạo tin; điểm tương đồng tính theo tiêu chí minh bạch (rê chuột xem lý do). Nhóm Facebook: nút tìm trong từng nhóm + dán nhiều bài một lần.",
       "6.16": "Thu thập sâu hơn theo đúng phường/xã và huyện (Chợ Tốt theo mã khu vực; Alonhadat/Thuviennhadat theo trang huyện); tự học bảng tên cũ-mới từ dữ liệu tin; mặc định bật hiển thị tin cùng huyện (khác xã) trong Hàng chờ; thu thập tối đa 200 tin/nguồn.",
@@ -2655,11 +2657,12 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       if (c.origin === 'backend') return '<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Tin thật · có link</span>';
       return '<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300">Nhập tay</span>';
     }
-    const MATCH_LABEL = { thon: 'Cùng thôn/xóm', xa: 'Cùng xã/phường', huyen: 'Cùng huyện · KHÁC xã', nhac: 'Tin có nhắc xã/phường', khong: 'Chưa thấy nhắc xã/phường' };
+    const MATCH_LABEL = { near: 'Xã/phường lân cận · gần thửa', thon: 'Cùng thôn/xóm', xa: 'Cùng xã/phường', huyen: 'Cùng huyện · KHÁC xã', nhac: 'Tin có nhắc xã/phường', khong: 'Chưa thấy nhắc xã/phường' };
     function matchBadgeHtml(c) {
       if (!c.matchLevel || !MATCH_LABEL[c.matchLevel]) return '';
       const cls = c.matchLevel === 'thon' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : (c.matchLevel === 'xa' || c.matchLevel === 'nhac') ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-amber-50 text-amber-800 border-amber-300';
-      return `<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold border ${cls}">${MATCH_LABEL[c.matchLevel]}</span>`;
+      const dist = (typeof c.distanceMeters === 'number') ? ` · cách ${c.distanceMeters >= 1000 ? (c.distanceMeters / 1000).toFixed(2) + ' km' : c.distanceMeters + ' m'}` : '';
+      return `<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold border ${cls}">${MATCH_LABEL[c.matchLevel]}${dist}</span>`;
     }
     function qualityBadgesHtml(c) {
       const tag = (txt, cls) => `<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold border ${cls}">${txt}</span>`;
@@ -2731,7 +2734,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         area: Number(it.area_m2) > 0 ? Number(it.area_m2) : null,
         frontage: Number(it.frontage_m) > 0 ? Number(it.frontage_m) : null, depth: null,
         rawPrice: price, link: it.url || '', sourceType: it.source || 'khac', sourceName: it.source_label || it.source || 'Tin rao',
-        distanceMeters: null, description: it.description || '',
+        distanceMeters: (typeof it.distance_m === 'number') ? it.distance_m : null, description: it.description || '',
         lat: typeof it.lat === 'number' ? it.lat : null, lng: typeof it.lng === 'number' ? it.lng : null
       };
     }
@@ -2748,7 +2751,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 6000);
         const r = await fetch(base + '/api/health', { signal: ctrl.signal }); clearTimeout(t);
         const j = await r.json();
-const okVer = j && Number(j.api_version) >= REQUIRED_API_VERSION;
+    const okVer = j && Number(j.api_version) >= REQUIRED_API_VERSION;
         if (j && j.ok && okVer) { out.textContent = `Kết nối được, đúng phiên bản (API v${j.api_version}). Thư mục đang chạy: ${j.folder || '?'}. Nguồn: ${(j.sources || []).join(', ')}`; out.className = 'text-[11px] text-emerald-700'; }
         else if (j && j.ok) { out.textContent = `Kết nối được NHƯNG máy chủ là BẢN CŨ (API v${j.api_version || 1}, cần v${REQUIRED_API_VERSION}). Tắt máy chủ cũ (Ctrl+C) và chạy lại từ thư mục server của bản mới nhất.`; out.className = 'text-[11px] text-rose-700 font-semibold'; }
         else { out.textContent = 'Máy chủ trả lời lạ, kiểm tra địa chỉ.'; out.className = 'text-[11px] text-rose-700'; }
@@ -2768,6 +2771,7 @@ const okVer = j && Number(j.api_version) >= REQUIRED_API_VERSION;
       });
       const dp = splitDistrictProvince(valStr('targetDistrictProvince'));
       params.set('huyen', dp.huyen); params.set('tinh', dp.tinh);
+      if (targetCoordsKnown) { params.set('lat', String(targetCoords.lat)); params.set('lng', String(targetCoords.lng)); params.set('radius_m', '1000'); }
       setFloatingStatus('survey', 'Đang thu thập tin thật từ các trang rao (có thể mất vài phút)...');
       let data;
       try {
@@ -2787,12 +2791,13 @@ const okVer = j && Number(j.api_version) >= REQUIRED_API_VERSION;
       }
       const mapped = (data.items || []).map(mapBackendItem);
       // Bảng chính CHỈ nhận tin cùng xã/phường (thôn trước); tin cùng huyện khác xã (nếu bật mở rộng) chỉ vào Hàng chờ
-      const inWard = mapped.filter(c => c.matchLevel !== 'huyen');
+      const nearOnly = mapped.filter(c => c.matchLevel === 'near');       // khác xã nhưng có tọa độ thật trong bán kính: chỉ Hàng chờ
+      const inWard = mapped.filter(c => c.matchLevel !== 'huyen' && c.matchLevel !== 'near');
       const districtOnly = mapped.filter(c => c.matchLevel === 'huyen');
       // Bảng chính CHỈ nhận tin đạt chuẩn: cùng xã/phường, có ngày đăng rõ, không ngoại lai giá, đủ giá + diện tích
       const usableList = inWard.filter(c => c.eligibleMain && compIsValid(c));
       const unusable = inWard.filter(c => !(c.eligibleMain && compIsValid(c)));
-      const top = usableList.slice(0, 5), rest = usableList.slice(5).concat(unusable).concat(districtOnly);
+      const top = usableList.slice(0, 5), rest = usableList.slice(5).concat(unusable).concat(nearOnly).concat(districtOnly);
       // giữ tin nhập tay đang có; thay các tin lấy từ máy chủ lần trước
       currentComps = currentComps.filter(c => c.origin !== 'backend').concat(top);
       backupCompsPool = rest.concat(backupCompsPool.filter(c => c.origin === 'ai'));
@@ -2810,9 +2815,11 @@ const okVer = j && Number(j.api_version) >= REQUIRED_API_VERSION;
       if (data.extra_district_available > 0 && !districtOnly.length) hints.push(`Có thêm ${data.extra_district_available} tin cùng huyện (khác xã): bật "Hiển thị thêm tin cùng huyện" ở Quản trị để xem trong Hàng chờ.`);
       showBackendLog([
         ...(data.quality ? [`Bộ lọc chất lượng: gộp ${data.quality.merged_duplicates} tin trùng; ${data.quality.outliers} tin ngoại lai đơn giá và ${data.quality.no_date} tin không rõ ngày đăng được đưa vào Hàng chờ (không tính giá); ${data.quality.eligible} tin đạt chuẩn.`] : []),
-        `Máy chủ khảo giá: cùng thôn/xóm ${mc.thon || 0} tin, cùng xã/phường ${mc.xa || 0} tin${districtOnly.length ? ', cùng huyện khác xã ' + districtOnly.length + ' tin (Hàng chờ)' : ''}; đưa ${top.length} tin lên bảng chính.`,
+        `Máy chủ khảo giá: cùng thôn/xóm ${mc.thon || 0} tin, cùng xã/phường ${mc.xa || 0} tin${districtOnly.length ? ', cùng huyện khác xã ' + districtOnly.length + ' tin (Hàng chờ)' : ''}${nearOnly.length ? ', lân cận trong 1 km (có tọa độ) ' + nearOnly.length + ' tin (Hàng chờ, kèm khoảng cách)' : ''}; đưa ${top.length} tin lên bảng chính.`,
+        ...(targetCoordsKnown && !(Number(data.api_version) >= 4) ? ['Máy chủ chưa hỗ trợ tìm theo bán kính (cần API v4): hãy kéo bản mới về và chạy lại.'] : []),
         ...hints, ...(data.fetchlog || []).slice(0, 12), ...(data.errors || []).slice(0, 6).map(e => 'Lỗi nguồn: ' + e)
       ]);
+      showAdminNames();
       renderMapElements(); recalculateTargetValues(); renderPoolListUI();
       setTimeout(() => { fitAllMarkersSafe(); }, 400);
       setFloatingStatus('success', `Đã lấy ${top.length} tin thật lên bảng chính`);
@@ -3110,18 +3117,44 @@ ${items}`;
       setLocationStatus(`Đã xác định: <b>${lat.toFixed(6)}, ${lng.toFixed(6)}</b>${acc} · <a class="underline text-sky-700" target="_blank" rel="noopener" href="${mapsLinkFor(lat.toFixed(6), lng.toFixed(6))}">Mở Google Maps</a>`, 'text-emerald-800');
       renderMapElements();
       if (map) map.setView([lat, lng], 17);
-      if (localStorage.getItem('llp_geo_fill') !== 'false') return fillAddressFromCoords(lat, lng);
+      if (localStorage.getItem('llp_geo_fill') !== 'false') return fillAddressFromCoords(lat, lng).then(g => { showAdminNames(); return g; });
     }
     function resetTargetLocation() {
       targetCoordsKnown = false; targetLocationInfo = null;
       const inp = document.getElementById('targetLocationInput'); if (inp) inp.value = '';
-      ['locationStatus', 'geoNote'].forEach(id => { const e = document.getElementById(id); if (e) { e.classList.add('hidden'); e.innerHTML = ''; } });
+      ['locationStatus', 'geoNote', 'adminNamesNote'].forEach(id => { const e = document.getElementById(id); if (e) { e.classList.add('hidden'); e.innerHTML = ''; } });
       try { toggleMapPick(false); } catch (e) {}
       if (typeof renderMapElements === 'function') renderMapElements();
     }
-    function applyLocationInput() {
+    async function resolveShortViaBackend(url) {
+      try {
+        const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 15000);
+        const r = await fetch(`${getBackendUrl()}/api/resolve?url=${encodeURIComponent(url)}`, { signal: ctrl.signal }); clearTimeout(t);
+        if (!r.ok) return { ok: false, error: 'HTTP ' + r.status };
+        return await r.json();
+      } catch (e) { return { ok: false, error: '' }; }
+    }
+    // Tên cũ / tên mới của xã phường, tra từ dữ liệu tin đã học (không đoán)
+    async function showAdminNames() {
+      const el = document.getElementById('adminNamesNote'); if (!el) return;
+      const ward = valStr('targetWard'); if (!ward) { el.classList.add('hidden'); return; }
+      try {
+        const r = await fetch(`${getBackendUrl()}/api/admin_names?name=${encodeURIComponent(ward)}`);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const j = await r.json(); const parts = [];
+        if ((j.now_named || []).length) parts.push(`tên cũ, nay là: <b>${j.now_named.map(escHtml).join(' / ')}</b>`);
+        if ((j.formerly || []).length) parts.push(`tên mới, trước đây là: <b>${j.formerly.map(escHtml).join(' / ')}</b>`);
+        el.innerHTML = parts.length ? `Xã/phường "${escHtml(ward)}": ${parts.join('; ')} (học từ dữ liệu tin, hãy đối chiếu với sổ).` : `Chưa có dữ liệu đối chiếu tên cũ/mới cho "${escHtml(ward)}".`;
+        el.classList.remove('hidden');
+      } catch (e) { el.classList.add('hidden'); }
+    }
+    async function applyLocationInput() {
       const r = parseLatLng(valStr('targetLocationInput'));
-      if (r.short) { setLocationStatus('Đây là <b>link rút gọn</b> (maps.app.goo.gl): trình duyệt không tự mở rộng được. Hãy mở link đó, sao chép <b>link dài</b> trên thanh địa chỉ, hoặc chạm vào điểm trong Google Maps rồi sao chép <b>tọa độ</b> và dán vào đây.', 'text-amber-800'); return; }
+      if (r.short) {
+        setLocationStatus('Đang mở link rút gọn qua máy chủ khảo giá...', 'text-slate-600');
+        const via = await resolveShortViaBackend(r.url);
+        if (via && via.ok) return setTargetLocation(via.lat, via.lng, { source: 'input', format: 'link rút gọn' + (via.kind === 'center' ? ' (tâm màn hình)' : '') });
+        setLocationStatus('Không mở được link rút gọn' + (via && via.error ? ' (' + escHtml(via.error) + ')' : ' (chưa kết nối máy chủ khảo giá hoặc máy chủ bản cũ)') + '. Hãy mở link, sao chép <b>link dài</b> trên thanh địa chỉ, hoặc chạm vào điểm trong Google Maps rồi sao chép <b>tọa độ</b> và dán vào đây.', 'text-amber-800'); return; }
       if (r.error) { setLocationStatus(escHtml(r.error), 'text-rose-700'); return; }
       return setTargetLocation(r.lat, r.lng, { source: 'input', format: r.format });
     }

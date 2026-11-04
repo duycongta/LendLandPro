@@ -54,7 +54,7 @@ def filter_listings(items, groups, need=1, area=None, tol=0.5, land_type="", fro
     return uniq
 
 
-LEVEL_ORDER = {"thon": 0, "xa": 1, "huyen": 2}
+LEVEL_ORDER = {"thon": 0, "xa": 1, "huyen": 2, "near": 3}
 
 def classify_location(l: Listing, admin: AdminMap, xa: str, huyen: str, tinh: str, thon: str = "", scope: str = "ward"):
     """Cấp khớp địa danh của tin so với tài sản: 'thon' (cùng thôn/xóm) > 'xa' (cùng xã/phường) > 'huyen' (cùng huyện, khác xã; chỉ khi
@@ -104,3 +104,47 @@ def select_comps(items, admin, xa, huyen, tinh, thon="", scope="ward", area=None
         d = abs(l.area_m2 - area) / area if (area and l.area_m2) else 9
         return (LEVEL_ORDER[lvl], st, d)
     return sorted(uniq, key=key)
+
+
+import math
+
+def haversine_m(lat1, lng1, lat2, lng2) -> float:
+    """Khoảng cách đường chim bay (mét) giữa hai tọa độ."""
+    r = 6371000.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    a = math.sin((p2 - p1) / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(math.radians(lng2 - lng1) / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+def listing_coords(l: Listing):
+    """(lat, lng) thật do nguồn cung cấp (hiện chỉ Chợ Tốt), hoặc None. Không suy đoán tọa độ."""
+    raw = l.raw if isinstance(l.raw, dict) else {}
+    try:
+        lat, lng = float(raw.get("latitude")), float(raw.get("longitude"))
+    except (TypeError, ValueError):
+        return None
+    return (lat, lng) if (8 < lat < 24 and 102 < lng < 110) else None
+
+def select_near(items, exclude_urls, admin, tinh, lat, lng, radius_m, area=None, tol=0.5, land_type="", kind=""):
+    """Tin KHÁC xã/phường nhưng có tọa độ thật nằm trong bán kính quanh thửa đất: [(Listing, distance_m)] gần nhất trước.
+    Chỉ để tham khảo (Hàng chờ), không tự đưa vào bảng chính."""
+    allowed = province_aliases(admin, tinh)
+    out = []
+    for l in items:
+        if l.url in exclude_urls:
+            continue
+        c = listing_coords(l)
+        if not c:
+            continue
+        d = haversine_m(lat, lng, c[0], c[1])
+        if d > radius_m:
+            continue
+        if allowed and province_conflict(norm(l.address + " " + l.title), allowed):
+            continue
+        if area and l.area_m2 and not (area * (1 - tol) <= l.area_m2 <= area * (1 + tol)):
+            continue
+        if kind and l.kind != kind:
+            continue
+        if land_type and l.land_type and l.land_type != land_type:
+            continue
+        out.append((l, d))
+    return sorted(out, key=lambda t: t[1])

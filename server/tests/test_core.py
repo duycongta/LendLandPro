@@ -333,9 +333,9 @@ def test_api_version_and_user_scenario(monkeypatch, tmp_path):
     ]
     store.save([Listing("chotot", f"https://x/{n}", t, address=a, price_vnd=pr, area_m2=ar, kind="dat", posted_at=_ago(10)) for n, a, t, pr, ar in rows])
     c = TestClient(m.app)
-    assert c.get("/api/health").json()["api_version"] == 3 and "folder" in c.get("/api/health").json()
+    assert c.get("/api/health").json()["api_version"] == 4 and "folder" in c.get("/api/health").json()
     r = c.get("/api/comps", params={"xa": "Xã Phước Sơn", "huyen": "Huyện Tuy Phước", "tinh": "Tỉnh Bình Định", "thon": "Thôn Xuân Phương", "area": 751.4, "kind": "dat", "tol": 50}).json()
-    assert r["api_version"] == 3
+    assert r["api_version"] == 4
     assert [i["url"].split("/")[-1] for i in r["items"]] == ["6"] and r["items"][0]["match_level"] == "thon"
 
 
@@ -408,3 +408,77 @@ def test_chotot_province_filter_and_codes(monkeypatch):
     assert wards == {(704301, 7340)} and areas == {704301}
     calls.clear(); got = c.search_codes(7043, 704301, 7340, limit=20)
     assert calls[0]["region_v2"] == 7043 and calls[0]["area_v2"] == 704301 and calls[0]["ward"] == 7340 and len(got) == 1
+
+
+def test_geo_parse_and_ssrf():
+    from app import geo
+    assert geo.parse_maps_url("https://www.google.com/maps/place/X/@13.80,109.20,17z/data=!3d13.795063!4d109.190325") == (13.795063, 109.190325, "pin")
+    assert geo.parse_maps_url("https://www.google.com/maps/@13.8,109.2,17z")[2] == "center"
+    assert geo.parse_maps_url("https://www.google.com/maps?q=13.7,109.1")[2] == "query"
+    assert geo.parse_maps_url("https://www.google.com/maps") is None
+    assert geo.host_ok("https://maps.app.goo.gl/abc") and geo.host_ok("https://www.google.com.vn/maps/x")
+    for bad in ("http://maps.app.goo.gl/x", "https://evil.com/maps", "https://maps.app.goo.gl.evil.com/x", "https://127.0.0.1/", "https://169.254.169.254/",
+                "https://user@maps.app.goo.gl/x", "https://maps.app.goo.gl:8080/x", "file:///etc/passwd"):
+        assert not geo.host_ok(bad), bad
+
+def test_resolve_follows_only_google(monkeypatch):
+    from app import geo
+    class R:
+        def __init__(s, code, loc=None): s.status_code = code; s.headers = {"Location": loc} if loc else {}
+        def close(s): pass
+    class S:
+        def __init__(s, hops): s.hops = hops; s.calls = []
+        def get(s, url, **kw):
+            assert kw.get("allow_redirects") is False
+            s.calls.append(url); return s.hops[url]
+    ok = S({"https://maps.app.goo.gl/a": R(302, "https://www.google.com/maps/place/X/@13.8,109.2,17z/data=!3d13.795063!4d109.190325")})
+    final, err = geo.resolve_short_url("https://maps.app.goo.gl/a", session=ok)
+    assert err is None and geo.parse_maps_url(final)[:2] == (13.795063, 109.190325)
+    evil = S({"https://maps.app.goo.gl/a": R(302, "http://169.254.169.254/latest")})
+    final, err = geo.resolve_short_url("https://maps.app.goo.gl/a", session=evil)
+    assert err and evil.calls == ["https://maps.app.goo.gl/a"]          # không gọi tới địa chỉ nội bộ
+
+def test_api_resolve_endpoint():
+    from fastapi.testclient import TestClient
+    import app.main as m
+    c = TestClient(m.app)
+    assert c.get("/api/resolve", params={"url": "https://evil.com/x"}).json()["ok"] is False
+    j = c.get("/api/resolve", params={"url": "https://www.google.com/maps/@13.8,109.2,17z/data=!3d13.795063!4d109.190325"}).json()
+    assert j["ok"] and j["lat"] == 13.795063 and j["kind"] == "pin"
+    assert c.get("/api/resolve", params={"url": "https://www.google.com/maps/@1.0,1.0,17z"}).json()["ok"] is False      # ngoài Việt Nam
+
+def test_near_ward_distance_pool(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+    import app.main as m, app.store as store
+    monkeypatch.setattr(store, "DB", tmp_path / "n.sqlite")
+    def mkl(n, addr, lat=None, lng=None, price=1e9, area=100):
+        raw = {"latitude": lat, "longitude": lng} if lat else {}
+        return Listing("chotot", f"https://x/{n}", f"Bán đất lô {n} khu {n}", address=addr, price_vnd=price, area_m2=area, kind="dat", posted_at=_ago(10), raw=raw)
+    store.save([
+        mkl(1, "Xã Phước Sơn, Huyện Tuy Phước, Bình Định", 13.7951, 109.1904),                        # cùng xã, có tọa độ
+        mkl(2, "Xã Phước Hòa, Huyện Tuy Phước, Bình Định", 13.7990, 109.1904),                        # xã khác, ~430 m -> near
+        mkl(3, "Xã Phước Hòa, Huyện Tuy Phước, Bình Định", 13.8300, 109.1904),                        # xã khác, ~3.9 km -> loại
+        mkl(4, "Xã Phước Hòa, Huyện Tuy Phước, Bình Định"),                                           # không có tọa độ -> loại
+        mkl(5, "Xã Phước Hòa, Huyện Phù Cát, Quảng Ngãi", 13.7960, 109.1905),                         # tỉnh khác -> loại
+    ])
+    c = TestClient(m.app)
+    p = {"xa": "Xã Phước Sơn", "huyen": "Huyện Tuy Phước", "tinh": "Bình Định", "area": 100, "kind": "dat", "lat": 13.795063, "lng": 109.190325, "radius_m": 1000}
+    r = c.get("/api/comps", params=p).json()
+    by = {i["url"].split("/")[-1]: i for i in r["items"]}
+    assert set(by) == {"1", "2"}
+    assert by["2"]["match_level"] == "near" and by["2"]["eligible_main"] is False and by["2"]["pool_reason"] == "near_ward" and 300 < by["2"]["distance_m"] < 600
+    assert by["1"]["match_level"] == "xa" and by["1"]["distance_m"] < 50 and r["match_counts"]["near"] == 1
+    assert r["stats"]["n_used"] == 1                                       # tin near không tính giá
+    r2 = c.get("/api/comps", params={k: v for k, v in p.items() if k not in ("lat", "lng")}).json()
+    assert {i["url"].split("/")[-1] for i in r2["items"]} == {"1"} and r2["items"][0]["distance_m"] is None
+
+def test_admin_names_from_data(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+    import app.main as m, app.store as store
+    monkeypatch.setattr(store, "DB", tmp_path / "a.sqlite")
+    store.save([Listing("chotot", "https://x/1", "Bán đất", address="a", price_vnd=1e9, area_m2=100, kind="dat", posted_at=_ago(5),
+                        raw={"ward_name": "Phường Nhơn Bình", "ward_name_v3": "Phường Quy Nhơn Nam"})])
+    c = TestClient(m.app)
+    assert c.get("/api/admin_names", params={"name": "Nhơn Bình"}).json()["now_named"] == ["Phường Quy Nhơn Nam"]
+    assert c.get("/api/admin_names", params={"name": "Phường Quy Nhơn Nam"}).json()["formerly"] == ["Phường Nhơn Bình"]
+    j = c.get("/api/admin_names", params={"name": "Xã Không Có"}).json(); assert j["now_named"] == [] and j["formerly"] == []

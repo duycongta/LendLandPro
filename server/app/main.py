@@ -7,7 +7,9 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import store
-from .search import build_keywords, location_terms, filter_listings, same_street, rank, select_comps
+from .search import build_keywords, location_terms, filter_listings, same_street, rank, select_comps, select_near, listing_coords, haversine_m
+from . import geo
+from .textnorm import core_name
 from .learn import learn_pairs
 from .quality import dedupe_semantic, recency_tier, price_bounds, source_weight, source_weights, weighted_median
 from .sources import SOURCES, parse_manual_text
@@ -204,7 +206,7 @@ def listing_to_api(l):
         "lat": lat if ok_coord else None, "lng": lng if ok_coord else None,
     }
 
-API_VERSION = 3     # 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
+API_VERSION = 4     # 4: thêm /api/resolve, /api/admin_names, lat/lng/radius_m + distance_m. 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
 
 @app.get("/api/health")
 def api_health():
@@ -213,7 +215,8 @@ def api_health():
 @app.get("/api/comps")
 def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", tinh: str = "Gia Lai", area: float = 0, kind: str = "",
               land_type: str = "", months: int = 6, tol: float = 50, discount: float = 10, scope: str = "ward",
-              live: int = 0, maxn: int = 100, limit: int = 60, src: str = ""):
+              live: int = 0, maxn: int = 100, limit: int = 60, src: str = "",
+              lat: float = 0, lng: float = 0, radius_m: float = 1000):
     """Tin so sánh THẬT (có link), đã qua các bộ lọc chất lượng:
     - bắt buộc cùng xã/phường và không thuộc tỉnh khác; cùng thôn/xóm, cùng đường xếp trước (scope=district: thêm tin cùng huyện, khác xã);
     - gộp tin trùng (cùng SĐT+diện tích+giá, hoặc nội dung giống nhau), giữ bản từ nguồn tin cậy hơn;
@@ -238,31 +241,41 @@ def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", ti
     extra_district = sum(1 for _, lv, _ in deduped if lv == "huyen")
     if scope != "district":
         deduped = [t for t in deduped if t[1] != "huyen"]
+    have_pt = bool(lat and lng and geo.in_vietnam(lat, lng))
+    near_pairs = []
+    if have_pt:          # tin khác xã nhưng có tọa độ thật trong bán kính -> chỉ vào Hàng chờ, kèm khoảng cách
+        taken = {l.url for l, _, _ in deduped}
+        near_pairs = [(l, "near", {"dup_count": 0, "also_on": []}) for l, _ in
+                      select_near(rec, taken, admin_eff, tinh, lat, lng, min(max(radius_m, 100), 5000), area or None, tol / 100, land_type, kind)]
+        deduped = deduped + near_pairs
     # ngoại lai về đơn giá: tính trên tin cùng xã/phường có ngày rõ
-    base = [l.price_per_m2 for l, lv, _ in deduped if lv != "huyen" and recency_tier(l) <= 2 and l.price_per_m2]
+    base = [l.price_per_m2 for l, lv, _ in deduped if lv not in ("huyen", "near") and recency_tier(l) <= 2 and l.price_per_m2]
     bounds = price_bounds(base)
     rows = []
     for l, lv, info in deduped:
         tier = recency_tier(l); ppm = l.price_per_m2
         outlier = bool(bounds and ppm and (ppm < bounds[0] or ppm > bounds[1]))
-        reason = ("district" if lv == "huyen" else "no_date" if tier == 3 else "outlier" if outlier else
+        reason = ("near_ward" if lv == "near" else "district" if lv == "huyen" else "no_date" if tier == 3 else "outlier" if outlier else
                   "incomplete" if not (l.price_vnd and l.area_m2) else "")
         rows.append((l, lv, info, tier, outlier, reason, source_weight(l.source, weights)))
     def key(r):
         l, lv, info, tier, outlier, reason, w = r
         st_ = 0 if (duong and same_street(l, duong)) else 1
         d = abs(l.area_m2 - area) / area if (area and l.area_m2) else 9
-        return ({"thon": 0, "xa": 1, "huyen": 2}[lv], 0 if reason == "" else 1, st_, tier, -w, d)
+        return ({"thon": 0, "xa": 1, "huyen": 2, "near": 3}[lv], 0 if reason == "" else 1, st_, tier, -w, d)
     rows.sort(key=key)
     ok_rows = [r for r in rows if r[5] == ""]
     res = summarize([r[0] for r in ok_rows], discount=discount / 100)
     wmed = weighted_median([(r[0].price_per_m2, r[6]) for r in ok_rows])
-    counts = {lv: sum(1 for r in rows if r[1] == lv) for lv in ("thon", "xa", "huyen")}
+    counts = {lv: sum(1 for r in rows if r[1] == lv) for lv in ("thon", "xa", "huyen", "near")}
     out = []
     for l, lv, info, tier, outlier, reason, w in rows[:limit]:
         d = listing_to_api(l)
         d.update(match_level=lv, weight=w, outlier=outlier, date_tier=tier, dup_count=info["dup_count"], also_on=info["also_on"],
-                 eligible_main=(reason == ""), pool_reason=reason)
+                 eligible_main=(reason == ""), pool_reason=reason, distance_m=None)
+        c = listing_coords(l) if have_pt else None
+        if c:
+            d["distance_m"] = round(haversine_m(lat, lng, c[0], c[1]))
         out.append(d)
     return {
         "api_version": API_VERSION,
@@ -279,3 +292,36 @@ def _within(l, months):
     from .quality import days_old
     n = days_old(l)
     return n is not None and (not months or n <= 30 * months)
+
+
+@app.get("/api/resolve")
+def api_resolve(url: str):
+    """Mở link Google Maps rút gọn (maps.app.goo.gl) và trả về tọa độ. Chỉ chấp nhận tên miền Google (chống SSRF)."""
+    if not geo.host_ok(url):
+        return {"ok": False, "error": "Chỉ hỗ trợ link https của Google Maps."}
+    try:
+        final, err = geo.resolve_short_url(url)
+    except Exception as e:
+        return {"ok": False, "error": f"Không mở được link: {e}"}
+    p = geo.parse_maps_url(final)
+    if err or not p:
+        return {"ok": False, "error": err or "Link không chứa tọa độ."}
+    lat, lng, kind = p
+    if not geo.in_vietnam(lat, lng):
+        return {"ok": False, "error": f"Tọa độ {lat}, {lng} nằm ngoài Việt Nam."}
+    return {"ok": True, "lat": lat, "lng": lng, "kind": kind, "final_url": final}
+
+@app.get("/api/admin_names")
+def api_admin_names(name: str):
+    """Tên cũ / tên mới của một xã, phường, huyện, đã học từ chính các tin (Chợ Tốt, Alonhadat ghi cả hai tên).
+    Chỉ trả những gì có trong dữ liệu; không có thì trả rỗng (không đoán)."""
+    c = core_name(name)
+    if not c:
+        return {"ok": True, "now_named": [], "formerly": []}
+    now_named, formerly = set(), set()      # now_named: tên mới của đơn vị mang tên cũ này; formerly: tên cũ của đơn vị mang tên mới này
+    for old, new in learn_pairs(store.load_all()):
+        if core_name(old) == c:
+            now_named.add(new)
+        if core_name(new) == c:
+            formerly.add(old)
+    return {"ok": True, "now_named": sorted(now_named), "formerly": sorted(formerly)}
