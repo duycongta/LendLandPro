@@ -1013,8 +1013,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.19";
+    const APP_VERSION = "6.20";
     const APP_CHANGELOG = {
+      "6.20": "Sau khi AI đọc ảnh GCN, KHÔNG tự tìm tin nữa: hiện hộp xác nhận \"Đã đọc được thông tin tài sản từ ảnh, kiểm tra lại và xác nhận tìm tin TSSS\" (Xác nhận / Trở lại). Tự điền địa danh từ tọa độ: nếu trình duyệt bị chặn OpenStreetMap thì thử qua máy chủ khảo giá (API v5) và báo lỗi rõ hơn.",
       "6.19": "Máy chủ mở được link Google Maps rút gọn (maps.app.goo.gl); tìm tin trong bán kính 1 km quanh vị trí thửa đất (tin phường/xã lân cận có tọa độ thật chỉ vào Hàng chờ, kèm khoảng cách, không tính giá); hiện tên cũ / tên mới của xã phường học từ chính dữ liệu tin (cần máy chủ API v4).",
       "6.18": "Vị trí thửa đất: nhập link Google Maps (dài) hoặc tọa độ (độ-phút-giây, thập phân), nút Dùng vị trí hiện tại (GPS điện thoại, hiện sai số), ghim thật trên bản đồ, chạm bản đồ để dời ghim, tự điền Xã/Huyện/Tỉnh từ tọa độ (Google nếu có khóa, OpenStreetMap dự phòng; nền vàng cần xác nhận), báo cáo ghi tọa độ.",
       "6.17": "Tận dụng Gemini (khóa trả phí) ĐÚNG CHỖ: AI chỉ TRÍCH XUẤT thông tin từ tin rao thật/tin dán (mặt tiền, đường vào, loại đất, pháp lý, thôn/đường) kèm kiểm tra chống bịa, không tự tạo tin; điểm tương đồng tính theo tiêu chí minh bạch (rê chuột xem lý do). Nhóm Facebook: nút tìm trong từng nhóm + dán nhiều bài một lần.",
@@ -2200,7 +2201,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
         }
 
         if (parsedData) {
-          applyParsedData(parsedData);
+          applyParsedData(parsedData, { confirmSurvey: true });
           statusBox.className = "mt-3 p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs flex items-start gap-2.5 shadow-sm";
           statusBox.innerHTML = `
             <i class="ph-fill ph-check-circle text-emerald-600 text-xl flex-shrink-0"></i>
@@ -2255,7 +2256,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
       onPlanningNoticeInput();
     }
 
-    function applyParsedData(data) {
+    function applyParsedData(data, opts) {
       if (data.owner) {
         window.currentOwnerName = data.owner;
         document.getElementById('targetOwnerNameInput').value = data.owner;
@@ -2293,7 +2294,30 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
 
       renderMapElements();
       recalculateTargetValues();
+      if (opts && opts.confirmSurvey) { showSurveyConfirm(); return; }     // v6.20: chờ người dùng kiểm tra thông tin đọc từ ảnh rồi mới tìm tin
       generateSmartCompsForArea(data);
+    }
+
+    // Hộp xác nhận nổi sau khi đọc ảnh: Xác nhận -> chạy khảo sát bằng giá trị hiện trong các ô; Trở lại -> đóng, giữ nguyên thông tin
+    function showSurveyConfirm() {
+      let box = document.getElementById('surveyConfirmBox');
+      if (!box) {
+        box = document.createElement('div'); box.id = 'surveyConfirmBox';
+        box.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 px-4';
+        box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true');
+        box.innerHTML = `<div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-5">
+          <div class="flex items-start gap-3"><i class="ph-fill ph-check-circle text-emerald-600 text-3xl flex-shrink-0"></i>
+          <div><div class="font-bold text-slate-900 text-sm">Đã đọc được thông tin tài sản từ ảnh tải lên</div>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">Hãy kiểm tra lại các thông tin vừa được điền (xã/phường, huyện/tỉnh, diện tích...), sửa nếu cần, rồi xác nhận để bắt đầu tìm tin TSSS.</p></div></div>
+          <div class="mt-4 flex justify-end gap-2">
+            <button type="button" id="surveyConfirmBack" class="px-4 py-2 rounded-lg text-xs font-semibold border border-slate-300 bg-white hover:bg-slate-100 text-slate-700">Trở lại</button>
+            <button type="button" id="surveyConfirmOk" class="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white">Xác nhận tìm tin TSSS</button>
+          </div></div>`;
+        document.body.appendChild(box);
+        box.querySelector('#surveyConfirmBack').onclick = () => { box.classList.add('hidden'); };
+        box.querySelector('#surveyConfirmOk').onclick = () => { box.classList.add('hidden'); triggerManualSurvey(); };
+      }
+      box.classList.remove('hidden');
     }
 
     async function generateSmartCompsForArea(target) {
@@ -3204,6 +3228,13 @@ ${items}`;
       return { ward: comp.administrative_area_level_3 || comp.sublocality_level_1 || comp.sublocality || '', district: comp.administrative_area_level_2 || '',
                province: comp.administrative_area_level_1 || '', source: 'Google' };
     }
+    async function reverseGeocodeBackend(lat, lng) {
+      const r = await fetch(`${getBackendUrl()}/api/reverse?lat=${lat}&lng=${lng}`);
+      if (!r.ok) throw new Error('HTTP ' + r.status + (r.status === 404 ? ' (máy chủ bản cũ, cần API v5)' : ''));
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || 'lỗi');
+      return { ward: j.ward || '', district: j.district || '', province: j.province || '', source: j.source || 'OpenStreetMap' };
+    }
     async function reverseGeocodeOSM(lat, lng) {
       const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=vi`);
       if (!r.ok) throw new Error('OpenStreetMap HTTP ' + r.status);
@@ -3216,8 +3247,9 @@ ${items}`;
       let g = null; const errs = [];
       const key = (localStorage.getItem('llp_gmaps_key') || '').trim();
       if (key) { try { g = await reverseGeocodeGoogle(lat, lng, key); } catch (e) { errs.push(e.message); } }
-      if (!g) { try { g = await reverseGeocodeOSM(lat, lng); } catch (e) { errs.push(e.message); } }
-      if (!g) { showNote('Không tra được địa danh từ tọa độ (' + errs.join('; ') + '). Hãy nhập Xã/Phường, Huyện, Tỉnh bằng tay.'); return null; }
+      if (!g) { try { g = await reverseGeocodeOSM(lat, lng); } catch (e) { errs.push('OpenStreetMap: ' + e.message); } }
+      if (!g) { try { g = await reverseGeocodeBackend(lat, lng); } catch (e) { errs.push('Máy chủ khảo giá: ' + e.message); } }
+      if (!g) { showNote('Không tra được địa danh từ tọa độ (' + errs.join('; ').replace(/Failed to fetch/g, 'không kết nối được, có thể bị mạng/trình chặn quảng cáo chặn') + '). Hãy nhập Xã/Phường, Huyện, Tỉnh bằng tay.'); return null; }
       const msgs = [];
       const tryFill = (id, value, label) => {
         if (!value) return; const el = document.getElementById(id); if (!el) return;

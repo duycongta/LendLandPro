@@ -333,9 +333,9 @@ def test_api_version_and_user_scenario(monkeypatch, tmp_path):
     ]
     store.save([Listing("chotot", f"https://x/{n}", t, address=a, price_vnd=pr, area_m2=ar, kind="dat", posted_at=_ago(10)) for n, a, t, pr, ar in rows])
     c = TestClient(m.app)
-    assert c.get("/api/health").json()["api_version"] == 4 and "folder" in c.get("/api/health").json()
+    assert c.get("/api/health").json()["api_version"] == 5 and "folder" in c.get("/api/health").json()
     r = c.get("/api/comps", params={"xa": "Xã Phước Sơn", "huyen": "Huyện Tuy Phước", "tinh": "Tỉnh Bình Định", "thon": "Thôn Xuân Phương", "area": 751.4, "kind": "dat", "tol": 50}).json()
-    assert r["api_version"] == 4
+    assert r["api_version"] == 5
     assert [i["url"].split("/")[-1] for i in r["items"]] == ["6"] and r["items"][0]["match_level"] == "thon"
 
 
@@ -482,3 +482,16 @@ def test_admin_names_from_data(monkeypatch, tmp_path):
     assert c.get("/api/admin_names", params={"name": "Nhơn Bình"}).json()["now_named"] == ["Phường Quy Nhơn Nam"]
     assert c.get("/api/admin_names", params={"name": "Phường Quy Nhơn Nam"}).json()["formerly"] == ["Phường Nhơn Bình"]
     j = c.get("/api/admin_names", params={"name": "Xã Không Có"}).json(); assert j["now_named"] == [] and j["formerly"] == []
+
+
+def test_api_reverse(monkeypatch):
+    from fastapi.testclient import TestClient
+    import app.main as m
+    monkeypatch.setattr(m, "_nominatim_reverse", lambda lat, lng: {"suburb": "Phường Nhơn Bình", "county": "Thị xã An Nhơn", "state": "Bình Định"})
+    c = TestClient(m.app)
+    j = c.get("/api/reverse", params={"lat": 13.795, "lng": 109.19}).json()
+    assert j["ok"] and j["ward"] == "Phường Nhơn Bình" and j["district"] == "Thị xã An Nhơn" and j["province"] == "Bình Định"
+    assert c.get("/api/reverse", params={"lat": 1, "lng": 1}).json()["ok"] is False
+    def boom(lat, lng): raise RuntimeError("mạng")
+    monkeypatch.setattr(m, "_nominatim_reverse", boom)
+    assert c.get("/api/reverse", params={"lat": 13.795, "lng": 109.19}).json()["ok"] is False
