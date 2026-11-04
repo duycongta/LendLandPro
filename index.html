@@ -273,6 +273,23 @@
           </div>
         </div>
 
+        <!-- v6.18: VỊ TRÍ THỬA ĐẤT (link Google Maps / tọa độ / GPS) -->
+        <div class="border border-sky-200 bg-sky-50/40 rounded-xl p-3.5 sm:p-4 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5 font-bold text-slate-800 text-[11px] sm:text-xs uppercase tracking-wide"><i class="ph-bold ph-map-pin text-sky-600 text-base"></i> Vị trí thửa đất</div>
+            <label class="flex items-center gap-1.5 text-[11px] text-slate-600"><input type="checkbox" id="chkGeoFill" checked onchange="try{localStorage.setItem('llp_geo_fill', this.checked ? 'true' : 'false')}catch(e){}"> Tự điền Xã/Huyện/Tỉnh từ tọa độ</label>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input type="text" id="targetLocationInput" placeholder="Dán link Google Maps hoặc tọa độ, ví dụ: 13°47'42.2&quot;N 109°11'25.2&quot;E hoặc 13.795063, 109.190325" class="flex-grow border border-slate-300 rounded-lg p-2.5 text-xs bg-white" onkeydown="if(event.key==='Enter'){applyLocationInput();}">
+            <div class="flex gap-2">
+              <button onclick="applyLocationInput()" type="button" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs px-3 py-2 rounded-lg whitespace-nowrap">Xác định</button>
+              <button onclick="useCurrentLocation()" type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-1"><i class="ph-bold ph-crosshair"></i> Vị trí hiện tại</button>
+            </div>
+          </div>
+          <div id="locationStatus" class="hidden text-[11px] leading-snug"></div>
+          <div id="geoNote" class="hidden text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 leading-snug"></div>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 text-xs font-medium bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200">
           <div>
             <label class="block text-slate-700 font-semibold mb-1">Tổng diện tích (m²) *</label>
@@ -497,6 +514,7 @@
           <button onclick="openInGoogleMapsTab()" type="button" class="text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded font-bold flex items-center gap-1 shadow-sm cursor-pointer" title="Mở tọa độ tài sản trên Google Maps tab mới">
             <i class="ph-bold ph-arrow-square-out text-sm"></i> Mở Google Maps
           </button>
+          <button id="btnMapPick" onclick="toggleMapPick()" type="button" class="text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 py-1 rounded font-medium flex items-center gap-1"><i class="ph-bold ph-map-pin"></i> Đặt ghim</button>
           <button onclick="zoomToTarget()" type="button" class="text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 sm:px-2.5 py-1 rounded font-medium flex items-center gap-1 shadow-sm cursor-pointer">
             <i class="ph-bold ph-crosshair"></i> Zoom Thửa
           </button>
@@ -770,6 +788,11 @@
             <input type="text" id="backendUrlInput" placeholder="http://localhost:8000" class="flex-grow border border-slate-300 rounded-lg p-2 font-mono text-[11px] bg-white">
             <button onclick="testBackendConnection()" type="button" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 rounded-lg">Kiểm tra</button>
           </div>
+          <div class="border-t border-emerald-200 pt-2 space-y-1">
+            <label class="block text-[11px] font-semibold text-slate-700">Khóa Google Maps (Geocoding API) để tự điền địa danh từ tọa độ - tùy chọn:</label>
+            <input type="password" id="gmapsKeyInput" placeholder="Để trống = dùng OpenStreetMap miễn phí" class="w-full border border-slate-300 rounded-lg p-2 font-mono text-[11px] bg-white">
+            <div class="text-[10px] text-slate-500 leading-snug">Nên giới hạn khóa chỉ cho Geocoding API và chỉ cho trang https://duycongta.github.io/* trong Google Cloud, và đặt cảnh báo ngân sách. Tọa độ (không kèm thông tin khách hàng) được gửi tới Google hoặc OpenStreetMap để tra địa danh.</div>
+          </div>
           <label class="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" id="chkAiEnrich" checked> Dùng AI (Gemini) trích thông tin từ tin rao (mặt tiền, đường vào, loại đất, pháp lý, thôn/đường) và chấm tương đồng</label>
           <label class="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" id="chkAlwaysAi"> Luôn chạy thêm AI gợi ý (tin chưa kiểm chứng) sau khi lấy tin thật</label>
           <label class="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" id="chkExpandDistrict"> Hiển thị thêm tin cùng huyện (khác xã) trong Hàng chờ để tham khảo; không bao giờ tự đưa lên bảng chính hay tính giá</label>
@@ -867,6 +890,10 @@
             <td id="pRoadWidth">--</td>
             <td class="font-semibold bg-slate-50">Công trình trên đất (CTXD):</td>
             <td id="pBuilding">--</td>
+          </tr>
+          <tr>
+            <td class="font-semibold bg-slate-50">Vị trí thửa đất (tọa độ):</td>
+            <td colspan="3" id="pLocation">--</td>
           </tr>
         </table>
       </div>
@@ -985,8 +1012,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.17";
+    const APP_VERSION = "6.18";
     const APP_CHANGELOG = {
+      "6.18": "Vị trí thửa đất: nhập link Google Maps (dài) hoặc tọa độ (độ-phút-giây, thập phân), nút Dùng vị trí hiện tại (GPS điện thoại, hiện sai số), ghim thật trên bản đồ, chạm bản đồ để dời ghim, tự điền Xã/Huyện/Tỉnh từ tọa độ (Google nếu có khóa, OpenStreetMap dự phòng; nền vàng cần xác nhận), báo cáo ghi tọa độ.",
       "6.17": "Tận dụng Gemini (khóa trả phí) ĐÚNG CHỖ: AI chỉ TRÍCH XUẤT thông tin từ tin rao thật/tin dán (mặt tiền, đường vào, loại đất, pháp lý, thôn/đường) kèm kiểm tra chống bịa, không tự tạo tin; điểm tương đồng tính theo tiêu chí minh bạch (rê chuột xem lý do). Nhóm Facebook: nút tìm trong từng nhóm + dán nhiều bài một lần.",
       "6.16": "Thu thập sâu hơn theo đúng phường/xã và huyện (Chợ Tốt theo mã khu vực; Alonhadat/Thuviennhadat theo trang huyện); tự học bảng tên cũ-mới từ dữ liệu tin; mặc định bật hiển thị tin cùng huyện (khác xã) trong Hàng chờ; thu thập tối đa 200 tin/nguồn.",
       "6.15": "Kiểm tra phiên bản máy chủ khảo giá: nếu đang chạy bản cũ (thiếu bộ lọc địa danh) thì KHÔNG dùng kết quả và báo rõ cách cập nhật; nút Kiểm tra hiện phiên bản API và thư mục đang chạy.",
@@ -1451,6 +1479,7 @@
         if (elKey) elKey.value = masterKey;
         const elBe = document.getElementById('backendUrlInput'); if (elBe) elBe.value = getBackendUrl();
         const elAi = document.getElementById('chkAlwaysAi'); if (elAi) elAi.checked = localStorage.getItem('llp_always_ai') === 'true';
+        const elGk = document.getElementById('gmapsKeyInput'); if (elGk) elGk.value = localStorage.getItem('llp_gmaps_key') || '';
         const elAe = document.getElementById('chkAiEnrich'); if (elAe) elAe.checked = localStorage.getItem('llp_ai_extract') !== 'false';
         const elEx = document.getElementById('chkExpandDistrict'); if (elEx) elEx.checked = localStorage.getItem('llp_expand_district') !== 'false';
 
@@ -1489,6 +1518,7 @@
         localStorage.setItem('llp_always_ai', document.getElementById('chkAlwaysAi').checked ? 'true' : 'false');
         localStorage.setItem('llp_expand_district', document.getElementById('chkExpandDistrict').checked ? 'true' : 'false');
         localStorage.setItem('llp_ai_extract', document.getElementById('chkAiEnrich').checked ? 'true' : 'false');
+        localStorage.setItem('llp_gmaps_key', valStr('gmapsKeyInput'));
       } catch (e) {}
 
       const mode = localStorage.getItem('gemini_api_mode') || 'free';
@@ -1705,6 +1735,7 @@
       document.getElementById('pShape').innerText = shapeVal;
       document.getElementById('pRoadWidth').innerText = roadVal;
       document.getElementById('pBuilding').innerText = bldVal;
+      { const pl = document.getElementById('pLocation'); if (pl) pl.textContent = locationReportText(); }
       syncAlertsToReport(computePlanningDeduction(resA, agriA));
 
       // 2. Đồng bộ Mục II: AI Overview & Khuyến nghị
@@ -1910,6 +1941,7 @@
           maxZoom: 19, attribution: 'OpenStreetMap'
         });
         satLayer.addTo(map);
+        map.on('click', e => { if (mapPickMode) { setTargetLocation(e.latlng.lat, e.latlng.lng, { source: 'map' }); toggleMapPick(false); } });
         renderMapElements();
       } catch (e) {
         console.warn("Leaflet Map init skipped:", e);
@@ -3006,6 +3038,167 @@ ${items}`;
       });
     }
 
+    // =========================================================================
+    // v6.18: VỊ TRÍ THỬA ĐẤT - đọc link/tọa độ Google Maps, GPS, ghim bản đồ, tự điền địa danh
+    // =========================================================================
+    let mapPickMode = false;
+    let targetLocationInfo = null;      // {source, accuracy}
+    let geoWatchState = null;
+
+    // Việt Nam kể cả hải đảo
+    function inVietnam(lat, lng) { return lat >= 6 && lat <= 24 && lng >= 102 && lng <= 118; }
+    function dmsToDeg(d, m, sec, hemi) {
+      let v = parseFloat(d) + (m ? parseFloat(m) / 60 : 0) + (sec ? parseFloat(String(sec).replace(',', '.')) / 3600 : 0);
+      return /[SsWw]/.test(hemi) ? -v : v;
+    }
+    // Đọc một chuỗi người dùng dán: tọa độ độ-phút-giây, thập phân, link Google Maps dài; link rút gọn được nhận diện để báo riêng
+    function parseLatLng(input) {
+      const t = String(input || '').trim();
+      if (!t) return { error: 'Chưa nhập gì.' };
+      const fail = (m) => ({ error: m });
+      const ok = (lat, lng, format) => {
+        lat = Math.round(lat * 1e6) / 1e6; lng = Math.round(lng * 1e6) / 1e6;
+        return inVietnam(lat, lng) ? { lat, lng, format } : fail(`Tọa độ ${lat}, ${lng} nằm ngoài Việt Nam, hãy kiểm tra lại (có thể bị đảo vị trí).`);
+      };
+      if (/^https?:\/\//i.test(t)) {
+        let u; try { u = new URL(t); } catch (e) { return fail('Đường link không hợp lệ.'); }
+        const host = u.hostname.toLowerCase();
+        if (host === 'maps.app.goo.gl' || host === 'goo.gl') return { short: true, url: t };
+        if (!/(^|\.)google\.[a-z.]+$/.test(host) || !/maps/.test(u.pathname + u.hostname)) return fail('Đây không phải link Google Maps.');
+        const dec = decodeURIComponent(t);
+        let m = [...dec.matchAll(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g)].pop();          // vị trí ghim chính xác
+        if (m) return ok(parseFloat(m[1]), parseFloat(m[2]), 'link Google Maps (ghim)');
+        m = /[?&](?:q|ll|query|center|destination)=(?:loc:)?(-?\d+\.\d+)[,+ ]\s*(-?\d+\.\d+)/.exec(dec);
+        if (m) return ok(parseFloat(m[1]), parseFloat(m[2]), 'link Google Maps');
+        m = /@(-?\d+\.\d+),(-?\d+\.\d+)/.exec(dec);                                       // tâm màn hình (kém chính xác hơn)
+        if (m) return ok(parseFloat(m[1]), parseFloat(m[2]), 'link Google Maps (tâm màn hình)');
+        return fail('Link này không chứa tọa độ. Hãy mở link trong trình duyệt rồi sao chép link dài, hoặc chạm vào điểm trong Google Maps và sao chép tọa độ.');
+      }
+      // độ-phút-giây: 13°47'42.2"N 109°11'25.2"E (hai nhóm, N/S là vĩ độ, E/W là kinh độ, thứ tự nào cũng được)
+      const dmsRe = /(\d{1,3})\s*[°º]\s*(?:(\d{1,2})\s*['′’]\s*)?(?:(\d{1,2}(?:[.,]\d+)?)\s*(?:["″”]|''|’’)?\s*)?([NSEWnsew])/g;
+      const parts = [...t.matchAll(dmsRe)];
+      if (parts.length >= 2) {
+        let lat = null, lng = null;
+        parts.forEach(m => { const v = dmsToDeg(m[1], m[2], m[3], m[4]); if (/[NSns]/.test(m[4])) lat = v; else lng = v; });
+        if (lat !== null && lng !== null) return ok(lat, lng, 'độ-phút-giây');
+      }
+      // thập phân: "13.795063, 109.190325" (dấu chấm) hoặc "13,795063 109,190325" (dấu phẩy, cách nhau bằng khoảng trắng/;)
+      let m = /(-?\d{1,3}\.\d+)\s*[,;\s]\s*(-?\d{1,3}\.\d+)/.exec(t);
+      if (m) return ok(parseFloat(m[1]), parseFloat(m[2]), 'thập phân');
+      m = /(-?\d{1,3},\d+)\s*[;\s]\s*(-?\d{1,3},\d+)/.exec(t);
+      if (m) return ok(parseFloat(m[1].replace(',', '.')), parseFloat(m[2].replace(',', '.')), 'thập phân');
+      return fail('Không đọc được vị trí. Hãy dán tọa độ (vd 13.795063, 109.190325 hoặc 13°47\'42.2"N 109°11\'25.2"E) hoặc link Google Maps dài.');
+    }
+
+    function setLocationStatus(html, cls) {
+      const el = document.getElementById('locationStatus'); if (!el) return;
+      el.className = 'text-[11px] leading-snug ' + (cls || 'text-slate-700'); el.innerHTML = html; el.classList.remove('hidden');
+    }
+    function mapsLinkFor(lat, lng) { return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`; }
+    function locationReportText() {
+      if (!targetCoordsKnown) return '--';
+      const acc = targetLocationInfo && targetLocationInfo.accuracy ? `, sai số khoảng ${Math.round(targetLocationInfo.accuracy)} m` : '';
+      const src = { gps: 'định vị GPS thiết bị', map: 'chấm trên bản đồ', input: 'nhập tọa độ/link Google Maps' }[(targetLocationInfo && targetLocationInfo.source) || 'input'] || '';
+      return `${targetCoords.lat.toFixed(6)}, ${targetCoords.lng.toFixed(6)} (${src}${acc}) - ${mapsLinkFor(targetCoords.lat.toFixed(6), targetCoords.lng.toFixed(6))}`;
+    }
+    // Đặt vị trí thật của tài sản: cập nhật ghim, ô nhập, trạng thái; tùy chọn tự điền địa danh
+    function setTargetLocation(lat, lng, info) {
+      targetCoords = { lat, lng }; targetCoordsKnown = true; targetLocationInfo = info || { source: 'input' };
+      const inp = document.getElementById('targetLocationInput');
+      if (inp && info && info.source !== 'input') inp.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      const acc = info && info.accuracy ? ` · sai số khoảng <b>${Math.round(info.accuracy)} m</b>${info.accuracy > 30 ? ' (khá lớn: nên dời ghim về đúng thửa)' : ''}` : '';
+      setLocationStatus(`Đã xác định: <b>${lat.toFixed(6)}, ${lng.toFixed(6)}</b>${acc} · <a class="underline text-sky-700" target="_blank" rel="noopener" href="${mapsLinkFor(lat.toFixed(6), lng.toFixed(6))}">Mở Google Maps</a>`, 'text-emerald-800');
+      renderMapElements();
+      if (map) map.setView([lat, lng], 17);
+      if (localStorage.getItem('llp_geo_fill') !== 'false') return fillAddressFromCoords(lat, lng);
+    }
+    function resetTargetLocation() {
+      targetCoordsKnown = false; targetLocationInfo = null;
+      const inp = document.getElementById('targetLocationInput'); if (inp) inp.value = '';
+      ['locationStatus', 'geoNote'].forEach(id => { const e = document.getElementById(id); if (e) { e.classList.add('hidden'); e.innerHTML = ''; } });
+      try { toggleMapPick(false); } catch (e) {}
+      if (typeof renderMapElements === 'function') renderMapElements();
+    }
+    function applyLocationInput() {
+      const r = parseLatLng(valStr('targetLocationInput'));
+      if (r.short) { setLocationStatus('Đây là <b>link rút gọn</b> (maps.app.goo.gl): trình duyệt không tự mở rộng được. Hãy mở link đó, sao chép <b>link dài</b> trên thanh địa chỉ, hoặc chạm vào điểm trong Google Maps rồi sao chép <b>tọa độ</b> và dán vào đây.', 'text-amber-800'); return; }
+      if (r.error) { setLocationStatus(escHtml(r.error), 'text-rose-700'); return; }
+      return setTargetLocation(r.lat, r.lng, { source: 'input', format: r.format });
+    }
+
+    // ---- GPS của thiết bị ----
+    function finishGeoWatch() {
+      const st = geoWatchState; if (!st) return;
+      geoWatchState = null;
+      try { navigator.geolocation.clearWatch(st.id); } catch (e) {}
+      if (st.best) setTargetLocation(st.best.lat, st.best.lng, { source: 'gps', accuracy: st.best.acc });
+      else setLocationStatus('Chưa lấy được vị trí. Hãy ra nơi thoáng hoặc thử lại.', 'text-rose-700');
+    }
+    function useCurrentLocation() {
+      if (!navigator.geolocation) { setLocationStatus('Thiết bị/trình duyệt này không hỗ trợ định vị.', 'text-rose-700'); return; }
+      if (geoWatchState) finishGeoWatch();
+      setLocationStatus('Đang lấy vị trí... (cho phép trình duyệt truy cập vị trí khi được hỏi)', 'text-slate-600');
+      const st = { best: null, id: null }; geoWatchState = st;
+      st.id = navigator.geolocation.watchPosition(pos => {
+        const acc = pos.coords.accuracy || 9999;
+        if (!st.best || acc < st.best.acc) st.best = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc };
+        setLocationStatus(`Đang cải thiện độ chính xác... hiện sai số khoảng <b>${Math.round(st.best.acc)} m</b>`, 'text-slate-600');
+        if (st.best.acc <= 20 && geoWatchState === st) finishGeoWatch();
+      }, err => {
+        if (geoWatchState === st) { geoWatchState = null; try { navigator.geolocation.clearWatch(st.id); } catch (e) {} }
+        const msg = err && err.code === 1 ? 'Bạn đã từ chối quyền truy cập vị trí. Hãy cho phép trong cài đặt trình duyệt (iPhone: Cài đặt > Quyền riêng tư > Dịch vụ định vị > Safari).' : 'Không lấy được vị trí (' + ((err && err.message) || 'lỗi') + ').';
+        setLocationStatus(msg, 'text-rose-700');
+      }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+      setTimeout(() => { if (geoWatchState === st) finishGeoWatch(); }, 15000);   // sau 15 giây dùng kết quả tốt nhất đang có
+    }
+
+    // ---- Chạm bản đồ để đặt/dời ghim ----
+    function toggleMapPick(force) {
+      mapPickMode = (typeof force === 'boolean') ? force : !mapPickMode;
+      const b = document.getElementById('btnMapPick');
+      if (b) b.className = 'text-[11px] border px-2 py-1 rounded font-medium flex items-center gap-1 ' + (mapPickMode ? 'bg-rose-600 text-white border-rose-700' : 'bg-white hover:bg-slate-100 border-slate-300');
+      const g = document.getElementById('gisMap'); if (g) g.style.cursor = mapPickMode ? 'crosshair' : '';
+      if (mapPickMode) showToast('Chạm lên bản đồ ở đúng vị trí thửa đất để đặt ghim.');
+    }
+
+    // ---- Tự điền Xã/Huyện/Tỉnh từ tọa độ: Google nếu có khóa, OpenStreetMap dự phòng ----
+    async function reverseGeocodeGoogle(lat, lng, key) {
+      const r = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&language=vi&key=${encodeURIComponent(key)}`);
+      const j = await r.json();
+      if (j.status !== 'OK' || !j.results || !j.results.length) throw new Error('Google: ' + (j.status || 'lỗi') + (j.error_message ? ' - ' + j.error_message : ''));
+      const comp = {};
+      j.results.slice(0, 3).forEach(res => (res.address_components || []).forEach(c => (c.types || []).forEach(t => { if (!comp[t]) comp[t] = c.long_name; })));
+      return { ward: comp.administrative_area_level_3 || comp.sublocality_level_1 || comp.sublocality || '', district: comp.administrative_area_level_2 || '',
+               province: comp.administrative_area_level_1 || '', source: 'Google' };
+    }
+    async function reverseGeocodeOSM(lat, lng) {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=vi`);
+      if (!r.ok) throw new Error('OpenStreetMap HTTP ' + r.status);
+      const a = (await r.json()).address || {};
+      return { ward: a.suburb || a.village || a.quarter || a.neighbourhood || a.hamlet || '', district: a.county || a.city_district || a.town || a.city || '',
+               province: a.state || a.province || '', source: 'OpenStreetMap' };
+    }
+    async function fillAddressFromCoords(lat, lng) {
+      const note = document.getElementById('geoNote'); const showNote = (t) => { if (note) { note.textContent = t; note.classList.toggle('hidden', !t); } };
+      let g = null; const errs = [];
+      const key = (localStorage.getItem('llp_gmaps_key') || '').trim();
+      if (key) { try { g = await reverseGeocodeGoogle(lat, lng, key); } catch (e) { errs.push(e.message); } }
+      if (!g) { try { g = await reverseGeocodeOSM(lat, lng); } catch (e) { errs.push(e.message); } }
+      if (!g) { showNote('Không tra được địa danh từ tọa độ (' + errs.join('; ') + '). Hãy nhập Xã/Phường, Huyện, Tỉnh bằng tay.'); return null; }
+      const msgs = [];
+      const tryFill = (id, value, label) => {
+        if (!value) return; const el = document.getElementById(id); if (!el) return;
+        if (!el.value.trim()) { el.value = value; markAiPending(id); msgs.push(`${label}: ${value}`); }
+        else if (!normVi(el.value).includes(normVi(value).replace(/^(xa|phuong|thi tran|huyen|thi xa|thanh pho|quan|tinh)\s+/, '')) ) msgs.push(`bản đồ cho biết ${label.toLowerCase()} "${value}" (khác với "${el.value.trim()}" đã nhập, giữ nguyên giá trị bạn nhập)`);
+      };
+      tryFill('targetWard', g.ward, 'Xã/Phường');
+      const dp = [g.district, g.province].filter(Boolean).join(', ');
+      tryFill('targetDistrictProvince', dp, 'Huyện/Tỉnh');
+      showNote(msgs.length ? `${g.source} tra từ tọa độ - ${msgs.join('; ')}. Đây có thể là TÊN MỚI sau sáp nhập: hãy đối chiếu với tên trên sổ.` : '');
+      recalculateTargetValues();
+      return g;
+    }
+
     // === TÍNH TOÁN ĐỊNH GIÁ ĐA CƠ CẤU (ĐẤT Ở + ĐẤT VƯỜN + CTXD) ===
     function recalculateTargetValues() {
       const totalArea = parseFloat(document.getElementById('targetArea').value) || 0;
@@ -3299,6 +3492,7 @@ ${items}`;
       const pm = document.getElementById('targetPlanningDeductMode'); if (pm) pm.value = 'agri';
       const ph = document.getElementById('planningHint'); if (ph) ph.textContent = '';
       document.getElementById('targetBuildingType').value = '';
+      resetTargetLocation();
       document.getElementById('targetBuildingArea').value = '';
       document.getElementById('targetBuildingValueDisplay').innerText = '0.00 Tỷ VNĐ';
 
