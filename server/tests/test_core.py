@@ -333,9 +333,9 @@ def test_api_version_and_user_scenario(monkeypatch, tmp_path):
     ]
     store.save([Listing("chotot", f"https://x/{n}", t, address=a, price_vnd=pr, area_m2=ar, kind="dat", posted_at=_ago(10)) for n, a, t, pr, ar in rows])
     c = TestClient(m.app)
-    assert c.get("/api/health").json()["api_version"] == 9 and "folder" in c.get("/api/health").json()
+    assert c.get("/api/health").json()["api_version"] == 10 and "folder" in c.get("/api/health").json()
     r = c.get("/api/comps", params={"xa": "Xã Phước Sơn", "huyen": "Huyện Tuy Phước", "tinh": "Tỉnh Bình Định", "thon": "Thôn Xuân Phương", "area": 751.4, "kind": "dat", "tol": 50}).json()
-    assert r["api_version"] == 9
+    assert r["api_version"] == 10
     assert [i["url"].split("/")[-1] for i in r["items"]] == ["6"] and r["items"][0]["match_level"] == "thon"
 
 
@@ -630,3 +630,32 @@ def test_reverse_chain_falls_through():
         def get(s, url, **kw): raise ConnectionError("x")
         def post(s, url, **kw): raise ConnectionError("x")
     r = geo.reverse_chain(13.4, 109.3, session=S3()); assert r["ok"] is False and len(r["tried"]) == 3
+
+
+def test_normalize_geo_and_chain_prefers_real_ward():
+    from app import geo
+    n = geo.normalize_geo({"ward": "Tổ dân phố 8", "district": "Quy Nhon", "province": "Gia Lai province"})
+    assert n["ward"] == "" and n["hamlet"] == "Tổ dân phố 8" and n["province"] == "Gia Lai" and n["english"] is True
+    assert geo.normalize_geo({"ward": "Tô Châu", "district": "Hà Tiên", "province": "An Giang"})["ward"] == "Tô Châu"       # không nhầm xã tên thật
+    assert geo.normalize_geo({"ward": "Bản Cái", "province": "Lào Cai"})["ward"] == "Bản Cái"
+    assert geo.normalize_geo({"ward": "Khu phố 3", "province": "X"})["hamlet"] == "Khu phố 3"
+    class R:
+        def __init__(s, d): s.d = d
+        def raise_for_status(s): pass
+        def json(s): return s.d
+    class S:
+        def get(s, url, **kw):
+            if "nominatim" in url: return R({"address": {"neighbourhood": "Tổ dân phố 8", "county": "Quy Nhon", "state": "Gia Lai province"}})
+            return R({"features": [{"properties": {"locality": "Quy Nhon Ward", "city": "Quy Nhon City", "state": "Gia Lai Province"}}]})
+        def post(s, url, **kw):
+            return R({"elements": [{"tags": {"admin_level": "8", "name": "Phường Quy Nhơn"}}, {"tags": {"admin_level": "4", "name": "Gia Lai"}}]})
+    r = geo.reverse_chain(13.78, 109.22, session=S())
+    assert r["ok"] and r["ward"] == "Phường Quy Nhơn" and r["province"] == "Gia Lai" and r["hamlet"] == "Tổ dân phố 8" and r["source"].startswith("Overpass") and r["english"] is False
+    # chỉ có nguồn kém: vẫn dùng bản tốt nhất, không bỏ trống
+    class S2(S):
+        def post(s, url, **kw): raise ConnectionError("x")
+        def get(s, url, **kw):
+            if "nominatim" in url: return R({"address": {"neighbourhood": "Tổ dân phố 8", "county": "Quy Nhon", "state": "Gia Lai province"}})
+            raise ConnectionError("x")
+    r2 = geo.reverse_chain(13.78, 109.22, session=S2())
+    assert r2["ok"] and r2["ward"] == "" and r2["district"] == "Quy Nhon" and r2["hamlet"] == "Tổ dân phố 8" and r2["english"] is True

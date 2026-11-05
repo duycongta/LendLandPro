@@ -132,8 +132,28 @@ def parse_overpass_areas(elements) -> dict:
             lv.setdefault(t["admin_level"], t["name"])
     return {"ward": lv.get("8", ""), "district": lv.get("6", ""), "province": lv.get("4", "")}
 
+import re as _re
+_SUBWARD = _re.compile(r"^(to dan pho|tdp|khu pho|kp|khu vuc|thon|xom|ap|to\s+\d+)\s")
+_EN_WORDS = _re.compile(r"\s*\b(province|city|district|ward|commune|town|municipality)\b", _re.I)
+
+def normalize_geo(r: dict) -> dict:
+    """Tổ dân phố/Khu phố/Thôn/Xóm... là cấp nhỏ hơn xã/phường -> chuyển sang hamlet; bỏ chữ tiếng Anh thừa và đánh dấu english."""
+    from .textnorm import norm
+    out = {"ward": "", "district": "", "province": "", "hamlet": "", "english": False}
+    for k in ("ward", "district", "province"):
+        v = (r.get(k) or "").strip()
+        if _EN_WORDS.search(v):
+            out["english"] = True
+        out[k] = _re.sub(r"\s{2,}", " ", _EN_WORDS.sub("", v)).strip()
+    if out["ward"] and _SUBWARD.match(norm(out["ward"]) + " "):
+        out["hamlet"], out["ward"] = out["ward"], ""
+    return out
+
 def _complete(r: dict) -> bool:
     return bool((r.get("ward") or r.get("district")) and r.get("province"))
+
+def _score(r: dict, order: int):
+    return (1 if r["ward"] and not r["english"] else 0, 1 if r["ward"] else 0, 1 if _complete(r) else 0, 0 if r["english"] else 1, -order)
 
 def reverse_chain(lat, lng, session=None, providers=None):
     """Thử lần lượt các nguồn, lấy kết quả đầu tiên có (xã/phường hoặc huyện) và tỉnh. -> {ok, ward, district, province, source, tried[]}"""
@@ -157,13 +177,21 @@ def reverse_chain(lat, lng, session=None, providers=None):
                 last = e
         raise last
     chain = providers or [("OpenStreetMap Nominatim", nominatim), ("Photon (OpenStreetMap)", photon), ("Overpass (ranh giới hành chính OpenStreetMap)", overpass)]
-    tried = []
+    tried, cands, hamlet = [], [], ""
     for name, fn in chain:
         try:
-            r = fn()
+            r = normalize_geo(fn())
         except Exception as e:
             tried.append(f"{name}: {type(e).__name__}"); continue
-        if _complete(r):
-            return {"ok": True, **r, "source": name, "tried": tried}
-        tried.append(f"{name}: kết quả thiếu xã/phường hoặc tỉnh")
-    return {"ok": False, "error": "Các nguồn đều không trả đủ địa danh (" + "; ".join(tried) + ")", "tried": tried}
+        hamlet = hamlet or r["hamlet"]
+        if not _complete(r):
+            tried.append(f"{name}: kết quả thiếu xã/phường hoặc tỉnh"); continue
+        cands.append((r, name))
+        if r["ward"] and not r["english"]:
+            break
+        tried.append(f"{name}: " + ("chưa có tên xã/phường (chỉ có cấp tổ/khu phố hoặc huyện)" if not r["ward"] else "tên tiếng Anh") + ", thử nguồn khác")
+    if not cands:
+        return {"ok": False, "error": "Các nguồn đều không trả đủ địa danh (" + "; ".join(tried) + ")", "tried": tried}
+    best, src = max(((r, n) for r, n in cands), key=lambda t: _score(t[0], [c[1] for c in cands].index(t[1])))
+    return {"ok": True, "ward": best["ward"], "district": best["district"], "province": best["province"], "hamlet": best["hamlet"] or hamlet,
+            "english": best["english"], "source": src, "tried": tried}
