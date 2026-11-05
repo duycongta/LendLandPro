@@ -333,9 +333,9 @@ def test_api_version_and_user_scenario(monkeypatch, tmp_path):
     ]
     store.save([Listing("chotot", f"https://x/{n}", t, address=a, price_vnd=pr, area_m2=ar, kind="dat", posted_at=_ago(10)) for n, a, t, pr, ar in rows])
     c = TestClient(m.app)
-    assert c.get("/api/health").json()["api_version"] == 8 and "folder" in c.get("/api/health").json()
+    assert c.get("/api/health").json()["api_version"] == 9 and "folder" in c.get("/api/health").json()
     r = c.get("/api/comps", params={"xa": "Xã Phước Sơn", "huyen": "Huyện Tuy Phước", "tinh": "Tỉnh Bình Định", "thon": "Thôn Xuân Phương", "area": 751.4, "kind": "dat", "tol": 50}).json()
-    assert r["api_version"] == 8
+    assert r["api_version"] == 9
     assert [i["url"].split("/")[-1] for i in r["items"]] == ["6"] and r["items"][0]["match_level"] == "thon"
 
 
@@ -484,17 +484,14 @@ def test_admin_names_from_data(monkeypatch, tmp_path):
     j = c.get("/api/admin_names", params={"name": "Xã Không Có"}).json(); assert j["now_named"] == [] and j["formerly"] == []
 
 
-def test_api_reverse(monkeypatch):
+def test_api_reverse_endpoint(monkeypatch):
     from fastapi.testclient import TestClient
-    import app.main as m
-    monkeypatch.setattr(m, "_nominatim_reverse", lambda lat, lng: {"suburb": "Phường Nhơn Bình", "county": "Thị xã An Nhơn", "state": "Bình Định"})
+    import app.main as m, app.geo as geo
+    monkeypatch.setattr(geo, "reverse_chain", lambda la, ln: {"ok": True, "ward": "Phường Nhơn Bình", "district": "Thị xã An Nhơn", "province": "Bình Định", "source": "X", "tried": []})
     c = TestClient(m.app)
     j = c.get("/api/reverse", params={"lat": 13.795, "lng": 109.19}).json()
-    assert j["ok"] and j["ward"] == "Phường Nhơn Bình" and j["district"] == "Thị xã An Nhơn" and j["province"] == "Bình Định"
+    assert j["ok"] and j["ward"] == "Phường Nhơn Bình"
     assert c.get("/api/reverse", params={"lat": 1, "lng": 1}).json()["ok"] is False
-    def boom(lat, lng): raise RuntimeError("mạng")
-    monkeypatch.setattr(m, "_nominatim_reverse", boom)
-    assert c.get("/api/reverse", params={"lat": 13.795, "lng": 109.19}).json()["ok"] is False
 
 
 def test_province_merge_phu_yen_dak_lak(monkeypatch, tmp_path):
@@ -594,3 +591,42 @@ def test_roads_from_overpass_and_endpoint(monkeypatch):
     monkeypatch.setattr(geo, "fetch_overpass_roads", boom)
     assert TestClient(m.app).get("/api/roads", params={"lat": lat, "lng": lng}).json()["ok"] is False
     assert TestClient(m.app).get("/api/roads", params={"lat": 1, "lng": 1}).json()["ok"] is False
+
+
+def test_reverse_parsers():
+    from app import geo
+    assert geo.parse_nominatim({"suburb": "Phường Nhơn Bình", "county": "Thị xã An Nhơn", "state": "Bình Định"}) == {"ward": "Phường Nhơn Bình", "district": "Thị xã An Nhơn", "province": "Bình Định"}
+    assert geo.parse_photon({"features": [{"properties": {"locality": "Xuân Phú", "county": "Sông Cầu", "state": "Phú Yên"}}]}) == {"ward": "Xuân Phú", "district": "Sông Cầu", "province": "Phú Yên"}
+    assert geo.parse_photon({"features": []}) == {"ward": "", "district": "", "province": ""}
+    els = [{"tags": {"admin_level": "8", "name": "Phường Xuân Phú"}}, {"tags": {"admin_level": "6", "name": "Thị xã Sông Cầu"}}, {"tags": {"admin_level": "4", "name": "Phú Yên"}},
+           {"tags": {"admin_level": "2", "name": "Việt Nam"}}, {"tags": {"admin_level": "8"}}]
+    assert geo.parse_overpass_areas(els) == {"ward": "Phường Xuân Phú", "district": "Thị xã Sông Cầu", "province": "Phú Yên"}
+
+def test_reverse_chain_falls_through():
+    from app import geo
+    class R:
+        def __init__(s, data, code=200): s.data = data; s.status_code = code
+        def raise_for_status(s):
+            if s.status_code >= 400: raise RuntimeError(s.status_code)
+        def json(s): return s.data
+    class S:
+        def __init__(s): s.calls = []
+        def get(s, url, **kw):
+            s.calls.append(url)
+            if "nominatim" in url: raise ConnectionError("10061")                       # bị chặn như máy người dùng
+            if "photon" in url: return R({"features": [{"properties": {"city": "Sông Cầu"}}]})  # thiếu tỉnh -> bỏ qua
+            raise AssertionError(url)
+        def post(s, url, **kw):
+            s.calls.append(url); return R({"elements": [{"tags": {"admin_level": "8", "name": "Phường Xuân Phú"}}, {"tags": {"admin_level": "4", "name": "Phú Yên"}}]})
+    sess = S(); r = geo.reverse_chain(13.4, 109.3, session=sess)
+    assert r["ok"] and r["ward"] == "Phường Xuân Phú" and r["province"] == "Phú Yên" and r["source"].startswith("Overpass")
+    assert [("nominatim" in c) or ("photon" in c) or ("overpass" in c) for c in sess.calls] == [True, True, True] and len(r["tried"]) == 2
+    # nguồn đầu thành công thì dừng ngay
+    class S2(S):
+        def get(s, url, **kw): s.calls.append(url); return R({"address": {"suburb": "Phường A", "state": "Tỉnh B"}})
+    s2 = S2(); r = geo.reverse_chain(13.4, 109.3, session=s2); assert r["source"] == "OpenStreetMap Nominatim" and len(s2.calls) == 1
+    # tất cả thất bại
+    class S3(S):
+        def get(s, url, **kw): raise ConnectionError("x")
+        def post(s, url, **kw): raise ConnectionError("x")
+    r = geo.reverse_chain(13.4, 109.3, session=S3()); assert r["ok"] is False and len(r["tried"]) == 3

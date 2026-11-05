@@ -1039,8 +1039,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.25";
+    const APP_VERSION = "6.26";
     const APP_CHANGELOG = {
+      "6.26": "Tra xã/phường, huyện, tỉnh từ tọa độ tự chuyển nguồn dự phòng: Google (nếu có khóa) → Nominatim → Photon → Overpass (ranh giới hành chính OpenStreetMap) → máy chủ khảo giá (API v9, chạy cùng chuỗi từ máy chủ); ghi chú nêu nguồn đã dùng và các nguồn bị lỗi/chặn; vẫn tô vàng cần đối chiếu sổ.",
       "6.25": "Lô góc (mặt tiền / hẻm) trong ô Vị trí kèm ô hệ số điều chỉnh % do thẩm định viên tự nhập (mặc định trống, báo cáo ghi rõ); tin so sánh có chữ lô góc/2 mặt tiền được gắn nhãn. Vị trí hiện tại/ghim: gợi ý 2-4 đường hoặc hẻm gần nhất kèm khoảng cách (máy chủ API v8, OpenStreetMap; dự phòng tên đường từ Google nếu có khóa) để chọn điền ô đường, có ô tick đang ở hẻm. Nút Khảo sát nhanh tại vị trí (không cần sổ). PDF: giảm lề, tăng cỡ chữ, tránh ngắt giữa hàng bảng.",
       "6.24": "Nút bookmarklet lấy bài Facebook (máy tính): đang mở bài trên Facebook (đã đăng nhập), bôi đen nội dung rồi bấm nút trên thanh dấu trang, app tự mở/cập nhật tab LendLand Pro và điền sẵn link + nội dung vào ô dán tin (nhiều bài cộng dồn, cách nhau ---); nội dung truyền qua phần sau dấu # của link nên không gửi lên máy chủ nào; không tự trích xuất, bạn kiểm tra rồi bấm Trích Xuất.",
       "6.23": "Dán tin Facebook kèm link bài: link đứng trên đầu mỗi bài (các bài cách nhau ---) hoặc nằm trong nội dung được lưu làm chứng cứ cho nút Xem tin; tự nhận nguồn Facebook (và tên nhóm nếu đã thêm nhóm); bỏ link khỏi nội dung trước khi đọc giá/diện tích và trước khi gửi AI để dãy số trong link không bị đọc nhầm.",
@@ -3425,12 +3426,42 @@ ${items}`;
       return { ward: comp.administrative_area_level_3 || comp.sublocality_level_1 || comp.sublocality || '', district: comp.administrative_area_level_2 || '',
                province: comp.administrative_area_level_1 || '', source: 'Google' };
     }
+    async function reverseGeocodePhoton(lat, lng) {
+      const r = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}`);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json(); const p = ((j.features || [])[0] || {}).properties || {};
+      return { ward: p.locality || p.district || '', district: p.county || p.city || '', province: p.state || '', source: 'Photon (OpenStreetMap)' };
+    }
+    async function reverseGeocodeOverpass(lat, lng) {
+      const q = `[out:json][timeout:15];is_in(${lat},${lng})->.a;area.a[boundary=administrative][admin_level~"^(4|6|8)$"];out tags;`;
+      const r = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q));
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const lv = {}; ((await r.json()).elements || []).forEach(e => { const t = e.tags || {}; if (['4', '6', '8'].includes(t.admin_level) && t.name && !lv[t.admin_level]) lv[t.admin_level] = t.name; });
+      return { ward: lv['8'] || '', district: lv['6'] || '', province: lv['4'] || '', source: 'Overpass (ranh giới hành chính OpenStreetMap)' };
+    }
+    function geoComplete(g) { return !!(g && (g.ward || g.district) && g.province); }
+    // v6.26: thử lần lượt các nguồn, lấy kết quả đầu tiên đủ (xã/phường hoặc huyện) và tỉnh
+    async function reverseGeocodeChain(lat, lng) {
+      const key = (localStorage.getItem('llp_gmaps_key') || '').trim();
+      const chain = [];
+      if (key) chain.push(['Google', () => reverseGeocodeGoogle(lat, lng, key)]);
+      chain.push(['Nominatim', () => reverseGeocodeOSM(lat, lng)], ['Photon', () => reverseGeocodePhoton(lat, lng)], ['Overpass', () => reverseGeocodeOverpass(lat, lng)], ['Máy chủ khảo giá', () => reverseGeocodeBackend(lat, lng)]);
+      const tried = [];
+      for (const [name, fn] of chain) {
+        try {
+          const g = await fn();
+          if (geoComplete(g)) return { g, tried };
+          tried.push(`${name}: kết quả thiếu xã/phường hoặc tỉnh`);
+        } catch (e) { tried.push(`${name}: ${String(e && e.message || e).replace(/Failed to fetch/g, 'không kết nối được, có thể bị mạng/DNS/trình chặn quảng cáo chặn')}`); }
+      }
+      return { g: null, tried };
+    }
     async function reverseGeocodeBackend(lat, lng) {
       const r = await fetch(`${getBackendUrl()}/api/reverse?lat=${lat}&lng=${lng}`);
       if (!r.ok) throw new Error('HTTP ' + r.status + (r.status === 404 ? ' (máy chủ bản cũ, cần API v5)' : ''));
       const j = await r.json();
       if (!j.ok) throw new Error(j.error || 'lỗi');
-      return { ward: j.ward || '', district: j.district || '', province: j.province || '', source: j.source || 'OpenStreetMap' };
+      return { ward: j.ward || '', district: j.district || '', province: j.province || '', source: (j.source || 'OpenStreetMap') + ' (qua máy chủ khảo giá)' };
     }
     async function reverseGeocodeOSM(lat, lng) {
       const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=vi`);
@@ -3441,22 +3472,18 @@ ${items}`;
     }
     async function fillAddressFromCoords(lat, lng) {
       const note = document.getElementById('geoNote'); const showNote = (t) => { if (note) { note.textContent = t; note.classList.toggle('hidden', !t); } };
-      let g = null; const errs = [];
-      const key = (localStorage.getItem('llp_gmaps_key') || '').trim();
-      if (key) { try { g = await reverseGeocodeGoogle(lat, lng, key); } catch (e) { errs.push(e.message); } }
-      if (!g) { try { g = await reverseGeocodeOSM(lat, lng); } catch (e) { errs.push('OpenStreetMap: ' + e.message); } }
-      if (!g) { try { g = await reverseGeocodeBackend(lat, lng); } catch (e) { errs.push('Máy chủ khảo giá: ' + e.message); } }
-      if (!g) { showNote('Không tra được địa danh từ tọa độ (' + errs.join('; ').replace(/Failed to fetch/g, 'không kết nối được, có thể bị mạng/trình chặn quảng cáo chặn') + '). Hãy nhập Xã/Phường, Huyện, Tỉnh bằng tay.'); return null; }
+      const { g, tried } = await reverseGeocodeChain(lat, lng);
+      if (!g) { showNote('Không tra được địa danh từ tọa độ. Đã thử: ' + tried.join('; ') + '. Hãy nhập Xã/Phường, Huyện, Tỉnh bằng tay.'); return null; }
       const msgs = [];
       const tryFill = (id, value, label) => {
         if (!value) return; const el = document.getElementById(id); if (!el) return;
         if (!el.value.trim()) { el.value = value; markAiPending(id); msgs.push(`${label}: ${value}`); }
-        else if (!normVi(el.value).includes(normVi(value).replace(/^(xa|phuong|thi tran|huyen|thi xa|thanh pho|quan|tinh)\s+/, '')) ) msgs.push(`bản đồ cho biết ${label.toLowerCase()} "${value}" (khác với "${el.value.trim()}" đã nhập, giữ nguyên giá trị bạn nhập)`);
+        else if (!(' ' + normVi(el.value) + ' ').includes(' ' + normVi(value).replace(/^(xa|phuong|thi tran|huyen|thi xa|thanh pho|quan|tinh)\s+/, '') + ' ') ) msgs.push(`bản đồ cho biết ${label.toLowerCase()} "${value}" (khác với "${el.value.trim()}" đã nhập, giữ nguyên giá trị bạn nhập)`);
       };
       tryFill('targetWard', g.ward, 'Xã/Phường');
       const dp = [g.district, g.province].filter(Boolean).join(', ');
       tryFill('targetDistrictProvince', dp, 'Huyện/Tỉnh');
-      showNote(msgs.length ? `${g.source} tra từ tọa độ - ${msgs.join('; ')}. Đây có thể là TÊN MỚI sau sáp nhập: hãy đối chiếu với tên trên sổ.` : '');
+      showNote(msgs.length ? `${g.source} tra từ tọa độ - ${msgs.join('; ')}. Đây có thể là TÊN MỚI sau sáp nhập (hoặc tên theo dữ liệu bản đồ): hãy đối chiếu với tên trên sổ.${tried.length ? ' Nguồn đã bỏ qua: ' + tried.join('; ') + '.' : ''}` : '');
       recalculateTargetValues();
       return g;
     }

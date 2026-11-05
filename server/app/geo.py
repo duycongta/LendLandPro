@@ -106,3 +106,64 @@ def fetch_overpass_roads(lat, lng, radius_m=60, session=None):
         except Exception as e:
             last = e
     raise last
+
+
+# ---- Tra địa danh từ tọa độ: chuỗi dự phòng Nominatim -> Photon -> Overpass (chạy từ máy chủ) ----
+UA = {"User-Agent": "LendLandPro/1.0 (cong cu khao sat gia BDS)"}
+
+def parse_nominatim(a: dict) -> dict:
+    return {"ward": a.get("suburb") or a.get("village") or a.get("quarter") or a.get("neighbourhood") or a.get("hamlet") or "",
+            "district": a.get("county") or a.get("city_district") or a.get("town") or a.get("city") or "",
+            "province": a.get("state") or a.get("province") or ""}
+
+def parse_photon(j: dict) -> dict:
+    """Photon (dữ liệu OpenStreetMap): tên phường/xã nằm ở locality hoặc district; huyện ở county hoặc city; tỉnh ở state. Cách gán này chưa kiểm chứng
+    trên dữ liệu thật của Việt Nam nên kết quả được ghi chú là cần đối chiếu."""
+    feats = (j or {}).get("features") or []
+    p = (feats[0].get("properties") if feats else None) or {}
+    return {"ward": p.get("locality") or p.get("district") or "", "district": p.get("county") or p.get("city") or "", "province": p.get("state") or ""}
+
+def parse_overpass_areas(elements) -> dict:
+    """Ranh giới hành chính chứa điểm: admin_level 8 = xã/phường, 6 = huyện/thị xã/thành phố, 4 = tỉnh (quy ước OpenStreetMap Việt Nam)."""
+    lv = {}
+    for e in elements or []:
+        t = e.get("tags") or {}
+        if t.get("admin_level") in ("4", "6", "8") and t.get("name"):
+            lv.setdefault(t["admin_level"], t["name"])
+    return {"ward": lv.get("8", ""), "district": lv.get("6", ""), "province": lv.get("4", "")}
+
+def _complete(r: dict) -> bool:
+    return bool((r.get("ward") or r.get("district")) and r.get("province"))
+
+def reverse_chain(lat, lng, session=None, providers=None):
+    """Thử lần lượt các nguồn, lấy kết quả đầu tiên có (xã/phường hoặc huyện) và tỉnh. -> {ok, ward, district, province, source, tried[]}"""
+    import requests
+    s = session or requests
+    def nominatim():
+        r = s.get("https://nominatim.openstreetmap.org/reverse", timeout=12, headers=UA,
+                  params={"format": "jsonv2", "lat": lat, "lon": lng, "zoom": 18, "addressdetails": 1, "accept-language": "vi"})
+        r.raise_for_status(); return parse_nominatim(r.json().get("address") or {})
+    def photon():
+        r = s.get("https://photon.komoot.io/reverse", timeout=12, headers=UA, params={"lat": lat, "lon": lng})
+        r.raise_for_status(); return parse_photon(r.json())
+    def overpass():
+        q = f'[out:json][timeout:15];is_in({lat},{lng})->.a;area.a[boundary=administrative][admin_level~"^(4|6|8)$"];out tags;'
+        last = None
+        for url in OVERPASS_URLS:
+            try:
+                r = s.post(url, data={"data": q}, timeout=20, headers=UA); r.raise_for_status()
+                return parse_overpass_areas(r.json().get("elements", []))
+            except Exception as e:
+                last = e
+        raise last
+    chain = providers or [("OpenStreetMap Nominatim", nominatim), ("Photon (OpenStreetMap)", photon), ("Overpass (ranh giới hành chính OpenStreetMap)", overpass)]
+    tried = []
+    for name, fn in chain:
+        try:
+            r = fn()
+        except Exception as e:
+            tried.append(f"{name}: {type(e).__name__}"); continue
+        if _complete(r):
+            return {"ok": True, **r, "source": name, "tried": tried}
+        tried.append(f"{name}: kết quả thiếu xã/phường hoặc tỉnh")
+    return {"ok": False, "error": "Các nguồn đều không trả đủ địa danh (" + "; ".join(tried) + ")", "tried": tried}

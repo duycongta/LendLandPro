@@ -206,7 +206,7 @@ def listing_to_api(l):
         "lat": lat if ok_coord else None, "lng": lng if ok_coord else None,
     }
 
-API_VERSION = 8     # 8: thêm /api/roads. 7: thêm job + /api/cancel (dừng khảo sát). 6: thêm diagnostics trong /api/comps. 5: thêm /api/reverse. 4: thêm /api/resolve, /api/admin_names, lat/lng/radius_m + distance_m. 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
+API_VERSION = 9     # 9: /api/reverse có chuỗi dự phòng. 8: thêm /api/roads. 7: thêm job + /api/cancel (dừng khảo sát). 6: thêm diagnostics trong /api/comps. 5: thêm /api/reverse. 4: thêm /api/resolve, /api/admin_names, lat/lng/radius_m + distance_m. 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
 
 @app.get("/api/health")
 def api_health():
@@ -335,26 +335,12 @@ def api_admin_names(name: str):
     return {"ok": True, "now_named": sorted(now_named), "formerly": sorted(formerly)}
 
 
-def _nominatim_reverse(lat: float, lng: float) -> dict:
-    import requests
-    r = requests.get("https://nominatim.openstreetmap.org/reverse", timeout=15,
-                     params={"format": "jsonv2", "lat": lat, "lon": lng, "zoom": 18, "addressdetails": 1, "accept-language": "vi"},
-                     headers={"User-Agent": "LendLandPro/1.0 (cong cu khao sat gia BDS)"})
-    r.raise_for_status()
-    return r.json().get("address") or {}
-
 @app.get("/api/reverse")
 def api_reverse(lat: float, lng: float):
-    """Tra xã/phường, huyện, tỉnh từ tọa độ qua OpenStreetMap (gọi từ máy chủ, tránh trình duyệt bị chặn)."""
+    """Tra xã/phường, huyện, tỉnh từ tọa độ bằng chuỗi nguồn dự phòng OpenStreetMap Nominatim -> Photon -> Overpass (gọi từ máy chủ, tránh trình duyệt/DNS bị chặn)."""
     if not geo.in_vietnam(lat, lng):
         return {"ok": False, "error": "Tọa độ nằm ngoài Việt Nam."}
-    try:
-        a = _nominatim_reverse(lat, lng)
-    except Exception as e:
-        return {"ok": False, "error": f"Không tra được địa danh: {e}"}
-    return {"ok": True, "ward": a.get("suburb") or a.get("village") or a.get("quarter") or a.get("neighbourhood") or a.get("hamlet") or "",
-            "district": a.get("county") or a.get("city_district") or a.get("town") or a.get("city") or "",
-            "province": a.get("state") or a.get("province") or "", "source": "OpenStreetMap (qua máy chủ)"}
+    return geo.reverse_chain(lat, lng)
 
 
 def diagnose(allr, rec, admin_eff, xa, huyen, tinh, thon, n_after_filters):
@@ -376,6 +362,7 @@ def diagnose(allr, rec, admin_eff, xa, huyen, tinh, thon, n_after_filters):
     return {"stored": len(allr), "stored_by_source": dict(Counter(l.source for l in allr)), "recent": len(rec),
             "other_province": other_prov, "same_ward": ward_hit, "same_district_other_ward": district_hit,
             "after_filters": n_after_filters, "province_names_accepted": sorted(allowed)}
+
 
 
 @app.get("/api/cancel")
