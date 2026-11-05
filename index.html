@@ -635,6 +635,23 @@
             </a>
           </div>
         </div>
+        <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 text-[11px] space-y-1.5">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="font-bold text-sky-900">Nút lấy bài Facebook (máy tính):</span>
+            <a id="fbBookmarklet" href="#" onclick="return false" class="inline-block px-2.5 py-1 rounded bg-sky-600 text-white font-bold cursor-grab" title="Kéo nút này lên thanh dấu trang">Lấy bài FB → LendLand</a>
+            <span class="text-slate-600">← kéo nút này lên thanh dấu trang (Ctrl+Shift+B để hiện thanh)</span>
+          </div>
+          <details class="text-slate-700 leading-snug">
+            <summary class="cursor-pointer font-semibold text-sky-800">Cách dùng</summary>
+            <div class="mt-1 space-y-1">
+              <p>1. Mở trang Facebook có bài (đã đăng nhập; kể cả trang kết quả tìm kiếm trong nhóm) rồi bấm nút trên thanh dấu trang <b>một lần</b>: biểu tượng <b>➜ LendLand</b> hiện cạnh dòng ngày giờ của từng bài.</p>
+              <p>2. Bấm biểu tượng của bài muốn lấy: link và nội dung bài đó được chuyển sang tab LendLand Pro (nhiều bài cộng dồn, cách nhau ---).</p>
+              <p>3. Hoặc <b>bôi đen nội dung</b> một bài rồi bấm nút trên thanh dấu trang để lấy đúng phần bôi đen.</p>
+              <p>4. Sang tab app kiểm tra rồi bấm <b>Trích Xuất Vào Bảng</b>. Nội dung chỉ đi qua phần sau dấu # của link, không gửi lên máy chủ nào.</p>
+              <p class="text-slate-500">Không kéo được nút? <button type="button" onclick="copyBookmarkletCode()" class="underline text-sky-700">sao chép mã</button>, tạo dấu trang mới và dán mã vào ô địa chỉ (URL). Facebook hay đổi cấu trúc trang nên biểu tượng có thể không hiện ở một số kiểu trang: khi đó dùng cách bôi đen.</p>
+            </div>
+          </details>
+        </div>
         <div>
           <button id="btnTogglePaste" type="button" onclick="toggleCollapsible('pasteNews')" class="text-xs font-semibold text-slate-700 hover:underline flex items-center gap-1"><i class="ph-bold ph-plus-circle"></i> <span>Dán tin rao từ Zalo / FB</span></button>
           <div id="pasteNewsWrap" class="hidden mt-2">
@@ -645,15 +662,6 @@
               <i class="ph-bold ph-clipboard"></i> Dán Clipboard
             </button>
           </div>
-          <details class="text-[11px] bg-sky-50 border border-sky-200 rounded-lg px-2.5 py-1.5">
-            <summary class="cursor-pointer font-semibold text-sky-800">Nút lấy bài Facebook (bookmarklet, dùng trên máy tính)</summary>
-            <div class="mt-1.5 space-y-1 text-slate-700 leading-snug">
-              <p>1. Kéo nút này lên <b>thanh dấu trang</b> của Chrome/Edge (Ctrl+Shift+B để hiện thanh): <a id="fbBookmarklet" href="#" onclick="return false" class="inline-block px-2 py-0.5 rounded bg-sky-600 text-white font-bold cursor-grab" title="Kéo nút này lên thanh dấu trang">Lấy bài FB → LendLand</a></p>
-              <p>2. Mở bài Facebook (đã đăng nhập), <b>bôi đen nội dung bài</b> rồi bấm nút trên thanh dấu trang. Không bôi đen thì nút lấy bài đầu tiên trên trang.</p>
-              <p>3. App tự mở/cập nhật tab này và điền sẵn <b>link + nội dung</b> vào ô bên dưới (nhiều bài cộng dồn, cách nhau ---). Kiểm tra rồi bấm <b>Trích Xuất Vào Bảng</b>.</p>
-              <p class="text-slate-500">Nếu không kéo được: <button type="button" onclick="copyBookmarkletCode()" class="underline text-sky-700">sao chép mã</button>, tạo dấu trang mới và dán mã vào ô địa chỉ (URL). Nội dung bài chỉ đi qua phần sau dấu # của link nên không gửi lên máy chủ nào.</p>
-            </div>
-          </details>
           <select id="manualSourceGroup" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"><option value="">Nguồn: Zalo / khác</option></select>
           <textarea id="manualRawText" rows="3" placeholder="Ví dụ: Cần bán đất hẻm 3m đường Hùng Vương P. Trần Quang Diệu, DT 55m2 thổ cư ODT, ngang 4.5m, giá 1 tỷ 150 triệu bớt lộc. Đăng ngày 28/10. LH 0905..." class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500"></textarea>
           <div class="flex justify-end">
@@ -1052,8 +1060,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.36";
+    const APP_VERSION = "6.37";
     const APP_CHANGELOG = {
+      "6.37": "Nút lấy bài Facebook (bookmarklet) nay hiện biểu tượng \"➜ LendLand\" cạnh dòng ngày giờ của MỖI bài (kể cả trang kết quả tìm kiếm nhóm): bấm biểu tượng của bài nào thì link và nội dung bài đó được chuyển sang app; vẫn hỗ trợ bôi đen nội dung rồi bấm nút. Nút bookmarklet đưa ra ngoài phần gập, nằm ngay trong thẻ Nguồn tra tin. Chưa kiểm chứng trên Facebook thật.",
       "6.36": "Đổi tên và gọn giao diện theo yêu cầu: bỏ neo cột STT (giữ neo cột Đặc điểm TS); cột \"Đặc điểm TS\" ở cả hai bảng; bảng chính thay cột Sau CK bằng \"Đơn giá rao\", hàng chờ đổi \"Đơn giá rao\"; nút \"Chuyển tất cả lên DS TSSS chính\" (có hộp hỏi xác nhận, tin AI vẫn gắn nhãn chưa kiểm chứng); đổi tên các khối (Tự động quét thông tin GCN, Thông tin tài sản mục tiêu, Danh mục TSSS chính thức / hàng chờ); gộp khối kênh lớn và hội nhóm FB thành một thẻ \"Nguồn tra tin\", phần dán tin rao gập sẵn; gộp Zoom Thửa + Bao Quát thành một nút \"Xem bao quát\".",
       "6.35": "Làm gọn: khối Ghi chú GCN (kèm Diện tích không tính giá, Trừ vào loại đất) và khối Công trình xây dựng thu gọn thành một dòng \"+ Thêm ...\" khi chưa có nội dung; tự mở khi có ghi chú, diện tích không tính giá hoặc diện tích sàn xây dựng (AI đọc ra cũng tự mở) và có thể bấm để mở/thu gọn.",
       "6.34": "Bảng Cảnh báo / Chú ý khi xem xét tài sản chuyển lên ngay dưới khối Vị trí thửa đất để thấy ngay khi vừa định vị (vẫn ẩn khi chưa có cảnh báo).",
@@ -3168,18 +3177,77 @@ ${items}`;
     // Mã chạy TRÊN trang Facebook (do người dùng bấm): lấy phần bôi đen (hoặc bài đầu tiên), mở tab app với #fbpost=<base64url JSON {u,t}>
     function bookmarkletSource(appUrl) {
       const code = function (APP) {
-        var t = String(window.getSelection ? window.getSelection() : '').trim();
-        if (!t) { var a = document.querySelector('[role="article"]'); t = a ? (a.innerText || '') : ''; }
-        t = t.replace(/\n{3,}/g, '\n\n').trim().slice(0, 6000);
-        if (!t) { alert('Không thấy nội dung bài. Hãy bôi đen chữ của bài rồi bấm lại.'); return; }
-        var u = location.href.split('#')[0];
-        try {
-          var x = new URL(location.href);
-          Array.from(x.searchParams.keys()).forEach(function (k) { if (/^__/.test(k) || /^(fbclid|notif_id|notif_t|comment_id|reply_comment_id|ref|mibextid)$/i.test(k)) x.searchParams.delete(k); });
-          u = x.origin + x.pathname + x.search;
-        } catch (e) {}
-        var b = btoa(unescape(encodeURIComponent(JSON.stringify({ u: u, t: t })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-        window.open(APP + '#fbpost=' + b, 'llp_app');
+        var TIME_RE = /(giờ|phút|giây|hôm qua|vừa xong|tháng|ngày|tuần|năm|\d+\s*[hmdwy]\b)/i;
+        var LINK_RE = /\/(posts|permalink|videos|reel|photo)\/|story_fbid=|permalink\.php/i;
+        var MARK = '➜ LendLand';
+        function clean(href) {
+          try {
+            var x = new URL(href, location.href);
+            if (!/(^|\.)facebook\.com$/i.test(x.hostname)) return '';
+            Array.from(x.searchParams.keys()).forEach(function (k) { if (/^__/.test(k) || /^(fbclid|notif_id|notif_t|comment_id|reply_comment_id|ref|mibextid)$/i.test(k)) x.searchParams.delete(k); });
+            return x.origin + x.pathname + x.search;
+          } catch (e) { return ''; }
+        }
+        function isTop(a) { return !(a.parentElement && a.parentElement.closest('[role="article"]')); }
+        function topOf(el) { var a = el && el.closest ? el.closest('[role="article"]') : null; while (a && !isTop(a)) a = a.parentElement.closest('[role="article"]'); return a; }
+        function findTime(a) {
+          var links = a.querySelectorAll('a[href]'), best = null;
+          for (var i = 0; i < links.length; i++) {
+            var l = links[i]; if (!LINK_RE.test(l.getAttribute('href') || '')) continue;
+            var t = (l.textContent || '').trim();
+            if (t.length <= 60 && TIME_RE.test(t)) return l;
+            if (!best) best = l;
+          }
+          return best;
+        }
+        function articleText(a) {
+          var t = a.innerText || a.textContent || '';
+          Array.prototype.forEach.call(a.querySelectorAll('[role="article"]'), function (n) { var nt = n.innerText || n.textContent || ''; if (nt) t = t.split(nt).join(''); });
+          return t.split(MARK).join('').replace(/\n{3,}/g, '\n\n').trim().slice(0, 6000);
+        }
+        function send(u, t) {
+          var b = btoa(unescape(encodeURIComponent(JSON.stringify({ u: u, t: t })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+          window.open(APP + '#fbpost=' + b, 'llp_app');
+        }
+        function linkOf(a) { var tl = findTime(a); return (tl && clean(tl.getAttribute('href'))) || clean(location.href); }
+        function say(msg) {
+          var d = document.createElement('div');
+          d.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:2147483647;background:#0f172a;color:#fff;padding:8px 14px;border-radius:10px;font:13px sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.4)';
+          d.textContent = msg; document.body.appendChild(d); setTimeout(function () { d.remove(); }, 6000);
+        }
+        function inject() {
+          var n = 0;
+          Array.prototype.forEach.call(document.querySelectorAll('[role="article"]'), function (a) {
+            if (!isTop(a) || a.querySelector('[data-llp-btn]')) return;
+            var btn = document.createElement('span');
+            btn.setAttribute('data-llp-btn', '1'); btn.textContent = MARK;
+            btn.style.cssText = 'cursor:pointer;background:#0284c7;color:#fff;padding:1px 7px;border-radius:9px;font:600 11px sans-serif;margin-left:8px;display:inline-block;vertical-align:middle';
+            btn.onclick = function (ev) {
+              ev.preventDefault(); ev.stopPropagation();
+              var t = articleText(a); if (!t) { say('Không đọc được nội dung bài này.'); return; }
+              send(linkOf(a), t); btn.textContent = '✓ đã gửi'; setTimeout(function () { btn.textContent = MARK; }, 2500);
+            };
+            var tl = findTime(a);
+            if (tl && tl.parentNode) tl.parentNode.insertBefore(btn, tl.nextSibling); else a.insertBefore(btn, a.firstChild);
+            n++;
+          });
+          return n;
+        }
+        var s = window.getSelection ? window.getSelection() : null;
+        var sel = String(s || '').trim();
+        if (sel) {
+          var node = s && s.anchorNode, el = node && (node.nodeType === 1 ? node : node.parentElement);
+          var art = topOf(el);
+          send(art ? linkOf(art) : clean(location.href), sel.slice(0, 6000));
+          return;
+        }
+        if (!document.querySelector('[role="article"]')) { alert('Không thấy bài đăng nào trên trang. Hãy bôi đen nội dung bài rồi bấm lại.'); return; }
+        inject();
+        if (!window.__llpFbObs) {
+          window.__llpFbObs = true; var timer = null;
+          new MutationObserver(function () { clearTimeout(timer); timer = setTimeout(inject, 400); }).observe(document.body, { childList: true, subtree: true });
+        }
+        say('LendLand: bấm "' + MARK + '" cạnh giờ đăng của bài muốn lấy (cuộn thêm thì biểu tượng tự hiện cho bài mới).');
       };
       return '(' + code.toString() + ')(' + JSON.stringify(appUrl) + ')';
     }
