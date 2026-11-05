@@ -857,7 +857,7 @@
             </div>
             <div>
               <label class="block text-[11px] font-semibold text-slate-700 mb-1">Mã PIN ứng dụng mới (6 số):</label>
-              <input type="password" id="newPinForChange" placeholder="Ví dụ: 888999" maxlength="12" class="w-full border border-rose-300 rounded-lg p-2 text-xs bg-white text-center font-bold tracking-widest focus:ring-2 focus:ring-rose-500 outline-none">
+              <input type="password" id="newPinForChange" placeholder="Nhập mã PIN 6 số" maxlength="12" class="w-full border border-rose-300 rounded-lg p-2 text-xs bg-white text-center font-bold tracking-widest focus:ring-2 focus:ring-rose-500 outline-none">
             </div>
           </div>
           <button onclick="changeVaultPinOnCloud()" type="button" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-lg text-xs shadow-sm transition active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer">
@@ -1040,8 +1040,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.28";
+    const APP_VERSION = "6.29";
     const APP_CHANGELOG = {
+      "6.29": "Ô đổi mã PIN: bỏ ví dụ số cụ thể, thay bằng chữ gợi ý \"Nhập mã PIN 6 số\".",
       "6.28": "Gợi ý đường: sửa lỗi hiện mỗi đường 2 lần (hai lần gọi chạy chồng nhau); Overpass thử nhiều máy chủ khi lỗi 502 (cả tra xã/phường lẫn tìm đường) và tự mở rộng bán kính 60→150 m khi không thấy đường; thêm Photon làm nguồn tên đường dự phòng (chưa kiểm chứng định dạng, không có khoảng cách).",
       "6.27": "Sửa từ phản hồi dùng thử trên điện thoại: (1) nút Dừng ngay trong thanh trạng thái nổi khi đang tìm tin; (2) tên Tổ dân phố/Khu phố/Thôn/Xóm không bị điền nhầm vào ô Xã/Phường mà chuyển sang ô Thôn/Xóm/Khu phố, ô Xã/Phường lấy từ nguồn kế tiếp; (3) tên tiếng Anh (province/city/district) bị hạ ưu tiên và được bỏ chữ thừa; (4) gợi ý đường/hẻm tự gọi thẳng Overpass khi không có máy chủ khảo giá (điện thoại).",
       "6.26": "Tra xã/phường, huyện, tỉnh từ tọa độ tự chuyển nguồn dự phòng: Google (nếu có khóa) → Nominatim → Photon → Overpass (ranh giới hành chính OpenStreetMap) → máy chủ khảo giá (API v9, chạy cùng chuỗi từ máy chủ); ghi chú nêu nguồn đã dùng và các nguồn bị lỗi/chặn; vẫn tô vàng cần đối chiếu sổ.",
