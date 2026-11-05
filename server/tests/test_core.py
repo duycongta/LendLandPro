@@ -333,9 +333,9 @@ def test_api_version_and_user_scenario(monkeypatch, tmp_path):
     ]
     store.save([Listing("chotot", f"https://x/{n}", t, address=a, price_vnd=pr, area_m2=ar, kind="dat", posted_at=_ago(10)) for n, a, t, pr, ar in rows])
     c = TestClient(m.app)
-    assert c.get("/api/health").json()["api_version"] == 7 and "folder" in c.get("/api/health").json()
+    assert c.get("/api/health").json()["api_version"] == 8 and "folder" in c.get("/api/health").json()
     r = c.get("/api/comps", params={"xa": "Xã Phước Sơn", "huyen": "Huyện Tuy Phước", "tinh": "Tỉnh Bình Định", "thon": "Thôn Xuân Phương", "area": 751.4, "kind": "dat", "tol": 50}).json()
-    assert r["api_version"] == 7
+    assert r["api_version"] == 8
     assert [i["url"].split("/")[-1] for i in r["items"]] == ["6"] and r["items"][0]["match_level"] == "thon"
 
 
@@ -573,3 +573,24 @@ def test_chotot_ward_scan_limits_to_district(monkeypatch):
     monkeypatch.setattr(c, "_page", fake_page)
     wards, areas = c.discover_codes(7046, {"xuan phu"}, {"song cau"})
     assert areas == {704602} and wards == {(704602, 77)}
+
+
+def test_roads_from_overpass_and_endpoint(monkeypatch):
+    from app import geo
+    import app.main as m
+    from fastapi.testclient import TestClient
+    lat, lng = 13.8, 109.2
+    def way(name, hw, dlat):       # đường chạy ngang (đông-tây) cách điểm dlat độ vĩ
+        return {"tags": {"name": name, "highway": hw}, "geometry": [{"lat": lat + dlat, "lon": lng - 0.001}, {"lat": lat + dlat, "lon": lng + 0.001}]}
+    els = [way("Đường Lê Thành Phương", "secondary", 0.0001), way("Hẻm 12 Lê Thành Phương", "service", 0.0003),
+           way("Đường Lê Thành Phương", "secondary", 0.0004), way("Đường Trần Hưng Đạo", "residential", 0.0005), {"tags": {"highway": "path"}, "geometry": []}]
+    r = geo.roads_from_overpass(els, lat, lng)
+    assert [x["name"] for x in r] == ["Đường Lê Thành Phương", "Hẻm 12 Lê Thành Phương", "Đường Trần Hưng Đạo"]
+    assert 10 <= r[0]["distance_m"] <= 12 and r[0]["alley"] is False and r[1]["alley"] is True and 32 <= r[1]["distance_m"] <= 35
+    monkeypatch.setattr(geo, "fetch_overpass_roads", lambda la, ln, rad: els)
+    j = TestClient(m.app).get("/api/roads", params={"lat": lat, "lng": lng}).json()
+    assert j["ok"] and j["roads"][0]["name"] == "Đường Lê Thành Phương"
+    def boom(*a): raise RuntimeError("mạng")
+    monkeypatch.setattr(geo, "fetch_overpass_roads", boom)
+    assert TestClient(m.app).get("/api/roads", params={"lat": lat, "lng": lng}).json()["ok"] is False
+    assert TestClient(m.app).get("/api/roads", params={"lat": 1, "lng": 1}).json()["ok"] is False

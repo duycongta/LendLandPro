@@ -206,7 +206,7 @@ def listing_to_api(l):
         "lat": lat if ok_coord else None, "lng": lng if ok_coord else None,
     }
 
-API_VERSION = 7     # 7: thêm job + /api/cancel (dừng khảo sát). 6: thêm diagnostics trong /api/comps. 5: thêm /api/reverse. 4: thêm /api/resolve, /api/admin_names, lat/lng/radius_m + distance_m. 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
+API_VERSION = 8     # 8: thêm /api/roads. 7: thêm job + /api/cancel (dừng khảo sát). 6: thêm diagnostics trong /api/comps. 5: thêm /api/reverse. 4: thêm /api/resolve, /api/admin_names, lat/lng/radius_m + distance_m. 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
 
 @app.get("/api/health")
 def api_health():
@@ -383,3 +383,15 @@ def api_cancel(job: str):
     """Dừng khảo sát đang thu thập (mã job do giao diện gửi kèm /api/comps)."""
     cancel.cancel(job)
     return {"ok": True}
+
+
+@app.get("/api/roads")
+def api_roads(lat: float, lng: float, radius_m: float = 60):
+    """Tên đường/hẻm gần vị trí (OpenStreetMap), kèm khoảng cách. Chỉ gợi ý để người dùng chọn; hẻm ở Việt Nam thường không có tên trên bản đồ."""
+    if not geo.in_vietnam(lat, lng):
+        return {"ok": False, "error": "Tọa độ nằm ngoài Việt Nam."}
+    try:
+        els = geo.fetch_overpass_roads(lat, lng, min(max(radius_m, 20), 150))
+    except Exception as e:
+        return {"ok": False, "error": f"Không tra được đường gần đây: {e}"}
+    return {"ok": True, "roads": geo.roads_from_overpass(els, lat, lng)}

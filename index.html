@@ -289,6 +289,13 @@
           <div id="locationStatus" class="hidden text-[11px] leading-snug"></div>
           <div id="geoNote" class="hidden text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 leading-snug"></div>
           <div id="adminNamesNote" class="hidden text-[11px] leading-snug text-slate-700"></div>
+          <div id="roadSuggest" class="hidden text-[11px] leading-snug bg-sky-50 border border-sky-200 rounded-lg p-2 space-y-1">
+            <div class="font-semibold text-sky-900">Đường/hẻm gần vị trí này (chạm để điền ô Đường, nhớ đối chiếu thực tế):</div>
+            <div id="roadSuggestList" class="flex flex-wrap gap-1.5"></div>
+            <label class="flex items-center gap-1.5 text-slate-700"><input type="checkbox" id="chkInAlley"> Tôi đang ở trong hẻm (ô Đường sẽ ghi "Hẻm ... đường X", số hẻm bạn nhập tay)</label>
+            <div id="roadSuggestNote" class="text-slate-500"></div>
+          </div>
+          <div class="flex justify-end"><button onclick="quickSurveyAtLocation()" type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1"><i class="ph-bold ph-magnifying-glass"></i> Khảo sát nhanh tại vị trí (không cần sổ)</button></div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 text-xs font-medium bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200">
@@ -318,14 +325,21 @@
           <div>
             <label class="block text-slate-500 mb-1">Vị trí & Lộ giới (m)</label>
             <div class="grid grid-cols-2 gap-2">
-              <select id="targetPosType" class="border border-slate-300 rounded-lg p-2.5 text-xs bg-white" onchange="recalculateTargetValues()">
+              <select id="targetPosType" class="border border-slate-300 rounded-lg p-2.5 text-xs bg-white" onchange="onPosTypeChange()">
                 <option value="mat_tien">Mặt tiền</option>
+                <option value="goc_mat_tien">Lô góc mặt tiền</option>
+                <option value="goc_hem">Lô góc hẻm</option>
                 <option value="hem_oto" selected>Hẻm ô tô</option>
                 <option value="hem_bagac">Ba gác</option>
                 <option value="hem_nho">Hẻm nhỏ</option>
               </select>
               <input type="number" id="targetRoadWidth" placeholder="Lộ giới" step="0.1" class="w-full border border-slate-300 rounded-lg p-2.5 text-center font-medium bg-white" oninput="recalculateTargetValues()">
             </div>
+            <div id="cornerAdjBox" class="hidden mt-2 flex items-center gap-2 text-[11px] text-slate-600">
+              <span class="whitespace-nowrap">Hệ số điều chỉnh lô góc (%):</span>
+              <input type="number" id="targetCornerAdj" placeholder="vd 5 (để trống = không điều chỉnh)" step="0.5" min="-30" max="30" class="w-full border border-slate-300 rounded-lg p-1.5 text-center bg-white" oninput="recalculateTargetValues()">
+            </div>
+            <div id="cornerAdjHint" class="hidden mt-1 text-[10px] text-amber-700 leading-snug">Lô góc thường thanh khoản và giá cao hơn vị trí thường, nhưng mức tăng do thẩm định viên đánh giá; app chỉ áp dụng số bạn nhập (giới hạn ±30%) và ghi vào báo cáo.</div>
           </div>
         </div>
 
@@ -1025,8 +1039,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.24";
+    const APP_VERSION = "6.25";
     const APP_CHANGELOG = {
+      "6.25": "Lô góc (mặt tiền / hẻm) trong ô Vị trí kèm ô hệ số điều chỉnh % do thẩm định viên tự nhập (mặc định trống, báo cáo ghi rõ); tin so sánh có chữ lô góc/2 mặt tiền được gắn nhãn. Vị trí hiện tại/ghim: gợi ý 2-4 đường hoặc hẻm gần nhất kèm khoảng cách (máy chủ API v8, OpenStreetMap; dự phòng tên đường từ Google nếu có khóa) để chọn điền ô đường, có ô tick đang ở hẻm. Nút Khảo sát nhanh tại vị trí (không cần sổ). PDF: giảm lề, tăng cỡ chữ, tránh ngắt giữa hàng bảng.",
       "6.24": "Nút bookmarklet lấy bài Facebook (máy tính): đang mở bài trên Facebook (đã đăng nhập), bôi đen nội dung rồi bấm nút trên thanh dấu trang, app tự mở/cập nhật tab LendLand Pro và điền sẵn link + nội dung vào ô dán tin (nhiều bài cộng dồn, cách nhau ---); nội dung truyền qua phần sau dấu # của link nên không gửi lên máy chủ nào; không tự trích xuất, bạn kiểm tra rồi bấm Trích Xuất.",
       "6.23": "Dán tin Facebook kèm link bài: link đứng trên đầu mỗi bài (các bài cách nhau ---) hoặc nằm trong nội dung được lưu làm chứng cứ cho nút Xem tin; tự nhận nguồn Facebook (và tên nhóm nếu đã thêm nhóm); bỏ link khỏi nội dung trước khi đọc giá/diện tích và trước khi gửi AI để dãy số trong link không bị đọc nhầm.",
       "6.22": "Nút \"Dừng lại\" cạnh nút Đang khảo sát: dừng hẳn việc thu thập tin (máy chủ API v7 ngừng cào trong vài giây) và hủy, không hiển thị kết quả; bảng giữ nguyên như trước khi khảo sát.",
@@ -1740,7 +1755,8 @@
       const rw = document.getElementById('targetRoadWidth').value.trim();
       const posSelect = document.getElementById('targetPosType');
       const posText = posSelect ? posSelect.options[posSelect.selectedIndex].text : "Đường trước đất";
-      const roadVal = rw ? `${posText} (rộng ~${rw}m)` : posText;
+      const ca = cornerAdjustment();
+      const roadVal = (rw ? `${posText} (rộng ~${rw}m)` : posText) + (ca ? `; hệ số điều chỉnh lô góc ${ca > 0 ? '+' : ''}${(ca * 100).toFixed(1).replace(/\.0$/, '')}% (thẩm định viên chọn)` : '');
 
       const bldType = document.getElementById('targetBuildingType').value.trim();
       const bldArea = parseFloat(document.getElementById('targetBuildingArea').value) || 0;
@@ -1891,11 +1907,13 @@
           <meta charset="UTF-8">
           <title>${escHtml(pdfFileName)}</title>
           <style>
-            @page { size: A4 portrait; margin: 12mm 10mm; }
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 11pt; background: #fff; }
+            @page { size: A4 portrait; margin: 8mm 6mm; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 12pt; background: #fff; }
             .report-paper { width: 100%; box-sizing: border-box; }
             .report-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 8px; }
-            .report-table th, .report-table td { border: 1px solid #94a3b8; padding: 6px 8px; font-size: 10.5pt; line-height: 1.35; word-wrap: break-word; }
+            .report-table th, .report-table td { border: 1px solid #94a3b8; padding: 6px 8px; font-size: 11.5pt; line-height: 1.35; word-wrap: break-word; }
+            .report-table tr { break-inside: avoid; page-break-inside: avoid; }
+            .font-bold.uppercase { break-after: avoid; page-break-after: avoid; }
             .font-bold { font-weight: bold; }
             .font-semibold { font-weight: 600; }
             .text-center { text-align: center; }
@@ -1917,7 +1935,7 @@
             .mt-3 { margin-top: 10px; }
             .uppercase { text-transform: uppercase; }
             ul { margin: 4px 0 0 18px; padding: 0; }
-            li { margin-bottom: 3px; font-size: 10pt; color: #334155; }
+            li { margin-bottom: 3px; font-size: 11pt; color: #334155; }
           </style>
         </head>
         <body>
@@ -1932,6 +1950,7 @@
       setTimeout(() => {
         try {
           iframe.contentWindow.focus();
+          if (/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || '')) showToast('Trong cửa sổ in: chọn khổ A4, hướng DỌC (Portrait), rồi Lưu thành PDF.');
           iframe.contentWindow.print();
         } catch (err) {
           console.error('Lỗi gọi hộp thoại in:', err);
@@ -2714,6 +2733,8 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       if (c.poolReason === 'no_date' || c.dateTier === 3) out.push(tag('Không rõ ngày đăng', 'bg-amber-50 text-amber-800 border-amber-300'));
       if (c.aiFields && c.aiFields.length) out.push(tag('AI trích: ' + escHtml(c.aiFields.join(', ')), 'bg-indigo-50 text-indigo-700 border-indigo-300'));
       if (c.poolReason === 'not_sale') out.push(tag('Không phải tin bán', 'bg-rose-50 text-rose-700 border-rose-300'));
+      if (c.corner) out.push(tag('Lô góc' + (isCornerPos() ? '' : ' · khác vị trí thửa'), isCornerPos() ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-amber-50 text-amber-800 border-amber-300'));
+      else if (isCornerPos() && c.origin !== 'ai') out.push(tag('Không phải lô góc', 'bg-slate-50 text-slate-600 border-slate-300'));
       if (c.dupCount > 0) out.push(tag(`Đã gộp ${c.dupCount} tin trùng${c.alsoOn && c.alsoOn.length ? ' (' + escHtml(c.alsoOn.join(', ')) + ')' : ''}`, 'bg-slate-50 text-slate-600 border-slate-300'));
       return out.join(' ');
     }
@@ -2778,7 +2799,8 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         frontage: Number(it.frontage_m) > 0 ? Number(it.frontage_m) : null, depth: null,
         rawPrice: price, link: it.url || '', sourceType: it.source || 'khac', sourceName: it.source_label || it.source || 'Tin rao',
         distanceMeters: (typeof it.distance_m === 'number') ? it.distance_m : null, description: it.description || '',
-        lat: typeof it.lat === 'number' ? it.lat : null, lng: typeof it.lng === 'number' ? it.lng : null
+        lat: typeof it.lat === 'number' ? it.lat : null, lng: typeof it.lng === 'number' ? it.lng : null,
+        corner: isCornerText((it.title || '') + ' ' + (it.description || ''))
       };
     }
     function showBackendLog(lines) {
@@ -3149,7 +3171,7 @@ ${items}`;
         area, frontage: rx.frontage > 0 ? rx.frontage : (ai.frontage_m || null), depth: ai.depth_m || null, rawPrice: price,
         link: postLink, sourceType: (group || fbLink) ? 'facebook' : 'zalo',
         sourceName: (group || (fbLink && fbLink.fb.group)) ? 'Facebook · ' + (group || fbLink.fb.group).name : (fbLink ? 'Facebook · link bài đã dán' : 'Tin nhập tay (Zalo/Facebook)'), distanceMeters: null, lat: null, lng: null,
-        matchLevel: wardCore ? (tn.includes(wardCore) ? 'nhac' : 'khong') : '', aiFields: []
+        matchLevel: wardCore ? (tn.includes(wardCore) ? 'nhac' : 'khong') : '', aiFields: [], corner: isCornerText(text)
       };
       applyAiToComp(comp, ai);
       return { comp };
@@ -3260,12 +3282,68 @@ ${items}`;
       setLocationStatus(`Đã xác định: <b>${lat.toFixed(6)}, ${lng.toFixed(6)}</b>${acc} · <a class="underline text-sky-700" target="_blank" rel="noopener" href="${mapsLinkFor(lat.toFixed(6), lng.toFixed(6))}">Mở Google Maps</a>`, 'text-emerald-800');
       renderMapElements();
       if (map) map.setView([lat, lng], 17);
+      suggestRoadsAt(lat, lng);
       if (localStorage.getItem('llp_geo_fill') !== 'false') return fillAddressFromCoords(lat, lng).then(g => { showAdminNames(); return g; });
+    }
+    // ---- v6.25: gợi ý đường/hẻm gần vị trí + khảo sát nhanh ----
+    let lastRoadSuggestions = [];
+    function pickRoad(i) {
+      const r = lastRoadSuggestions[i]; if (!r) return;
+      const inAlley = !!(document.getElementById('chkInAlley') || {}).checked;
+      const el = document.getElementById('targetStreet'); if (!el) return;
+      el.value = (inAlley && !r.alley) ? `Hẻm ... đường ${r.name.replace(/^(đường|phố)\s+/i, '')}` : r.name;
+      markAiPending('targetStreet'); recalculateTargetValues();
+      showToast(inAlley && !r.alley ? 'Đã điền tên đường; hãy sửa "..." thành số hẻm.' : 'Đã điền ô Đường (cần xác nhận).');
+    }
+    async function fetchRoadsNear(lat, lng) {
+      try {
+        const r = await fetch(`${getBackendUrl()}/api/roads?lat=${lat}&lng=${lng}`);
+        if (r.ok) { const j = await r.json(); if (j.ok) return { roads: j.roads || [], source: 'OpenStreetMap' }; throw new Error(j.error || 'lỗi'); }
+        throw new Error('HTTP ' + r.status + (r.status === 404 ? ' (máy chủ bản cũ, cần API v8)' : ''));
+      } catch (e) {
+        const key = (localStorage.getItem('llp_gmaps_key') || '').trim();
+        if (!key) throw e;
+        const g = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&result_type=route&language=vi&key=${encodeURIComponent(key)}`);
+        const j = await g.json();
+        if (j.status !== 'OK') throw new Error('Google: ' + j.status);
+        const names = []; (j.results || []).slice(0, 5).forEach(res => (res.address_components || []).forEach(c => { if ((c.types || []).includes('route') && !names.includes(c.long_name)) names.push(c.long_name); }));
+        return { roads: names.slice(0, 4).map(n => ({ name: n, distance_m: null, alley: /^(hẻm|kiệt|ngõ|ngách)\s/i.test(n) })), source: 'Google (không có khoảng cách)' };
+      }
+    }
+    async function suggestRoadsAt(lat, lng) {
+      const box = document.getElementById('roadSuggest'), list = document.getElementById('roadSuggestList'), note = document.getElementById('roadSuggestNote');
+      if (!box || !list) return;
+      box.classList.remove('hidden'); list.innerHTML = ''; note.textContent = 'Đang tìm đường gần vị trí...';
+      try {
+        const res = await fetchRoadsNear(lat, lng);
+        lastRoadSuggestions = res.roads;
+        if (!res.roads.length) { note.textContent = 'Không thấy đường có tên trong bán kính 60 m (hẻm thường chưa có tên trên bản đồ). Hãy nhập tay ô Đường.'; return; }
+        res.roads.forEach((r, i) => {
+          const b = document.createElement('button'); b.type = 'button';
+          b.className = 'px-2 py-1 rounded-lg border border-sky-300 bg-white hover:bg-sky-100 text-sky-900 font-medium';
+          b.textContent = r.name + (typeof r.distance_m === 'number' ? ` · ${r.distance_m} m` : '') + (r.alley ? ' (hẻm/lối nhỏ)' : '');
+          b.onclick = () => pickRoad(i); list.appendChild(b);
+        });
+        note.textContent = `Nguồn: ${res.source}. GPS điện thoại sai số vài đến vài chục mét nên có thể chọn nhầm đường song song: hãy đối chiếu thực tế.`;
+      } catch (e) {
+        lastRoadSuggestions = [];
+        note.textContent = 'Không tra được đường gần đây (' + String(e.message || e).replace(/Failed to fetch/g, 'không kết nối được máy chủ khảo giá') + '). Hãy nhập tay ô Đường.';
+      }
+    }
+    async function quickSurveyAtLocation() {
+      if (!targetCoordsKnown) { showToast('Hãy xác định vị trí trước (Vị trí hiện tại, dán tọa độ/link, hoặc chạm bản đồ).'); return; }
+      if (!valStr('targetWard') && !valStr('targetDistrictProvince')) {
+        setLocationStatus('Đang tra xã/phường, huyện, tỉnh từ vị trí...', 'text-slate-600');
+        await fillAddressFromCoords(targetCoords.lat, targetCoords.lng);
+      }
+      if (!valStr('targetWard') && !valStr('targetDistrictProvince')) { showToast('Chưa tra được Xã/Phường, Huyện/Tỉnh từ vị trí: hãy nhập tay rồi bấm lại.'); return; }
+      showToast('Khảo sát nhanh quanh vị trí (không cần sổ; diện tích để trống = không lọc theo diện tích).');
+      triggerManualSurvey();
     }
     function resetTargetLocation() {
       targetCoordsKnown = false; targetLocationInfo = null;
       const inp = document.getElementById('targetLocationInput'); if (inp) inp.value = '';
-      ['locationStatus', 'geoNote', 'adminNamesNote'].forEach(id => { const e = document.getElementById(id); if (e) { e.classList.add('hidden'); e.innerHTML = ''; } });
+      ['locationStatus', 'geoNote', 'adminNamesNote', 'roadSuggest'].forEach(id => { const e = document.getElementById(id); if (e) { e.classList.add('hidden'); e.innerHTML = ''; } });
       try { toggleMapPick(false); } catch (e) {}
       if (typeof renderMapElements === 'function') renderMapElements();
     }
@@ -3384,6 +3462,20 @@ ${items}`;
     }
 
     // === TÍNH TOÁN ĐỊNH GIÁ ĐA CƠ CẤU (ĐẤT Ở + ĐẤT VƯỜN + CTXD) ===
+    // v6.25: lô góc
+    function isCornerPos() { const v = (document.getElementById('targetPosType') || {}).value; return v === 'goc_mat_tien' || v === 'goc_hem'; }
+    function cornerAdjustment() {
+      if (!isCornerPos()) return 0;
+      const el = document.getElementById('targetCornerAdj'); const v = el ? parseFloat(el.value) : NaN;
+      return isNaN(v) ? 0 : Math.max(-30, Math.min(30, v)) / 100;
+    }
+    function onPosTypeChange() {
+      const on = isCornerPos();
+      ['cornerAdjBox', 'cornerAdjHint'].forEach(id => { const e = document.getElementById(id); if (e) e.classList.toggle('hidden', !on); });
+      recalculateTargetValues();
+    }
+    const CORNER_RE = /(lô|căn|nhà|thửa|đất)\s*góc|góc\s*(2|hai)\s*(mặt\s*tiền|mt)|(2|hai)\s*mặt\s*tiền|\b2\s*mt\b/i;
+    function isCornerText(t) { return CORNER_RE.test(String(t || '')); }
     function recalculateTargetValues() {
       const totalArea = parseFloat(document.getElementById('targetArea').value) || 0;
       let resArea = parseFloat(document.getElementById('targetResArea').value);
@@ -3481,13 +3573,15 @@ ${items}`;
       });
 
       // 1. ĐƠN GIÁ ĐẤT Ở (TÍNH TỪ TSSS)
-      const avgDiscountedResPrice = totalWeightedPrice / totalWeight;   // totalWeight > 0 được đảm bảo (đã có tin hợp lệ)
+      const baseDiscountedResPrice = totalWeightedPrice / totalWeight;   // totalWeight > 0 được đảm bảo (đã có tin hợp lệ)
+      const cornerAdj = cornerAdjustment();                                // v6.25: hệ số lô góc do thẩm định viên nhập (0 nếu không chọn lô góc / để trống)
+      const avgDiscountedResPrice = baseDiscountedResPrice * (1 + cornerAdj);
       const rawAvgResPrice = avgDiscountedResPrice / (1 - discountPercent / 100);
 
       // 2. ĐƠN GIÁ ĐẤT NÔNG NGHIỆP / VƯỜN
       let customAgriUnitPrice = parseFloat(document.getElementById('targetAgriUnitPrice').value);
       if (isNaN(customAgriUnitPrice) || customAgriUnitPrice <= 0) {
-        customAgriUnitPrice = Math.round((avgDiscountedResPrice * 0.15) * 100) / 100;
+        customAgriUnitPrice = Math.round((baseDiscountedResPrice * 0.15) * 100) / 100;
       }
       const rawAvgAgriPrice = customAgriUnitPrice / (1 - discountPercent / 100);
 
@@ -3521,7 +3615,7 @@ ${items}`;
 
       // Cập nhật số liệu vào Bảng định giá Mục IV báo cáo in
       document.getElementById('pLandArea').innerText = `${ded.resEff.toFixed(1)} m²` + (ded.dedRes > 0 ? ` (đã trừ ${ded.dedRes.toFixed(1)} m² quy hoạch)` : '');
-      document.getElementById('pLandUnitPrice').innerText = `${avgDiscountedResPrice.toFixed(2)} tr/m²`;
+      document.getElementById('pLandUnitPrice').innerText = `${avgDiscountedResPrice.toFixed(2)} tr/m²` + (cornerAdj ? ` (đã điều chỉnh ${cornerAdj > 0 ? '+' : ''}${(cornerAdj * 100).toFixed(1).replace(/\.0$/, '')}% lô góc do thẩm định viên chọn; trước điều chỉnh ${baseDiscountedResPrice.toFixed(2)})` : '');
       document.getElementById('pLandTotalVal').innerText = `${totalResLandValue.toFixed(2)} Tỷ`;
 
       document.getElementById('pAgriArea').innerText = `${ded.agriEff.toFixed(1)} m²` + (ded.dedAgri > 0 ? ` (đã trừ ${ded.dedAgri.toFixed(1)} m² quy hoạch)` : '');
@@ -3671,6 +3765,7 @@ ${items}`;
       document.getElementById('targetFrontage').value = '';
       document.getElementById('targetDepth').value = '';
       document.getElementById('targetRoadWidth').value = '';
+      { const ca = document.getElementById('targetCornerAdj'); if (ca) ca.value = ''; const pt = document.getElementById('targetPosType'); if (pt) pt.value = 'hem_oto'; onPosTypeChange(); }
       ['targetPlanningNotice','targetPlanningArea'].forEach(id => { const e = document.getElementById(id); if (e) { e.value = ''; e.title = ''; clearAiPending(e); } });
       ['targetFrontage','targetRoadWidth'].forEach(id => { const e = document.getElementById(id); if (e) { e.title = ''; clearAiPending(e); } });
       const pm = document.getElementById('targetPlanningDeductMode'); if (pm) pm.value = 'agri';
