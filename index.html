@@ -1040,8 +1040,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.27";
+    const APP_VERSION = "6.28";
     const APP_CHANGELOG = {
+      "6.28": "Gợi ý đường: sửa lỗi hiện mỗi đường 2 lần (hai lần gọi chạy chồng nhau); Overpass thử nhiều máy chủ khi lỗi 502 (cả tra xã/phường lẫn tìm đường) và tự mở rộng bán kính 60→150 m khi không thấy đường; thêm Photon làm nguồn tên đường dự phòng (chưa kiểm chứng định dạng, không có khoảng cách).",
       "6.27": "Sửa từ phản hồi dùng thử trên điện thoại: (1) nút Dừng ngay trong thanh trạng thái nổi khi đang tìm tin; (2) tên Tổ dân phố/Khu phố/Thôn/Xóm không bị điền nhầm vào ô Xã/Phường mà chuyển sang ô Thôn/Xóm/Khu phố, ô Xã/Phường lấy từ nguồn kế tiếp; (3) tên tiếng Anh (province/city/district) bị hạ ưu tiên và được bỏ chữ thừa; (4) gợi ý đường/hẻm tự gọi thẳng Overpass khi không có máy chủ khảo giá (điện thoại).",
       "6.26": "Tra xã/phường, huyện, tỉnh từ tọa độ tự chuyển nguồn dự phòng: Google (nếu có khóa) → Nominatim → Photon → Overpass (ranh giới hành chính OpenStreetMap) → máy chủ khảo giá (API v9, chạy cùng chuỗi từ máy chủ); ghi chú nêu nguồn đã dùng và các nguồn bị lỗi/chặn; vẫn tô vàng cần đối chiếu sổ.",
       "6.25": "Lô góc (mặt tiền / hẻm) trong ô Vị trí kèm ô hệ số điều chỉnh % do thẩm định viên tự nhập (mặc định trống, báo cáo ghi rõ); tin so sánh có chữ lô góc/2 mặt tiền được gắn nhãn. Vị trí hiện tại/ghim: gợi ý 2-4 đường hoặc hẻm gần nhất kèm khoảng cách (máy chủ API v8, OpenStreetMap; dự phòng tên đường từ Google nếu có khóa) để chọn điền ô đường, có ô tick đang ở hẻm. Nút Khảo sát nhanh tại vị trí (không cần sổ). PDF: giảm lề, tăng cỡ chữ, tránh ngắt giữa hàng bảng.",
@@ -3305,25 +3306,53 @@ ${items}`;
         if (r.ok) { const j = await r.json(); if (j.ok) return { roads: j.roads || [], source: 'OpenStreetMap' }; throw new Error(j.error || 'lỗi'); }
         throw new Error('HTTP ' + r.status + (r.status === 404 ? ' (máy chủ bản cũ, cần API v8)' : ''));
       } catch (e0) {
-        let ovp = null;
-        try { const els = await fetchOverpassRoadsBrowser(lat, lng); ovp = { roads: roadsFromOverpass(els, lat, lng), source: 'OpenStreetMap Overpass (gọi từ thiết bị)' }; if (ovp.roads.length) return ovp; } catch (e1) { /* thử Google */ }
-        const e = e0;
+        const errs = [String(e0.message || e0)];
+        let ovpEmpty = false;
+        for (const radius of [60, 150]) {                                                        // không thấy đường thì mở rộng bán kính
+          try {
+            const roads = roadsFromOverpass(await fetchOverpassRoadsBrowser(lat, lng, radius), lat, lng);
+            if (roads.length) return { roads, source: `OpenStreetMap Overpass (gọi từ thiết bị, bán kính ${radius} m)` };
+            ovpEmpty = true;
+          } catch (e1) { errs.push(String(e1.message || e1)); break; }                           // đã thử hết máy chủ Overpass
+        }
         const key = (localStorage.getItem('llp_gmaps_key') || '').trim();
-        if (!key) { if (ovp) return ovp; throw e; }
-        const g = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&result_type=route&language=vi&key=${encodeURIComponent(key)}`);
-        const j = await g.json();
-        if (j.status !== 'OK') throw new Error('Google: ' + j.status);
-        const names = []; (j.results || []).slice(0, 5).forEach(res => (res.address_components || []).forEach(c => { if ((c.types || []).includes('route') && !names.includes(c.long_name)) names.push(c.long_name); }));
-        return { roads: names.slice(0, 4).map(n => ({ name: n, distance_m: null, alley: /^(hẻm|kiệt|ngõ|ngách)\s/i.test(n) })), source: 'Google (không có khoảng cách)' };
+        if (key) {
+          try {
+            const g = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&result_type=route&language=vi&key=${encodeURIComponent(key)}`);
+            const j = await g.json();
+            if (j.status !== 'OK') throw new Error('Google: ' + j.status);
+            const names = []; (j.results || []).slice(0, 5).forEach(res => (res.address_components || []).forEach(c => { if ((c.types || []).includes('route') && !names.includes(c.long_name)) names.push(c.long_name); }));
+            if (names.length) return { roads: names.slice(0, 4).map(n => ({ name: n, distance_m: null, alley: /^(hẻm|kiệt|ngõ|ngách)\s/i.test(n) })), source: 'Google (không có khoảng cách)' };
+          } catch (e2) { errs.push(String(e2.message || e2)); }
+        }
+        try {
+          const roads = await fetchPhotonRoads(lat, lng);
+          if (roads.length) return { roads, source: 'Photon (OpenStreetMap, không có khoảng cách, chưa kiểm chứng nên cần đối chiếu)' };
+        } catch (e3) { errs.push(String(e3.message || e3)); }
+        if (ovpEmpty) return { roads: [], source: 'Overpass' };
+        throw new Error(errs.join('; '));
       }
     }
-    async function fetchOverpassRoadsBrowser(lat, lng) {
-      const q = `[out:json][timeout:15];way(around:60,${lat},${lng})["highway"]["name"];out geom;`;
-      let last;
-      for (const base of ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter']) {
-        try { const r = await fetch(base + '?data=' + encodeURIComponent(q)); if (!r.ok) throw new Error('HTTP ' + r.status); return (await r.json()).elements || []; } catch (e) { last = e; }
+    const OVERPASS_BASES = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter'];
+    // Gọi Overpass, lỗi (502, quá tải, mạng) thì thử máy chủ kế tiếp
+    async function overpassQuery(q) {
+      const errs = [];
+      for (const base of OVERPASS_BASES) {
+        try { const r = await fetch(base + '?data=' + encodeURIComponent(q)); if (!r.ok) throw new Error('HTTP ' + r.status); return (await r.json()).elements || []; }
+        catch (e) { errs.push(new URL(base).hostname + ': ' + String(e.message || e).replace(/Failed to fetch/g, 'không kết nối được')); }
       }
-      throw last;
+      throw new Error('Overpass: ' + errs.join('; '));
+    }
+    async function fetchOverpassRoadsBrowser(lat, lng, radius = 60) {
+      return overpassQuery(`[out:json][timeout:15];way(around:${radius},${lat},${lng})["highway"]["name"];out geom;`);
+    }
+    // Photon (dự phòng): đường gần nhất theo trường street / tên của đối tượng highway; không có khoảng cách
+    async function fetchPhotonRoads(lat, lng) {
+      const r = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}&radius=0.15&limit=5`);
+      if (!r.ok) throw new Error('Photon HTTP ' + r.status);
+      const names = [];
+      ((await r.json()).features || []).forEach(f => { const p = f.properties || {}; const n = (p.osm_key === 'highway' ? p.name : '') || p.street || ''; if (n && !names.includes(n)) names.push(n); });
+      return names.slice(0, 4).map(n => ({ name: n, distance_m: null, alley: /^(hẻm|kiệt|ngõ|ngách)\s/i.test(n) }));
     }
     function distToPolylineM(lat, lng, geom) {
       const k = 111320, cx = Math.cos(lat * Math.PI / 180);
@@ -3346,14 +3375,18 @@ ${items}`;
       });
       return Object.values(best).sort((a, b) => a.distance_m - b.distance_m).slice(0, limit);
     }
+    let roadReqId = 0;
     async function suggestRoadsAt(lat, lng) {
+      const myReq = ++roadReqId;                // hai lần gọi chạy chồng nhau: chỉ lần mới nhất được hiển thị
       const box = document.getElementById('roadSuggest'), list = document.getElementById('roadSuggestList'), note = document.getElementById('roadSuggestNote');
       if (!box || !list) return;
       box.classList.remove('hidden'); list.innerHTML = ''; note.textContent = 'Đang tìm đường gần vị trí...';
       try {
         const res = await fetchRoadsNear(lat, lng);
+        if (myReq !== roadReqId) return;
         lastRoadSuggestions = res.roads;
-        if (!res.roads.length) { note.textContent = 'Không thấy đường có tên trong bán kính 60 m (hẻm thường chưa có tên trên bản đồ). Hãy nhập tay ô Đường.'; return; }
+        if (!res.roads.length) { note.textContent = 'Không thấy đường có tên trong bán kính 150 m (hẻm thường chưa có tên trên bản đồ). Hãy nhập tay ô Đường.'; return; }
+        list.innerHTML = '';
         res.roads.forEach((r, i) => {
           const b = document.createElement('button'); b.type = 'button';
           b.className = 'px-2 py-1 rounded-lg border border-sky-300 bg-white hover:bg-sky-100 text-sky-900 font-medium';
@@ -3362,6 +3395,7 @@ ${items}`;
         });
         note.textContent = `Nguồn: ${res.source}. GPS điện thoại sai số vài đến vài chục mét nên có thể chọn nhầm đường song song: hãy đối chiếu thực tế.`;
       } catch (e) {
+        if (myReq !== roadReqId) return;
         lastRoadSuggestions = [];
         note.textContent = 'Không tra được đường gần đây (' + String(e.message || e).replace(/Failed to fetch/g, 'không kết nối được máy chủ khảo giá') + '). Hãy nhập tay ô Đường.';
       }
@@ -3469,9 +3503,8 @@ ${items}`;
     }
     async function reverseGeocodeOverpass(lat, lng) {
       const q = `[out:json][timeout:15];is_in(${lat},${lng})->.a;area.a[boundary=administrative][admin_level~"^(4|6|8)$"];out tags;`;
-      const r = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q));
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const lv = {}; ((await r.json()).elements || []).forEach(e => { const t = e.tags || {}; if (['4', '6', '8'].includes(t.admin_level) && t.name && !lv[t.admin_level]) lv[t.admin_level] = t.name; });
+      const els = await overpassQuery(q);
+      const lv = {}; els.forEach(e => { const t = e.tags || {}; if (['4', '6', '8'].includes(t.admin_level) && t.name && !lv[t.admin_level]) lv[t.admin_level] = t.name; });
       return { ward: lv['8'] || '', district: lv['6'] || '', province: lv['4'] || '', source: 'Overpass (ranh giới hành chính OpenStreetMap)' };
     }
     // v6.27: chuẩn hóa kết quả tra địa danh. Tổ dân phố/Khu phố/Thôn/Xóm... là cấp nhỏ hơn xã/phường -> chuyển sang hamlet; bỏ chữ tiếng Anh thừa

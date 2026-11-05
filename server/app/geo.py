@@ -91,7 +91,7 @@ def roads_from_overpass(elements, lat, lng, limit=4):
                           "alley": tags.get("highway", "") in ALLEY_HIGHWAY or any(n.startswith(p + " ") for p in ALLEY_PREFIX)}
     return sorted(best.values(), key=lambda r: r["distance_m"])[:limit]
 
-OVERPASS_URLS = ("https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter")
+OVERPASS_URLS = ("https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter", "https://maps.mail.ru/osm/tools/overpass/api/interpreter")
 
 def fetch_overpass_roads(lat, lng, radius_m=60, session=None):
     import requests

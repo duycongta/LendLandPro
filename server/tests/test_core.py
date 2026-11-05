@@ -333,9 +333,9 @@ def test_api_version_and_user_scenario(monkeypatch, tmp_path):
     ]
     store.save([Listing("chotot", f"https://x/{n}", t, address=a, price_vnd=pr, area_m2=ar, kind="dat", posted_at=_ago(10)) for n, a, t, pr, ar in rows])
     c = TestClient(m.app)
-    assert c.get("/api/health").json()["api_version"] == 10 and "folder" in c.get("/api/health").json()
+    assert c.get("/api/health").json()["api_version"] == 11 and "folder" in c.get("/api/health").json()
     r = c.get("/api/comps", params={"xa": "Xã Phước Sơn", "huyen": "Huyện Tuy Phước", "tinh": "Tỉnh Bình Định", "thon": "Thôn Xuân Phương", "area": 751.4, "kind": "dat", "tol": 50}).json()
-    assert r["api_version"] == 10
+    assert r["api_version"] == 11
     assert [i["url"].split("/")[-1] for i in r["items"]] == ["6"] and r["items"][0]["match_level"] == "thon"
 
 
@@ -659,3 +659,15 @@ def test_normalize_geo_and_chain_prefers_real_ward():
             raise ConnectionError("x")
     r2 = geo.reverse_chain(13.78, 109.22, session=S2())
     assert r2["ok"] and r2["ward"] == "" and r2["district"] == "Quy Nhon" and r2["hamlet"] == "Tổ dân phố 8" and r2["english"] is True
+
+
+def test_roads_endpoint_expands_radius(monkeypatch):
+    from fastapi.testclient import TestClient
+    import app.main as m, app.geo as geo
+    calls = []
+    far = [{"tags": {"name": "Đường Xa", "highway": "residential"}, "geometry": [{"lat": 13.8008, "lon": 109.199}, {"lat": 13.8008, "lon": 109.201}]}]
+    def fake(la, ln, rad):
+        calls.append(rad); return [] if rad < 150 else far
+    monkeypatch.setattr(geo, "fetch_overpass_roads", fake)
+    j = TestClient(m.app).get("/api/roads", params={"lat": 13.8, "lng": 109.2}).json()
+    assert calls == [60, 150] and j["ok"] and j["roads"][0]["name"] == "Đường Xa" and j["radius_m"] == 150

@@ -206,7 +206,7 @@ def listing_to_api(l):
         "lat": lat if ok_coord else None, "lng": lng if ok_coord else None,
     }
 
-API_VERSION = 10     # 10: /api/reverse chuẩn hóa tổ/khu phố->hamlet, hạ ưu tiên tên tiếng Anh. 9: /api/reverse có chuỗi dự phòng. 8: thêm /api/roads. 7: thêm job + /api/cancel (dừng khảo sát). 6: thêm diagnostics trong /api/comps. 5: thêm /api/reverse. 4: thêm /api/resolve, /api/admin_names, lat/lng/radius_m + distance_m. 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
+API_VERSION = 11     # 11: /api/roads mở rộng bán kính 60->150 m khi trống. 10: /api/reverse chuẩn hóa tổ/khu phố->hamlet, hạ ưu tiên tên tiếng Anh. 9: /api/reverse có chuỗi dự phòng. 8: thêm /api/roads. 7: thêm job + /api/cancel (dừng khảo sát). 6: thêm diagnostics trong /api/comps. 5: thêm /api/reverse. 4: thêm /api/resolve, /api/admin_names, lat/lng/radius_m + distance_m. 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
 
 @app.get("/api/health")
 def api_health():
@@ -378,7 +378,11 @@ def api_roads(lat: float, lng: float, radius_m: float = 60):
     if not geo.in_vietnam(lat, lng):
         return {"ok": False, "error": "Tọa độ nằm ngoài Việt Nam."}
     try:
-        els = geo.fetch_overpass_roads(lat, lng, min(max(radius_m, 20), 150))
+        radius = min(max(radius_m, 20), 150)
+        roads = geo.roads_from_overpass(geo.fetch_overpass_roads(lat, lng, radius), lat, lng)
+        if not roads and radius < 150:          # không thấy đường nào: mở rộng bán kính tới 150 m
+            radius = 150
+            roads = geo.roads_from_overpass(geo.fetch_overpass_roads(lat, lng, radius), lat, lng)
     except Exception as e:
         return {"ok": False, "error": f"Không tra được đường gần đây: {e}"}
-    return {"ok": True, "roads": geo.roads_from_overpass(els, lat, lng)}
+    return {"ok": True, "roads": roads, "radius_m": radius}
