@@ -21,6 +21,13 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
     
+    /* v6.33: neo cột STT + Địa chỉ khi trượt ngang (bảng Danh mục chính, Hàng chờ) */
+    table.sticky-cols th:nth-child(1), table.sticky-cols td:not([colspan]):nth-child(1) { position: sticky; left: 0; z-index: 3; width: 3rem; min-width: 3rem; max-width: 3rem; background: #fff; }
+    table.sticky-cols th:nth-child(2), table.sticky-cols td:not([colspan]):nth-child(2) { position: sticky; left: 3rem; z-index: 3; background: #fff; box-shadow: 1px 0 0 #cbd5e1; }
+    table.sticky-cols thead th:nth-child(1), table.sticky-cols thead th:nth-child(2) { background: #f1f5f9; z-index: 4; }
+    @media (max-width: 640px) {
+      table.sticky-cols th:nth-child(2), table.sticky-cols td:not([colspan]):nth-child(2) { min-width: 150px !important; max-width: 170px !important; width: 160px; }
+    }
     .report-paper {
       width: 100%;
       max-width: 800px;
@@ -281,10 +288,9 @@
             <label class="flex items-center gap-1.5 text-[11px] text-slate-600"><input type="checkbox" id="chkGeoFill" checked onchange="try{localStorage.setItem('llp_geo_fill', this.checked ? 'true' : 'false')}catch(e){}"> Tự điền Xã/Huyện/Tỉnh từ tọa độ</label>
           </div>
           <div class="flex flex-col sm:flex-row gap-2">
-            <input type="text" id="targetLocationInput" placeholder="Dán link Google Maps hoặc tọa độ, ví dụ: 13°47'42.2&quot;N 109°11'25.2&quot;E hoặc 13.795063, 109.190325" class="flex-grow border border-slate-300 rounded-lg p-2.5 text-xs bg-white" onkeydown="if(event.key==='Enter'){applyLocationInput();}">
+            <input type="text" id="targetLocationInput" placeholder="Để trống rồi bấm Xác định vị trí = dùng GPS. Hoặc dán link Google Maps / tọa độ, ví dụ: 13°47'42.2&quot;N 109°11'25.2&quot;E hoặc 13.795063, 109.190325" class="flex-grow border border-slate-300 rounded-lg p-2.5 text-xs bg-white" onkeydown="if(event.key==='Enter'){applyLocationInput();}">
             <div class="flex gap-2">
-              <button onclick="applyLocationInput()" type="button" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs px-3 py-2 rounded-lg whitespace-nowrap">Xác định</button>
-              <button onclick="useCurrentLocation()" type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-1"><i class="ph-bold ph-crosshair"></i> Vị trí hiện tại</button>
+              <button onclick="locatePlot()" id="btnLocate" type="button" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs px-4 py-2 rounded-lg whitespace-nowrap flex items-center gap-1.5" title="Ô trống: dùng GPS thiết bị. Ô có link/tọa độ: đọc link/tọa độ."><i class="ph-bold ph-crosshair"></i> Xác định vị trí</button>
             </div>
           </div>
           <div id="locationStatus" class="hidden text-[11px] leading-snug"></div>
@@ -296,7 +302,6 @@
             <label class="flex items-center gap-1.5 text-slate-700"><input type="checkbox" id="chkInAlley"> Tôi đang ở trong hẻm (ô Đường sẽ ghi "Hẻm ... đường X", số hẻm bạn nhập tay)</label>
             <div id="roadSuggestNote" class="text-slate-500"></div>
           </div>
-          <div class="flex justify-end"><button onclick="quickSurveyAtLocation()" type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1"><i class="ph-bold ph-magnifying-glass"></i> Khảo sát nhanh tại vị trí (không cần sổ)</button></div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 text-xs font-medium bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200">
@@ -430,9 +435,6 @@
           </div>
           
           <div class="flex items-center gap-2">
-            <button onclick="recalculateTargetValues()" type="button" class="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-3.5 py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow cursor-pointer">
-              <i class="ph-bold ph-arrows-clockwise"></i> Cập Nhật
-            </button>
             <button onclick="triggerManualSurvey()" id="btnManualSurvey" type="button" class="flex-2 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-md active:scale-95 cursor-pointer">
               <i class="ph-bold ph-magnifying-glass-plus text-base text-amber-300"></i> Khảo Sát Giá Thị Trường & Tìm TSSS
             </button>
@@ -686,7 +688,7 @@
 
         <div id="backendLogBox" class="hidden px-3.5 sm:px-4 py-2 text-[11px] text-slate-600 bg-slate-50 border-b border-slate-100 whitespace-pre-line"></div>
         <div class="overflow-x-auto w-full" style="-webkit-overflow-scrolling: touch;">
-          <table class="w-full text-left text-xs" style="min-width: 1040px;">
+          <table class="w-full text-left text-xs sticky-cols" style="min-width: 1040px;">
             <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 uppercase tracking-wider text-[11px]">
               <tr>
                 <th class="py-3 px-2 text-center w-12">STT</th>
@@ -732,7 +734,7 @@
         <div id="poolDrawerContent" class="hidden p-3 sm:p-4 bg-slate-50/50">
         <div class="mb-2 text-[11px] text-rose-800 bg-rose-50 border border-rose-200 rounded-lg p-2">Tin gắn nhãn <b>"AI tạo"</b> là gợi ý do AI viết ra, có thể không có thật. Bấm "Tra cứu kiểm chứng" để tìm trên Google; chỉ khi đã xác nhận mới "Xác nhận & đưa lên" bảng tính giá.</div>
           <div class="overflow-x-auto w-full">
-            <table class="w-full text-left text-xs bg-white rounded-lg border border-slate-200" style="min-width: 900px;">
+            <table class="w-full text-left text-xs bg-white rounded-lg border border-slate-200 sticky-cols" style="min-width: 900px;">
               <thead class="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200 uppercase text-[10px]">
                 <tr>
                   <th class="py-2.5 px-2 text-center w-12">#</th>
@@ -1040,8 +1042,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.32";
+    const APP_VERSION = "6.33";
     const APP_CHANGELOG = {
+      "6.33": "Gọn giao diện theo phản hồi: gộp \"Xác định\" và \"Vị trí hiện tại\" thành một nút \"Xác định vị trí\" (ô trống hoặc đang là tọa độ do app điền thì dùng GPS, ô có link/tọa độ bạn dán thì đọc link/tọa độ); bỏ nút \"Khảo sát nhanh tại vị trí\" (trùng nút Khảo Sát Giá) và nút \"Cập Nhật\" (các ô số đã tự tính lại); neo cố định cột STT và Địa chỉ ở bảng Danh mục chính và Hàng chờ khi trượt ngang (điện thoại thu hẹp cột Địa chỉ còn ~150 px).",
       "6.32": "Nút Dừng cũng có hiệu lực ở bước AI tìm tin (Gemini + Google Search, bước chạy khi không có máy chủ khảo giá, vd trên điện thoại): ngắt kết nối Gemini, hủy và giữ nguyên bảng như trước khi khảo sát.",
       "6.31": "Bỏ thông báo nhắc \"chọn A4, hướng Dọc\" trước hộp thoại in trên điện thoại (theo yêu cầu).",
       "6.30": "Xuất PDF: khung in ẩn có tỉ lệ A4 dọc (794x1123 px, trong suốt) thay vì kích thước 0 để hộp thoại in ở chế độ Tự động (Android) chọn hướng Dọc; chưa kiểm chứng trên điện thoại thật.",
@@ -3297,7 +3300,7 @@ ${items}`;
     function setTargetLocation(lat, lng, info) {
       targetCoords = { lat, lng }; targetCoordsKnown = true; targetLocationInfo = info || { source: 'input' };
       const inp = document.getElementById('targetLocationInput');
-      if (inp && info && info.source !== 'input') inp.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      if (inp && info && info.source !== 'input') { inp.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`; autoLocationText = inp.value; }
       const acc = info && info.accuracy ? ` · sai số khoảng <b>${Math.round(info.accuracy)} m</b>${info.accuracy > 30 ? ' (khá lớn: nên dời ghim về đúng thửa)' : ''}` : '';
       setLocationStatus(`Đã xác định: <b>${lat.toFixed(6)}, ${lng.toFixed(6)}</b>${acc} · <a class="underline text-sky-700" target="_blank" rel="noopener" href="${mapsLinkFor(lat.toFixed(6), lng.toFixed(6))}">Mở Google Maps</a>`, 'text-emerald-800');
       renderMapElements();
@@ -3415,18 +3418,8 @@ ${items}`;
         note.textContent = 'Không tra được đường gần đây (' + String(e.message || e).replace(/Failed to fetch/g, 'không kết nối được máy chủ khảo giá') + '). Hãy nhập tay ô Đường.';
       }
     }
-    async function quickSurveyAtLocation() {
-      if (!targetCoordsKnown) { showToast('Hãy xác định vị trí trước (Vị trí hiện tại, dán tọa độ/link, hoặc chạm bản đồ).'); return; }
-      if (!valStr('targetWard') && !valStr('targetDistrictProvince')) {
-        setLocationStatus('Đang tra xã/phường, huyện, tỉnh từ vị trí...', 'text-slate-600');
-        await fillAddressFromCoords(targetCoords.lat, targetCoords.lng);
-      }
-      if (!valStr('targetWard') && !valStr('targetDistrictProvince')) { showToast('Chưa tra được Xã/Phường, Huyện/Tỉnh từ vị trí: hãy nhập tay rồi bấm lại.'); return; }
-      showToast('Khảo sát nhanh quanh vị trí (không cần sổ; diện tích để trống = không lọc theo diện tích).');
-      triggerManualSurvey();
-    }
     function resetTargetLocation() {
-      targetCoordsKnown = false; targetLocationInfo = null;
+      targetCoordsKnown = false; targetLocationInfo = null; autoLocationText = '';
       const inp = document.getElementById('targetLocationInput'); if (inp) inp.value = '';
       ['locationStatus', 'geoNote', 'adminNamesNote', 'roadSuggest'].forEach(id => { const e = document.getElementById(id); if (e) { e.classList.add('hidden'); e.innerHTML = ''; } });
       try { toggleMapPick(false); } catch (e) {}
@@ -3453,6 +3446,13 @@ ${items}`;
         el.innerHTML = parts.length ? `Xã/phường "${escHtml(ward)}": ${parts.join('; ')} (học từ dữ liệu tin, hãy đối chiếu với sổ).` : `Chưa có dữ liệu đối chiếu tên cũ/mới cho "${escHtml(ward)}".`;
         el.classList.remove('hidden');
       } catch (e) { el.classList.add('hidden'); }
+    }
+    // v6.33: một nút cho cả hai việc: ô trống (hoặc đang là tọa độ do app tự điền) -> GPS; ô có link/tọa độ do người dùng dán -> đọc link/tọa độ
+    let autoLocationText = '';
+    function locatePlot() {
+      const v = valStr('targetLocationInput');
+      if (!v || v === autoLocationText) return useCurrentLocation();
+      return applyLocationInput();
     }
     async function applyLocationInput() {
       const r = parseLatLng(valStr('targetLocationInput'));
