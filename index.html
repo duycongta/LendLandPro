@@ -304,6 +304,18 @@
           </div>
         </div>
 
+        <!-- v6.7: BẢNG CẢNH BÁO / CHÚ Ý (v6.34: đặt ngay dưới khối Vị trí thửa đất) -->
+        <div id="alertsBox" class="hidden border border-amber-300 bg-amber-50/60 rounded-xl p-3.5 sm:p-4 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5 font-bold text-amber-900 text-xs uppercase tracking-wide">
+              <i class="ph-bold ph-warning text-base"></i> Cảnh báo / Chú ý khi xem xét tài sản
+            </div>
+            <button id="btnConfirmAi" onclick="confirmAiSuggestions()" type="button" class="hidden text-[11px] bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1 rounded-lg">Xác nhận các số AI đề xuất</button>
+          </div>
+          <ul id="alertsList" class="text-[12px] space-y-1"></ul>
+          <div class="text-[10px] text-slate-500 italic">Chỉ mang tính nhắc nhở nội bộ, không thay thế quy định và đánh giá chính thức của ngân hàng.</div>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 text-xs font-medium bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200">
           <div>
             <label class="block text-slate-700 font-semibold mb-1">Tổng diện tích (m²) *</label>
@@ -350,6 +362,9 @@
         </div>
 
         <!-- v6.9: GHI CHÚ GCN & DIỆN TÍCH KHÔNG TÍNH GIÁ -->
+        <div>
+          <button id="btnToggleGcnNotes" type="button" onclick="toggleCollapsible('gcnNotes')" class="text-xs font-semibold text-rose-700 hover:underline flex items-center gap-1"><i class="ph-bold ph-plus-circle"></i> <span>Thêm ghi chú GCN / diện tích không tính giá</span></button>
+          <div id="gcnNotesWrap" class="hidden mt-2">
         <div class="border border-rose-200 bg-rose-50/30 rounded-xl p-3.5 sm:p-4">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
             <div class="md:col-span-2">
@@ -370,19 +385,12 @@
             </div>
           </div>
         </div>
-
-        <!-- v6.7: BẢNG CẢNH BÁO / CHÚ Ý -->
-        <div id="alertsBox" class="hidden border border-amber-300 bg-amber-50/60 rounded-xl p-3.5 sm:p-4 space-y-2">
-          <div class="flex items-center justify-between gap-2">
-            <div class="flex items-center gap-1.5 font-bold text-amber-900 text-xs uppercase tracking-wide">
-              <i class="ph-bold ph-warning text-base"></i> Cảnh báo / Chú ý khi xem xét tài sản
-            </div>
-            <button id="btnConfirmAi" onclick="confirmAiSuggestions()" type="button" class="hidden text-[11px] bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1 rounded-lg">Xác nhận các số AI đề xuất</button>
           </div>
-          <ul id="alertsList" class="text-[12px] space-y-1"></ul>
-          <div class="text-[10px] text-slate-500 italic">Chỉ mang tính nhắc nhở nội bộ, không thay thế quy định và đánh giá chính thức của ngân hàng.</div>
         </div>
 
+        <div>
+          <button id="btnToggleCtxd" type="button" onclick="toggleCollapsible('ctxd')" class="text-xs font-semibold text-amber-800 hover:underline flex items-center gap-1"><i class="ph-bold ph-plus-circle"></i> <span>Thêm công trình xây dựng trên đất</span></button>
+          <div id="ctxdWrap" class="hidden mt-2">
         <div class="border border-amber-200 bg-amber-50/40 rounded-xl p-3.5 sm:p-4">
           <div class="flex items-center justify-between mb-2.5">
             <div class="flex items-center gap-1.5 sm:gap-2">
@@ -415,6 +423,8 @@
                 0.00 Tỷ VNĐ
               </div>
             </div>
+          </div>
+        </div>
           </div>
         </div>
 
@@ -1042,8 +1052,10 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.33";
+    const APP_VERSION = "6.35";
     const APP_CHANGELOG = {
+      "6.35": "Làm gọn: khối Ghi chú GCN (kèm Diện tích không tính giá, Trừ vào loại đất) và khối Công trình xây dựng thu gọn thành một dòng \"+ Thêm ...\" khi chưa có nội dung; tự mở khi có ghi chú, diện tích không tính giá hoặc diện tích sàn xây dựng (AI đọc ra cũng tự mở) và có thể bấm để mở/thu gọn.",
+      "6.34": "Bảng Cảnh báo / Chú ý khi xem xét tài sản chuyển lên ngay dưới khối Vị trí thửa đất để thấy ngay khi vừa định vị (vẫn ẩn khi chưa có cảnh báo).",
       "6.33": "Gọn giao diện theo phản hồi: gộp \"Xác định\" và \"Vị trí hiện tại\" thành một nút \"Xác định vị trí\" (ô trống hoặc đang là tọa độ do app điền thì dùng GPS, ô có link/tọa độ bạn dán thì đọc link/tọa độ); bỏ nút \"Khảo sát nhanh tại vị trí\" (trùng nút Khảo Sát Giá) và nút \"Cập Nhật\" (các ô số đã tự tính lại); neo cố định cột STT và Địa chỉ ở bảng Danh mục chính và Hàng chờ khi trượt ngang (điện thoại thu hẹp cột Địa chỉ còn ~150 px).",
       "6.32": "Nút Dừng cũng có hiệu lực ở bước AI tìm tin (Gemini + Google Search, bước chạy khi không có máy chủ khảo giá, vd trên điện thoại): ngắt kết nối Gemini, hủy và giữ nguyên bảng như trước khi khảo sát.",
       "6.31": "Bỏ thông báo nhắc \"chọn A4, hướng Dọc\" trước hộp thoại in trên điện thoại (theo yêu cầu).",
@@ -3604,7 +3616,24 @@ ${items}`;
     }
     const CORNER_RE = /(lô|căn|nhà|thửa|đất)\s*góc|góc\s*(2|hai)\s*(mặt\s*tiền|mt)|(2|hai)\s*mặt\s*tiền|\b2\s*mt\b/i;
     function isCornerText(t) { return CORNER_RE.test(String(t || '')); }
+    // v6.35: khối thu gọn (Ghi chú GCN, CTXD): thu gọn khi trống, tự mở khi có nội dung, bấm dòng \"+ Thêm ...\" để mở/thu gọn
+    const COLLAPSIBLES = {
+      gcnNotes: { wrap: 'gcnNotesWrap', btn: 'btnToggleGcnNotes', open: 'Thu gọn ghi chú GCN', closed: 'Thêm ghi chú GCN / diện tích không tính giá',
+        hasContent: () => !!valStr('targetPlanningNotice') || valNum('targetPlanningArea') > 0 },
+      ctxd: { wrap: 'ctxdWrap', btn: 'btnToggleCtxd', open: 'Thu gọn công trình xây dựng', closed: 'Thêm công trình xây dựng trên đất',
+        hasContent: () => !!valStr('targetBuildingType') || valNum('targetBuildingArea') > 0 }
+    };
+    function setCollapsible(key, open) {
+      const c = COLLAPSIBLES[key], wrap = document.getElementById(c.wrap), btn = document.getElementById(c.btn); if (!wrap || !btn) return;
+      wrap.classList.toggle('hidden', !open);
+      btn.querySelector('span').textContent = open ? c.open : c.closed;
+      const ic = btn.querySelector('i'); if (ic) ic.className = open ? 'ph-bold ph-minus-circle' : 'ph-bold ph-plus-circle';
+    }
+    function toggleCollapsible(key) { const wrap = document.getElementById(COLLAPSIBLES[key].wrap); setCollapsible(key, !!wrap && wrap.classList.contains('hidden')); }
+    // Chỉ TỰ MỞ khi có nội dung (không tự đóng, tránh đóng khi đang gõ)
+    function syncCollapsibles() { Object.keys(COLLAPSIBLES).forEach(k => { const w = document.getElementById(COLLAPSIBLES[k].wrap); if (w && w.classList.contains('hidden') && COLLAPSIBLES[k].hasContent()) setCollapsible(k, true); }); }
     function recalculateTargetValues() {
+      try { syncCollapsibles(); } catch (e) {}
       const totalArea = parseFloat(document.getElementById('targetArea').value) || 0;
       let resArea = parseFloat(document.getElementById('targetResArea').value);
       let agriArea = parseFloat(document.getElementById('targetAgriArea').value);
@@ -3933,6 +3962,7 @@ ${items}`;
       document.getElementById('printCompareTbody').innerHTML = '';
       document.getElementById('pdfPreviewContainer').innerHTML = '';
 
+      Object.keys(COLLAPSIBLES).forEach(k => setCollapsible(k, false));      // các ô đã được xóa trắng -> thu gọn lại
       renderMapElements();
       recalculateTargetValues();
       renderPoolListUI();
