@@ -1040,8 +1040,11 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.29";
+    const APP_VERSION = "6.32";
     const APP_CHANGELOG = {
+      "6.32": "Nút Dừng cũng có hiệu lực ở bước AI tìm tin (Gemini + Google Search, bước chạy khi không có máy chủ khảo giá, vd trên điện thoại): ngắt kết nối Gemini, hủy và giữ nguyên bảng như trước khi khảo sát.",
+      "6.31": "Bỏ thông báo nhắc \"chọn A4, hướng Dọc\" trước hộp thoại in trên điện thoại (theo yêu cầu).",
+      "6.30": "Xuất PDF: khung in ẩn có tỉ lệ A4 dọc (794x1123 px, trong suốt) thay vì kích thước 0 để hộp thoại in ở chế độ Tự động (Android) chọn hướng Dọc; chưa kiểm chứng trên điện thoại thật.",
       "6.29": "Ô đổi mã PIN: bỏ ví dụ số cụ thể, thay bằng chữ gợi ý \"Nhập mã PIN 6 số\".",
       "6.28": "Gợi ý đường: sửa lỗi hiện mỗi đường 2 lần (hai lần gọi chạy chồng nhau); Overpass thử nhiều máy chủ khi lỗi 502 (cả tra xã/phường lẫn tìm đường) và tự mở rộng bán kính 60→150 m khi không thấy đường; thêm Photon làm nguồn tên đường dự phòng (chưa kiểm chứng định dạng, không có khoảng cách).",
       "6.27": "Sửa từ phản hồi dùng thử trên điện thoại: (1) nút Dừng ngay trong thanh trạng thái nổi khi đang tìm tin; (2) tên Tổ dân phố/Khu phố/Thôn/Xóm không bị điền nhầm vào ô Xã/Phường mà chuyển sang ô Thôn/Xóm/Khu phố, ô Xã/Phường lấy từ nguồn kế tiếp; (3) tên tiếng Anh (province/city/district) bị hạ ưu tiên và được bỏ chữ thừa; (4) gợi ý đường/hẻm tự gọi thẳng Overpass khi không có máy chủ khảo giá (điện thoại).",
@@ -1898,8 +1901,12 @@
       iframe.style.position = 'fixed';
       iframe.style.right = '0';
       iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
+      // v6.30: khung in có tỉ lệ A4 DỌC (794x1123 px) thay vì 0x0 để chế độ "Tự động" của hộp thoại in (Android) chọn hướng Dọc; trong suốt, không chặn thao tác
+      iframe.style.width = '794px';
+      iframe.style.height = '1123px';
+      iframe.style.opacity = '0';
+      iframe.style.pointerEvents = 'none';
+      iframe.style.zIndex = '-1';
       iframe.style.border = '0';
       document.body.appendChild(iframe);
 
@@ -1955,7 +1962,6 @@
       setTimeout(() => {
         try {
           iframe.contentWindow.focus();
-          if (/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || '')) showToast('Trong cửa sổ in: chọn khổ A4, hướng DỌC (Portrait), rồi Lưu thành PDF.');
           iframe.contentWindow.print();
         } catch (err) {
           console.error('Lỗi gọi hộp thoại in:', err);
@@ -2386,6 +2392,9 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
       }
 
       setFloatingStatus('survey', enableGrounding ? 'AI đang quét tin thật từ Facebook & Sàn BĐS...' : 'Gemini AI đang phân tích & tìm TSSS...');
+      // v6.32: bước AI cũng dừng được (ngắt kết nối Gemini, bỏ kết quả)
+      const run = surveyRun = { id: 'ai' + Date.now().toString(36), kind: 'ai', ctrl: new AbortController(), cancelled: false, snapshot: { cur: currentComps.slice(), pool: backupCompsPool.slice() } };
+      setSurveyButtons(true);
 
       try {
         let validModels = [];
@@ -2393,7 +2402,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
         if (cachedModel && apiMode === 'payg') {
           validModels = [{ name: cachedModel }];
         } else {
-          const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+          const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, { signal: run.ctrl.signal });
           if (!listResponse.ok) throw new Error("API Key không hợp lệ");
           const listData = await listResponse.json();
           validModels = (listData.models || []).filter(m => 
@@ -2471,7 +2480,8 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
             let res = await fetch(endpoint, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
+              body: JSON.stringify(payload),
+              signal: run.ctrl.signal
             });
 
             if (!res.ok && enableGrounding) {
@@ -2499,8 +2509,9 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
                 break;
               }
             }
-          } catch(e) {}
+          } catch(e) { if (run.cancelled) break; }
         }
+        if (run.cancelled) return;
 
         if (successMarket && successMarket.comps && successMarket.comps.length > 0) {
           applyMarketCompsData(successMarket);
@@ -2515,8 +2526,11 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         }
 
       } catch (err) {
+        if (run.cancelled) return;
         setFloatingStatus('error', 'Lỗi kết nối khảo sát giá');
         showToast("Không thể hoàn tất khảo sát thị trường: " + err.message);
+      } finally {
+        if (surveyRun === run) { surveyRun = null; setSurveyButtons(false); }
       }
     }
 
@@ -2841,7 +2855,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       const run = surveyRun; if (!run || run.cancelled) return;
       run.cancelled = true;
       try { run.ctrl && run.ctrl.abort(); } catch (e) {}
-      fetch(`${getBackendUrl()}/api/cancel?job=${encodeURIComponent(run.id)}`).catch(() => {});
+      if (run.kind !== 'ai') fetch(`${getBackendUrl()}/api/cancel?job=${encodeURIComponent(run.id)}`).catch(() => {});
       if (run.snapshot) { currentComps = run.snapshot.cur; backupCompsPool = run.snapshot.pool; }
       setFloatingStatus('hide'); setSurveyButtons(false);
       showBackendLog(['Đã dừng khảo sát theo yêu cầu; kết quả lần này không được dùng.']);

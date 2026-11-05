@@ -7,3 +7,4 @@
 - Không tạo dữ liệu giả cho tài sản so sánh: tin do AI tạo phải gắn nhãn "AI tạo - chưa kiểm chứng" và không đưa vào tính giá khi chưa được người dùng xác nhận.
 - **Trước khi code, luôn hỏi người dùng bằng bảng câu hỏi có sẵn các tùy chọn trả lời** (công cụ AskUserQuestion) rồi mới thực hiện theo lựa chọn. Việc đẩy lên GitHub: làm theo đúng lựa chọn của người dùng ở bảng đó; mặc định là báo kết quả và hỏi lại trước khi đẩy.
 - Máy chủ (`server/`) được cập nhật qua GitHub: người dùng tự chạy `git pull origin main` trong thư mục `D:\LendLandPro-main` rồi chạy lại máy chủ. Khi đổi API phải nâng `API_VERSION` trong `server/app/main.py` và ghi rõ trong báo cáo.
+- **Mọi điều cần người dùng trả lời đều hỏi bằng hộp thoại có tùy chọn** (AskUserQuestion), không hỏi bằng chữ. Giữ danh sách các việc người dùng chưa trả lời từ các đoạn chat trước (không chỉ đoạn gần nhất) và hỏi lại bằng hộp thoại khi thích hợp; một hộp thoại tối đa 4 câu nên chia thành nhiều đợt.
