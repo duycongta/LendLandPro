@@ -641,13 +641,14 @@
             <a id="fbBookmarklet" href="#" onclick="return false" class="inline-block px-2.5 py-1 rounded bg-sky-600 text-white font-bold cursor-grab" title="Kéo nút này lên thanh dấu trang">Lấy bài FB → LendLand</a>
             <span class="text-slate-600">← kéo nút này lên thanh dấu trang (Ctrl+Shift+B để hiện thanh)</span>
           </div>
+          <label class="flex items-center gap-1.5 text-slate-700"><input type="checkbox" id="chkFbAutoPick" onchange="onFbAutoPickToggle(this.checked)"> Tự nhận bài FB khi quay lại tab này (trình duyệt sẽ hỏi quyền đọc clipboard một lần)</label>
           <details class="text-slate-700 leading-snug">
             <summary class="cursor-pointer font-semibold text-sky-800">Cách dùng</summary>
             <div class="mt-1 space-y-1">
               <p>1. Mở trang Facebook có bài (đã đăng nhập; kể cả trang kết quả tìm kiếm trong nhóm) rồi bấm nút trên thanh dấu trang <b>một lần</b>: biểu tượng <b>➜ LendLand</b> hiện cạnh dòng ngày giờ của từng bài.</p>
-              <p>2. Bấm biểu tượng của bài muốn lấy: link và nội dung bài đó được chuyển sang tab LendLand Pro (nhiều bài cộng dồn, cách nhau ---).</p>
+              <p>2. Bấm biểu tượng của bài muốn lấy: link và nội dung bài đó được <b>sao chép</b> (không mở tab mới; bấm nhiều bài thì cộng dồn). Quay lại tab LendLand Pro đang mở: bài tự điền vào ô dán tin nếu bạn tick ô bên dưới, hoặc bấm <b>Dán Clipboard</b>.</p>
               <p>3. Hoặc <b>bôi đen nội dung</b> một bài rồi bấm nút trên thanh dấu trang để lấy đúng phần bôi đen.</p>
-              <p>4. Sang tab app kiểm tra rồi bấm <b>Trích Xuất Vào Bảng</b>. Nội dung chỉ đi qua phần sau dấu # của link, không gửi lên máy chủ nào.</p>
+              <p>4. Kiểm tra rồi bấm <b>Trích Xuất Vào Bảng</b>. Nội dung chỉ đi qua clipboard của máy bạn, không gửi lên máy chủ nào. Nếu trình duyệt không cho sao chép, nút sẽ mở một tab app như cách cũ.</p>
               <p class="text-slate-500">Không kéo được nút? <button type="button" onclick="copyBookmarkletCode()" class="underline text-sky-700">sao chép mã</button>, tạo dấu trang mới và dán mã vào ô địa chỉ (URL). Facebook hay đổi cấu trúc trang nên biểu tượng có thể không hiện ở một số kiểu trang: khi đó dùng cách bôi đen.</p>
             </div>
           </details>
@@ -1060,8 +1061,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.37";
+    const APP_VERSION = "6.38";
     const APP_CHANGELOG = {
+      "6.38": "Lấy bài Facebook không mở tab mới: bấm biểu tượng ➜ LendLand (hoặc bôi đen + nút bookmarklet) sẽ SAO CHÉP link + nội dung bài vào clipboard (cộng dồn nhiều bài); tab app đang mở tự nhận khi bạn quay lại (ô tick \"Tự nhận bài FB khi quay lại tab này\", cần cho phép đọc clipboard), hoặc bấm Dán Clipboard; không sao chép được thì mở tab app như cũ. Chưa kiểm chứng trên Facebook/Chrome thật.",
       "6.37": "Nút lấy bài Facebook (bookmarklet) nay hiện biểu tượng \"➜ LendLand\" cạnh dòng ngày giờ của MỖI bài (kể cả trang kết quả tìm kiếm nhóm): bấm biểu tượng của bài nào thì link và nội dung bài đó được chuyển sang app; vẫn hỗ trợ bôi đen nội dung rồi bấm nút. Nút bookmarklet đưa ra ngoài phần gập, nằm ngay trong thẻ Nguồn tra tin. Chưa kiểm chứng trên Facebook thật.",
       "6.36": "Đổi tên và gọn giao diện theo yêu cầu: bỏ neo cột STT (giữ neo cột Đặc điểm TS); cột \"Đặc điểm TS\" ở cả hai bảng; bảng chính thay cột Sau CK bằng \"Đơn giá rao\", hàng chờ đổi \"Đơn giá rao\"; nút \"Chuyển tất cả lên DS TSSS chính\" (có hộp hỏi xác nhận, tin AI vẫn gắn nhãn chưa kiểm chứng); đổi tên các khối (Tự động quét thông tin GCN, Thông tin tài sản mục tiêu, Danh mục TSSS chính thức / hàng chờ); gộp khối kênh lớn và hội nhóm FB thành một thẻ \"Nguồn tra tin\", phần dán tin rao gập sẵn; gộp Zoom Thửa + Bao Quát thành một nút \"Xem bao quát\".",
       "6.35": "Làm gọn: khối Ghi chú GCN (kèm Diện tích không tính giá, Trừ vào loại đất) và khối Công trình xây dựng thu gọn thành một dòng \"+ Thêm ...\" khi chưa có nội dung; tự mở khi có ghi chú, diện tích không tính giá hoặc diện tích sàn xây dựng (AI đọc ra cũng tự mở) và có thể bấm để mở/thu gọn.",
@@ -3205,9 +3207,30 @@ ${items}`;
           Array.prototype.forEach.call(a.querySelectorAll('[role="article"]'), function (n) { var nt = n.innerText || n.textContent || ''; if (nt) t = t.split(nt).join(''); });
           return t.split(MARK).join('').replace(/\n{3,}/g, '\n\n').trim().slice(0, 6000);
         }
+        var Q = window.__llpQ = window.__llpQ || [];
+        function copy(text) {
+          try {
+            var ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', '');
+            ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0';
+            document.body.appendChild(ta); ta.focus(); ta.select();
+            var ok = document.execCommand('copy'); ta.remove();
+            if (ok) return Promise.resolve(true);
+          } catch (e) {}
+          if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return false; });
+          return Promise.resolve(false);
+        }
         function send(u, t) {
-          var b = btoa(unescape(encodeURIComponent(JSON.stringify({ u: u, t: t })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-          window.open(APP + '#fbpost=' + b, 'llp_app');
+          var entry = (u ? u + '\n' : '') + t, idx = -1;
+          if (u) for (var i = 0; i < Q.length; i++) if (Q[i].u === u) idx = i;
+          if (idx >= 0) Q[idx] = { u: u, e: entry }; else Q.push({ u: u, e: entry });
+          while (Q.length > 30) Q.shift();
+          var text = '#LendLandFB\n' + Q.map(function (x) { return x.e; }).join('\n---\n');
+          return copy(text).then(function (ok) {
+            if (ok) { say('LendLand: đã sao chép ' + Q.length + ' bài. Quay lại tab LendLand Pro đang mở (tự điền).'); return; }
+            var b = btoa(unescape(encodeURIComponent(JSON.stringify({ u: u, t: t })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            window.open(APP + '#fbpost=' + b, 'llp_app');
+            say('LendLand: không sao chép được vào clipboard nên đã mở tab LendLand Pro.');
+          });
         }
         function linkOf(a) { var tl = findTime(a); return (tl && clean(tl.getAttribute('href'))) || clean(location.href); }
         function say(msg) {
@@ -3225,7 +3248,7 @@ ${items}`;
             btn.onclick = function (ev) {
               ev.preventDefault(); ev.stopPropagation();
               var t = articleText(a); if (!t) { say('Không đọc được nội dung bài này.'); return; }
-              send(linkOf(a), t); btn.textContent = '✓ đã gửi'; setTimeout(function () { btn.textContent = MARK; }, 2500);
+              send(linkOf(a), t); btn.textContent = '✓ đã chép'; setTimeout(function () { btn.textContent = MARK; }, 2500);
             };
             var tl = findTime(a);
             if (tl && tl.parentNode) tl.parentNode.insertBefore(btn, tl.nextSibling); else a.insertBefore(btn, a.firstChild);
@@ -3251,10 +3274,49 @@ ${items}`;
       };
       return '(' + code.toString() + ')(' + JSON.stringify(appUrl) + ')';
     }
+    // v6.38: nhận bài Facebook qua clipboard (dòng đầu #LendLandFB, các bài cách nhau ---, dòng đầu mỗi bài là link nếu có)
+    const FB_CLIP_MARK = '#LendLandFB';
+    let lastIngestedClip = '', pickBusy = false;
+    function ingestFbClipboard(text, announce) {
+      text = String(text || '');
+      if (!text.startsWith(FB_CLIP_MARK)) return false;
+      if (text === lastIngestedClip) return false;                       // đã nhận rồi: không thêm lại bài người dùng đã xóa
+      const box = document.getElementById('manualRawText'); if (!box) return false;
+      const entries = text.slice(FB_CLIP_MARK.length).split(/\n---\n/).map(x => x.trim().slice(0, 20000)).filter(Boolean);
+      let added = 0;
+      entries.forEach(e => {
+        const m = /^(https?:\/\/\S+)/.exec(e); const u = m ? safeHttpUrl(m[1]) : '';
+        if (u && box.value.includes(u)) return;
+        box.value = box.value.trim() ? box.value.trim() + '\n---\n' + e : e; added++;
+      });
+      lastIngestedClip = text;
+      try { setCollapsible('pasteNews', true); } catch (e) {}
+      if (added) { try { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} showToast(`Đã nhận ${added} bài Facebook từ clipboard. Kiểm tra rồi bấm Trích Xuất Vào Bảng.`); }
+      else if (announce) showToast('Các bài này đã có trong ô dán tin.');
+      return added > 0;
+    }
+    async function pickFbFromClipboard(fromUser) {
+      if (pickBusy || !navigator.clipboard || !navigator.clipboard.readText) { if (fromUser) showToast('Trình duyệt này không cho đọc clipboard: hãy bấm Dán Clipboard hoặc dán tay.'); return false; }
+      pickBusy = true;
+      try { return ingestFbClipboard(await navigator.clipboard.readText(), fromUser); }
+      catch (e) { if (fromUser) showToast('Không đọc được clipboard: hãy cho phép trình duyệt đọc clipboard cho trang này.'); return false; }
+      finally { pickBusy = false; }
+    }
+    function onFbAutoPickToggle(on) {
+      try { localStorage.setItem('llp_fb_autopick', on ? 'true' : 'false'); } catch (e) {}
+      if (on) pickFbFromClipboard(true);            // bấm tick là thao tác của người dùng: hiện hộp xin quyền đọc clipboard
+    }
+    function onAppReturn() {
+      let on = false; try { on = localStorage.getItem('llp_fb_autopick') === 'true'; } catch (e) {}
+      if (on && document.visibilityState === 'visible') pickFbFromClipboard(false);
+    }
+    window.addEventListener('focus', onAppReturn);
+    document.addEventListener('visibilitychange', onAppReturn);
     function appBaseUrl() { return location.href.split('#')[0]; }
     function initBookmarklet() {
       const a = document.getElementById('fbBookmarklet'); if (!a) return;
       a.setAttribute('href', 'javascript:' + encodeURIComponent(bookmarkletSource(appBaseUrl())));
+      try { const c = document.getElementById('chkFbAutoPick'); if (c) c.checked = localStorage.getItem('llp_fb_autopick') === 'true'; } catch (e) {}
     }
     function copyBookmarkletCode() {
       const code = 'javascript:' + encodeURIComponent(bookmarkletSource(appBaseUrl()));
@@ -4120,6 +4182,7 @@ ${items}`;
     async function pasteFromClipboard() {
       try {
         const text = await navigator.clipboard.readText();
+        if (text.startsWith(FB_CLIP_MARK)) { lastIngestedClip = ''; ingestFbClipboard(text, true); return; }
         document.getElementById('manualRawText').value = text;
         showToast("Đã dán văn bản từ bộ nhớ tạm!");
       } catch (err) { showToast("Vui lòng cấp quyền clipboard."); }
