@@ -590,6 +590,15 @@
               <i class="ph-bold ph-clipboard"></i> Dán Clipboard
             </button>
           </div>
+          <details class="text-[11px] bg-sky-50 border border-sky-200 rounded-lg px-2.5 py-1.5">
+            <summary class="cursor-pointer font-semibold text-sky-800">Nút lấy bài Facebook (bookmarklet, dùng trên máy tính)</summary>
+            <div class="mt-1.5 space-y-1 text-slate-700 leading-snug">
+              <p>1. Kéo nút này lên <b>thanh dấu trang</b> của Chrome/Edge (Ctrl+Shift+B để hiện thanh): <a id="fbBookmarklet" href="#" onclick="return false" class="inline-block px-2 py-0.5 rounded bg-sky-600 text-white font-bold cursor-grab" title="Kéo nút này lên thanh dấu trang">Lấy bài FB → LendLand</a></p>
+              <p>2. Mở bài Facebook (đã đăng nhập), <b>bôi đen nội dung bài</b> rồi bấm nút trên thanh dấu trang. Không bôi đen thì nút lấy bài đầu tiên trên trang.</p>
+              <p>3. App tự mở/cập nhật tab này và điền sẵn <b>link + nội dung</b> vào ô bên dưới (nhiều bài cộng dồn, cách nhau ---). Kiểm tra rồi bấm <b>Trích Xuất Vào Bảng</b>.</p>
+              <p class="text-slate-500">Nếu không kéo được: <button type="button" onclick="copyBookmarkletCode()" class="underline text-sky-700">sao chép mã</button>, tạo dấu trang mới và dán mã vào ô địa chỉ (URL). Nội dung bài chỉ đi qua phần sau dấu # của link nên không gửi lên máy chủ nào.</p>
+            </div>
+          </details>
           <select id="manualSourceGroup" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"><option value="">Nguồn: Zalo / khác</option></select>
           <textarea id="manualRawText" rows="3" placeholder="Ví dụ: Cần bán đất hẻm 3m đường Hùng Vương P. Trần Quang Diệu, DT 55m2 thổ cư ODT, ngang 4.5m, giá 1 tỷ 150 triệu bớt lộc. Đăng ngày 28/10. LH 0905..." class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500"></textarea>
           <div class="flex justify-end">
@@ -1016,8 +1025,10 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.22";
+    const APP_VERSION = "6.24";
     const APP_CHANGELOG = {
+      "6.24": "Nút bookmarklet lấy bài Facebook (máy tính): đang mở bài trên Facebook (đã đăng nhập), bôi đen nội dung rồi bấm nút trên thanh dấu trang, app tự mở/cập nhật tab LendLand Pro và điền sẵn link + nội dung vào ô dán tin (nhiều bài cộng dồn, cách nhau ---); nội dung truyền qua phần sau dấu # của link nên không gửi lên máy chủ nào; không tự trích xuất, bạn kiểm tra rồi bấm Trích Xuất.",
+      "6.23": "Dán tin Facebook kèm link bài: link đứng trên đầu mỗi bài (các bài cách nhau ---) hoặc nằm trong nội dung được lưu làm chứng cứ cho nút Xem tin; tự nhận nguồn Facebook (và tên nhóm nếu đã thêm nhóm); bỏ link khỏi nội dung trước khi đọc giá/diện tích và trước khi gửi AI để dãy số trong link không bị đọc nhầm.",
       "6.22": "Nút \"Dừng lại\" cạnh nút Đang khảo sát: dừng hẳn việc thu thập tin (máy chủ API v7 ngừng cào trong vài giây) và hủy, không hiển thị kết quả; bảng giữ nguyên như trước khi khảo sát.",
       "6.21": "Sửa nhầm loại tin theo tỉnh sau sáp nhập 2025 (vd sổ Phú Yên cũ: tin đăng ghi Đắk Lắk bị loại): máy chủ có đủ bảng gộp 34 tỉnh (API v6). Khi không có tin đạt chuẩn, ô nhật ký nêu rõ lý do (số tin đã lưu theo nguồn, bị loại do khác tỉnh, cùng xã/phường...). Thanh trạng thái \"đang đọc ảnh\" chuyển thành \"Đã đọc xong ảnh\" rồi tự tắt.",
       "6.20": "Sau khi AI đọc ảnh GCN, KHÔNG tự tìm tin nữa: hiện hộp xác nhận \"Đã đọc được thông tin tài sản từ ảnh, kiểm tra lại và xác nhận tìm tin TSSS\" (Xác nhận / Trở lại). Tự điền địa danh từ tọa độ: nếu trình duyệt bị chặn OpenStreetMap thì thử qua máy chủ khảo giá (API v5) và báo lỗi rõ hơn.",
@@ -3047,6 +3058,70 @@ ${items}`;
       customFbGroups.forEach((g, i) => { const o = document.createElement('option'); o.value = String(i); o.textContent = 'Facebook · ' + g.name; sel.appendChild(o); });
       sel.value = cur && Number(cur) < customFbGroups.length ? cur : '';
     }
+    // v6.23: link bài (Facebook...) -> chứng cứ; bỏ link khỏi văn bản trước khi đọc giá/diện tích (dãy số trong link không được hiểu là giá)
+    const URL_IN_TEXT = /https?:\/\/[^\s<>"')]+/gi;
+    function postLinks(t) { return (String(t).match(URL_IN_TEXT) || []).map(u => u.replace(/[.,;:!?]+$/, '')); }
+    function stripUrls(t) { return String(t).replace(URL_IN_TEXT, ' ').replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n').trim(); }
+    function facebookGroupFromLink(link) {
+      let u; try { u = new URL(link); } catch (e) { return null; }
+      if (!/(^|\.)(facebook\.com|fb\.com|fb\.watch)$/i.test(u.hostname)) return null;
+      const m = /\/groups\/([^\/?#]+)/.exec(u.pathname);
+      return { gid: m ? m[1] : '', group: m ? (customFbGroups.find(g => g.id === m[1]) || null) : null };
+    }
+    // ---- v6.24: bookmarklet lấy bài Facebook ----
+    // Mã chạy TRÊN trang Facebook (do người dùng bấm): lấy phần bôi đen (hoặc bài đầu tiên), mở tab app với #fbpost=<base64url JSON {u,t}>
+    function bookmarkletSource(appUrl) {
+      const code = function (APP) {
+        var t = String(window.getSelection ? window.getSelection() : '').trim();
+        if (!t) { var a = document.querySelector('[role="article"]'); t = a ? (a.innerText || '') : ''; }
+        t = t.replace(/\n{3,}/g, '\n\n').trim().slice(0, 6000);
+        if (!t) { alert('Không thấy nội dung bài. Hãy bôi đen chữ của bài rồi bấm lại.'); return; }
+        var u = location.href.split('#')[0];
+        try {
+          var x = new URL(location.href);
+          Array.from(x.searchParams.keys()).forEach(function (k) { if (/^__/.test(k) || /^(fbclid|notif_id|notif_t|comment_id|reply_comment_id|ref|mibextid)$/i.test(k)) x.searchParams.delete(k); });
+          u = x.origin + x.pathname + x.search;
+        } catch (e) {}
+        var b = btoa(unescape(encodeURIComponent(JSON.stringify({ u: u, t: t })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        window.open(APP + '#fbpost=' + b, 'llp_app');
+      };
+      return '(' + code.toString() + ')(' + JSON.stringify(appUrl) + ')';
+    }
+    function appBaseUrl() { return location.href.split('#')[0]; }
+    function initBookmarklet() {
+      const a = document.getElementById('fbBookmarklet'); if (!a) return;
+      a.setAttribute('href', 'javascript:' + encodeURIComponent(bookmarkletSource(appBaseUrl())));
+    }
+    function copyBookmarkletCode() {
+      const code = 'javascript:' + encodeURIComponent(bookmarkletSource(appBaseUrl()));
+      (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(code) : Promise.reject()).then(() => showToast('Đã sao chép mã bookmarklet.'), () => showToast('Không sao chép được, hãy kéo nút lên thanh dấu trang.'));
+    }
+    function decodeFbPostHash(hash) {
+      const m = /^#?fbpost=([A-Za-z0-9_\-]+)$/.exec(String(hash || '')); if (!m) return null;
+      try {
+        const bin = atob(m[1].replace(/-/g, '+').replace(/_/g, '/'));
+        const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+        const o = JSON.parse(new TextDecoder().decode(bytes));
+        const t = typeof o.t === 'string' ? o.t.trim().slice(0, 20000) : ''; const u = typeof o.u === 'string' ? safeHttpUrl(o.u) : '';
+        return t ? { u, t } : null;
+      } catch (e) { return null; }
+    }
+    // Nhận bài từ bookmarklet: chỉ điền vào ô dán (không tự trích xuất); nhiều bài cộng dồn, cách nhau ---
+    function handleFbPostHash() {
+      const post = decodeFbPostHash(location.hash); if (!post) return false;
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+      const box = document.getElementById('manualRawText'); if (!box) return false;
+      if (post.u && box.value.includes(post.u)) { showToast('Bài này đã có trong ô dán tin.'); return true; }
+      const entry = (post.u ? post.u + '\n' : '') + post.t;
+      box.value = box.value.trim() ? box.value.trim() + '\n---\n' + entry : entry;
+      try { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+      showToast('Đã nhận bài Facebook từ nút. Kiểm tra nội dung rồi bấm Trích Xuất Vào Bảng.');
+      return true;
+    }
+    window.addEventListener('hashchange', handleFbPostHash);
+    document.addEventListener('DOMContentLoaded', () => { initBookmarklet(); handleFbPostHash(); });
+    if (document.readyState !== 'loading') { initBookmarklet(); handleFbPostHash(); }
+
     function splitPosts(text) {
       return String(text).split(/\n\s*(?:-{3,}|={3,}|_{3,}|\*{3,})\s*\n|\n\s*\n\s*\n+/).map(x => x.trim()).filter(x => x.length >= 15);
     }
@@ -3059,7 +3134,9 @@ ${items}`;
     }
     function buildManualComp(text, rx, ai, group) {
       const mDate = text.match(/(?:ngày|đăng ngày|hôm)\s*(\d{1,2}[\/\-\.]\d{1,2}(?:[\/\-\.]\d{2,4})?)/i);
-      const mLink = text.match(/https?:\/\/[^\s]+/i);
+      const links = postLinks(text); const fbLink = links.map(l => ({ l, fb: facebookGroupFromLink(l) })).find(x => x.fb);
+      const postLink = fbLink ? fbLink.l : (links[0] || '');
+      text = stripUrls(text);
       const area = rx.area > 0 ? rx.area : (ai.area_m2 || null);
       const price = rx.price > 0 ? rx.price : (ai.price_vnd ? Math.round(ai.price_vnd / 1e6) / 1000 : null);
       if (!(area > 0) || !(price > 0)) return { error: !(area > 0) ? 'diện tích (vd "100m2")' : 'giá (vd "2,5 tỷ")' };
@@ -3070,8 +3147,8 @@ ${items}`;
         address: text.replace(/\s+/g, ' ').slice(0, 80) + (text.length > 80 ? '...' : ''), description: text.replace(/\s+/g, ' ').slice(0, 500),
         postedDate: mDate ? mDate[1] : '--', roadType: /mặt tiền/i.test(text) ? 'mat_tien' : '', roadDesc: '',
         area, frontage: rx.frontage > 0 ? rx.frontage : (ai.frontage_m || null), depth: ai.depth_m || null, rawPrice: price,
-        link: mLink ? mLink[0] : '', sourceType: group ? 'facebook' : 'zalo',
-        sourceName: group ? 'Facebook · ' + group.name : 'Tin nhập tay (Zalo/Facebook)', distanceMeters: null, lat: null, lng: null,
+        link: postLink, sourceType: (group || fbLink) ? 'facebook' : 'zalo',
+        sourceName: (group || (fbLink && fbLink.fb.group)) ? 'Facebook · ' + (group || fbLink.fb.group).name : (fbLink ? 'Facebook · link bài đã dán' : 'Tin nhập tay (Zalo/Facebook)'), distanceMeters: null, lat: null, lng: null,
         matchLevel: wardCore ? (tn.includes(wardCore) ? 'nhac' : 'khong') : '', aiFields: []
       };
       applyAiToComp(comp, ai);
@@ -3091,10 +3168,10 @@ ${items}`;
       const gi = valStr('manualSourceGroup'); const group = gi !== '' ? customFbGroups[Number(gi)] : null;
       let added = 0, dups = 0; const errors = [];
       chunks.forEach((t, i) => {
-        const r = buildManualComp(t, parsePostRegex(t), (aiList && aiList[i]) || {}, group);
+        const r = buildManualComp(t, parsePostRegex(stripUrls(t)), (aiList && aiList[i]) || {}, group);
         if (r.error) { errors.push(r.error); return; }
         if ((aiList && aiList[i] && aiList[i].is_sale === false)) { errors.push('thông tin bán (tin cho thuê/tìm mua)'); return; }
-        const key = `${r.comp.area}|${r.comp.rawPrice}|${normVi(t).slice(0, 60)}`;
+        const key = `${r.comp.area}|${r.comp.rawPrice}|${normVi(stripUrls(t)).slice(0, 60)}`;
         if (currentComps.concat(backupCompsPool).some(c => c._key === key)) { dups++; return; }
         r.comp._key = key; currentComps.push(r.comp); added++;
       });
@@ -3106,7 +3183,7 @@ ${items}`;
       const chunks = splitPosts(text).length ? splitPosts(text) : [text];
       if (!aiExtractEnabled()) { manualAddChunks(chunks, null); return; }
       showToast('AI đang đọc ' + chunks.length + ' bài...');
-      return aiExtractBatch(chunks).then(res => manualAddChunks(chunks, res)).catch(e => {
+      return aiExtractBatch(chunks.map(stripUrls)).then(res => manualAddChunks(chunks, res)).catch(e => {
         showToast('AI không đọc được (' + e.message + '), dùng bộ đọc quy tắc.'); manualAddChunks(chunks, null);
       });
     }
@@ -3539,11 +3616,11 @@ ${items}`;
       s = s.replace(/(\d+),(\d+)/g, '$1.$2');
 
       if (s.includes('tỷ') || s.includes('ty') || /\bt\b/.test(s)) {
-        const mTyXx = s.match(/(\d+)[\s\.\,\-]*(?:tỷ|ty|\bt\b)[\s\.\,\-]*(\d)[x\*]+/i);
+        const mTyXx = s.match(/(\d+)[\s\.,\-]*(?:tỷ|ty|\bt\b)[\s\.,\-]*(\d)[x\*]+(?!\p{L})/iu);       // (?!\p{L}): "3 tỷ xây dựng" không phải "3 tỷ xx"
         if (mTyXx) return parseFloat(mTyXx[1] + "." + mTyXx[2] + "5");
-        const mTyOnlyXx = s.match(/(\d+)[\s\.\,\-]*(?:tỷ|ty|\bt\b)[\s\.\,\-]*[x\*]+/i);
+        const mTyOnlyXx = s.match(/(\d+)[\s\.,\-]*(?:tỷ|ty|\bt\b)[\s\.,\-]*[x\*]+(?!\p{L})/iu);
         if (mTyOnlyXx) return parseFloat(mTyOnlyXx[1]) + 0.35;
-        const mDotXTy = s.match(/(\d+)\.[x\*]+\s*(?:tỷ|ty|\bt\b)/i);
+        const mDotXTy = s.match(/(\d+)\.[x\*]+\s*(?:tỷ|ty|\bt\b)/iu);
         if (mDotXTy) return parseFloat(mDotXTy[1]) + 0.35;
 
         const mTyTr = s.match(/(\d+(?:\.\d+)?)\s*(?:tỷ|ty|\bt\b)\s*(\d+)?/i);
@@ -3560,7 +3637,7 @@ ${items}`;
         }
       }
 
-      const mTrXx = s.match(/(\d)[x\*]{2}\s*(?:tr|triệu|trieu)?/i);
+      const mTrXx = s.match(/(\d)[x\*]{2}(?!\p{L})\s*(?:tr|triệu|trieu)?/iu);
       if (mTrXx) return parseFloat(mTrXx[1] + "50") / 1000.0;
       const mTrOnly = s.match(/(\d+(?:\.\d+)?)\s*(?:tr|triệu|trieu)(?!\w)/i);
       if (mTrOnly) return Math.round((parseFloat(mTrOnly[1]) / 1000.0) * 1000) / 1000;
