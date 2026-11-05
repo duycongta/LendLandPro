@@ -22,9 +22,9 @@
     body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
     
     /* v6.33: neo cột STT + Địa chỉ khi trượt ngang (bảng Danh mục chính, Hàng chờ) */
-    table.sticky-cols th:nth-child(1), table.sticky-cols td:not([colspan]):nth-child(1) { position: sticky; left: 0; z-index: 3; width: 3rem; min-width: 3rem; max-width: 3rem; background: #fff; }
-    table.sticky-cols th:nth-child(2), table.sticky-cols td:not([colspan]):nth-child(2) { position: sticky; left: 3rem; z-index: 3; background: #fff; box-shadow: 1px 0 0 #cbd5e1; }
-    table.sticky-cols thead th:nth-child(1), table.sticky-cols thead th:nth-child(2) { background: #f1f5f9; z-index: 4; }
+    /* v6.36: chỉ neo cột Đặc điểm TS (cột STT trượt bình thường) */
+    table.sticky-cols th:nth-child(2), table.sticky-cols td:not([colspan]):nth-child(2) { position: sticky; left: 0; z-index: 3; background: #fff; box-shadow: 1px 0 0 #cbd5e1; }
+    table.sticky-cols thead th:nth-child(2) { background: #f1f5f9; z-index: 4; }
     @media (max-width: 640px) {
       table.sticky-cols th:nth-child(2), table.sticky-cols td:not([colspan]):nth-child(2) { min-width: 150px !important; max-width: 170px !important; width: 160px; }
     }
@@ -201,7 +201,7 @@
       <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
         <div class="p-1.5 sm:p-2 bg-indigo-100 text-indigo-700 rounded-lg flex-shrink-0"><i class="ph-bold ph-scan text-lg sm:text-xl"></i></div>
         <div>
-          <h2 class="font-bold text-slate-800 text-xs sm:text-base">Quét Giấy Chứng Nhận QSD Đất (PDF / Ảnh Sổ Đỏ)</h2>
+          <h2 class="font-bold text-slate-800 text-xs sm:text-base">Tự động quét thông tin GCN</h2>
           <p class="text-[11px] sm:text-xs text-slate-500">Tự động đọc thông tin & tìm TSSS ngay sau khi nạp ảnh. <em>(Có thể bỏ qua nếu nhập tay)</em></p>
         </div>
       </div>
@@ -243,8 +243,7 @@
         <div class="flex items-center gap-2">
           <div class="p-1.5 sm:p-2 bg-emerald-100 text-emerald-700 rounded-lg flex-shrink-0"><i class="ph-bold ph-map-pin text-lg sm:text-xl"></i></div>
           <div>
-            <h2 class="font-bold text-slate-800 text-xs sm:text-base">Thông Tin Tài Sản Mục Tiêu (Nhập Tay Hoặc Đọc Từ Sổ)</h2>
-            <p class="text-[11px] sm:text-xs text-slate-500">Tối thiểu chỉ cần Xã/Phường và Huyện/Tỉnh là khảo sát giá được ngay</p>
+            <h2 class="font-bold text-slate-800 text-xs sm:text-base">Thông tin tài sản mục tiêu</h2>
           </div>
         </div>
         <div class="flex items-center gap-1.5 sm:gap-2">
@@ -546,11 +545,8 @@
             <i class="ph-bold ph-arrow-square-out text-sm"></i> Mở Google Maps
           </button>
           <button id="btnMapPick" onclick="toggleMapPick()" type="button" class="text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 py-1 rounded font-medium flex items-center gap-1"><i class="ph-bold ph-map-pin"></i> Đặt ghim</button>
-          <button onclick="zoomToTarget()" type="button" class="text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 sm:px-2.5 py-1 rounded font-medium flex items-center gap-1 shadow-sm cursor-pointer">
-            <i class="ph-bold ph-crosshair"></i> Zoom Thửa
-          </button>
-          <button onclick="fitAllMarkersSafe()" type="button" class="text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 sm:px-2.5 py-1 rounded font-medium flex items-center gap-1 shadow-sm cursor-pointer">
-            <i class="ph-bold ph-arrows-out"></i> Bao Quát
+          <button onclick="viewOverview()" type="button" class="text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 sm:px-2.5 py-1 rounded font-medium flex items-center gap-1 shadow-sm cursor-pointer" title="Vừa khít thửa đất và các tin so sánh gần (trong khoảng 1 km)">
+            <i class="ph-bold ph-arrows-out"></i> Xem bao quát
           </button>
           <div class="h-3 w-px bg-slate-300 mx-0.5"></div>
           <button id="btnMapSat" onclick="setMapLayer('satellite')" type="button" class="text-[11px] bg-blue-600 text-white px-2 py-1 rounded font-medium shadow-sm cursor-pointer">🛰️ Vệ Tinh</button>
@@ -581,12 +577,11 @@
         <div class="flex items-center gap-2">
           <div class="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg flex-shrink-0"><i class="ph-bold ph-magnifying-glass text-base sm:text-xl"></i></div>
           <div>
-            <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Cổng Mở Trực Tiếp Sàn BĐS & Hội Nhóm Facebook Địa Phương</h3>
-            <span class="text-[11px] text-slate-500">Quản lý các nhóm Facebook BĐS Bình Định & dán tin môi giới</span>
+            <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Nguồn tra tin</h3>
           </div>
         </div>
         <button onclick="toggleFbGroupManager()" type="button" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 bg-white border border-indigo-200 px-2.5 py-1 rounded-lg shadow-xs cursor-pointer">
-          <i class="ph-bold ph-list-dashes"></i> <span id="toggleFbGroupBtnText">Hiện Danh Sách Nhóm (11)</span>
+          <i class="ph-bold ph-list-dashes"></i> <span id="toggleFbGroupBtnText">Hiện DS nhóm FB lấy tin (11)</span>
         </button>
       </div>
 
@@ -609,35 +604,10 @@
         <div id="fbGroupChipsList" class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pt-1"></div>
       </div>
 
-      <div class="p-3.5 sm:p-4 grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
-        <div class="space-y-2">
-          <div class="flex items-center justify-between text-xs font-semibold text-slate-700">
-            <span>Dán tin rao từ Zalo / Facebook môi giới:</span>
-            <button onclick="pasteFromClipboard()" type="button" class="text-blue-600 hover:underline flex items-center gap-1 cursor-pointer">
-              <i class="ph-bold ph-clipboard"></i> Dán Clipboard
-            </button>
-          </div>
-          <details class="text-[11px] bg-sky-50 border border-sky-200 rounded-lg px-2.5 py-1.5">
-            <summary class="cursor-pointer font-semibold text-sky-800">Nút lấy bài Facebook (bookmarklet, dùng trên máy tính)</summary>
-            <div class="mt-1.5 space-y-1 text-slate-700 leading-snug">
-              <p>1. Kéo nút này lên <b>thanh dấu trang</b> của Chrome/Edge (Ctrl+Shift+B để hiện thanh): <a id="fbBookmarklet" href="#" onclick="return false" class="inline-block px-2 py-0.5 rounded bg-sky-600 text-white font-bold cursor-grab" title="Kéo nút này lên thanh dấu trang">Lấy bài FB → LendLand</a></p>
-              <p>2. Mở bài Facebook (đã đăng nhập), <b>bôi đen nội dung bài</b> rồi bấm nút trên thanh dấu trang. Không bôi đen thì nút lấy bài đầu tiên trên trang.</p>
-              <p>3. App tự mở/cập nhật tab này và điền sẵn <b>link + nội dung</b> vào ô bên dưới (nhiều bài cộng dồn, cách nhau ---). Kiểm tra rồi bấm <b>Trích Xuất Vào Bảng</b>.</p>
-              <p class="text-slate-500">Nếu không kéo được: <button type="button" onclick="copyBookmarkletCode()" class="underline text-sky-700">sao chép mã</button>, tạo dấu trang mới và dán mã vào ô địa chỉ (URL). Nội dung bài chỉ đi qua phần sau dấu # của link nên không gửi lên máy chủ nào.</p>
-            </div>
-          </details>
-          <select id="manualSourceGroup" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"><option value="">Nguồn: Zalo / khác</option></select>
-          <textarea id="manualRawText" rows="3" placeholder="Ví dụ: Cần bán đất hẻm 3m đường Hùng Vương P. Trần Quang Diệu, DT 55m2 thổ cư ODT, ngang 4.5m, giá 1 tỷ 150 triệu bớt lộc. Đăng ngày 28/10. LH 0905..." class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500"></textarea>
-          <div class="flex justify-end">
-            <button onclick="parseManualText()" type="button" class="bg-slate-800 hover:bg-slate-900 text-white font-medium text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 shadow cursor-pointer">
-              <i class="ph-bold ph-plus-circle"></i> Trích Xuất Vào Bảng
-            </button>
-          </div>
-        </div>
-
+      <div class="p-3.5 sm:p-4 space-y-3">
         <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs space-y-2">
           <div class="font-bold text-slate-700 flex items-center justify-between">
-            <span class="flex items-center gap-1.5"><i class="ph-bold ph-globe text-blue-600"></i> Tra Cứu Trực Tiếp 4 Kênh Lớn</span>
+            <span class="flex items-center gap-1.5"><i class="ph-bold ph-globe text-blue-600"></i> Các kênh lớn đang lấy tin</span>
             <span class="text-[10px] text-slate-400 font-normal">Tự gán từ khóa địa phương</span>
           </div>
 
@@ -663,6 +633,35 @@
             <a id="btnSearchGoogle" href="https://www.google.com" target="_blank" class="text-[10px] bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 px-2 py-1.5 rounded flex items-center gap-1 font-semibold flex-shrink-0">
               <i class="ph-bold ph-google-logo"></i> Dorking
             </a>
+          </div>
+        </div>
+        <div>
+          <button id="btnTogglePaste" type="button" onclick="toggleCollapsible('pasteNews')" class="text-xs font-semibold text-slate-700 hover:underline flex items-center gap-1"><i class="ph-bold ph-plus-circle"></i> <span>Dán tin rao từ Zalo / FB</span></button>
+          <div id="pasteNewsWrap" class="hidden mt-2">
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs font-semibold text-slate-700">
+            <span>Nội dung tin rao (Zalo / FB):</span>
+            <button onclick="pasteFromClipboard()" type="button" class="text-blue-600 hover:underline flex items-center gap-1 cursor-pointer">
+              <i class="ph-bold ph-clipboard"></i> Dán Clipboard
+            </button>
+          </div>
+          <details class="text-[11px] bg-sky-50 border border-sky-200 rounded-lg px-2.5 py-1.5">
+            <summary class="cursor-pointer font-semibold text-sky-800">Nút lấy bài Facebook (bookmarklet, dùng trên máy tính)</summary>
+            <div class="mt-1.5 space-y-1 text-slate-700 leading-snug">
+              <p>1. Kéo nút này lên <b>thanh dấu trang</b> của Chrome/Edge (Ctrl+Shift+B để hiện thanh): <a id="fbBookmarklet" href="#" onclick="return false" class="inline-block px-2 py-0.5 rounded bg-sky-600 text-white font-bold cursor-grab" title="Kéo nút này lên thanh dấu trang">Lấy bài FB → LendLand</a></p>
+              <p>2. Mở bài Facebook (đã đăng nhập), <b>bôi đen nội dung bài</b> rồi bấm nút trên thanh dấu trang. Không bôi đen thì nút lấy bài đầu tiên trên trang.</p>
+              <p>3. App tự mở/cập nhật tab này và điền sẵn <b>link + nội dung</b> vào ô bên dưới (nhiều bài cộng dồn, cách nhau ---). Kiểm tra rồi bấm <b>Trích Xuất Vào Bảng</b>.</p>
+              <p class="text-slate-500">Nếu không kéo được: <button type="button" onclick="copyBookmarkletCode()" class="underline text-sky-700">sao chép mã</button>, tạo dấu trang mới và dán mã vào ô địa chỉ (URL). Nội dung bài chỉ đi qua phần sau dấu # của link nên không gửi lên máy chủ nào.</p>
+            </div>
+          </details>
+          <select id="manualSourceGroup" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"><option value="">Nguồn: Zalo / khác</option></select>
+          <textarea id="manualRawText" rows="3" placeholder="Ví dụ: Cần bán đất hẻm 3m đường Hùng Vương P. Trần Quang Diệu, DT 55m2 thổ cư ODT, ngang 4.5m, giá 1 tỷ 150 triệu bớt lộc. Đăng ngày 28/10. LH 0905..." class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500"></textarea>
+          <div class="flex justify-end">
+            <button onclick="parseManualText()" type="button" class="bg-slate-800 hover:bg-slate-900 text-white font-medium text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 shadow cursor-pointer">
+              <i class="ph-bold ph-plus-circle"></i> Trích Xuất Vào Bảng
+            </button>
+          </div>
+        </div>
           </div>
         </div>
       </div>
@@ -691,7 +690,7 @@
         <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-1.5 sm:gap-2">
             <i class="ph-bold ph-table text-slate-700 text-base sm:text-lg"></i>
-            <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Danh Mục Tài Sản So Sánh Chính (Đang Tính Vào Đơn Giá)</h3>
+            <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Danh mục TSSS chính thức</h3>
           </div>
           <span id="compsCountBadge" class="text-[11px] sm:text-xs text-slate-500">Chưa có tài sản so sánh</span>
         </div>
@@ -702,12 +701,12 @@
             <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 uppercase tracking-wider text-[11px]">
               <tr>
                 <th class="py-3 px-2 text-center w-12">STT</th>
-                <th class="py-3 px-3" style="min-width: 250px; max-width: 320px;">Địa Chỉ & Vị Trí Tiếp Giáp</th>
+                <th class="py-3 px-3" style="min-width: 250px; max-width: 320px;">Đặc điểm TS</th>
                 <th class="py-3 px-2 text-center w-24">Ngày Đăng</th>
                 <th class="py-3 px-2 text-center w-20">DT (m²)</th>
                 <th class="py-3 px-2 text-center w-24">Kích Thước</th>
                 <th class="py-3 px-3 text-right w-24">Giá Rao Bán</th>
-                <th class="py-3 px-3 text-right w-28">Sau CK 10%</th>
+                <th class="py-3 px-3 text-right w-28">Đơn giá rao</th>
                 <th class="py-3 px-2 text-center w-24">Tương Đồng</th>
                 <th class="py-3 px-2 text-center w-28">Nguồn Tin</th>
                 <th class="py-3 px-2 text-center text-rose-700 w-28">Thao Tác</th>
@@ -731,7 +730,7 @@
           <div class="flex items-center gap-2">
             <i class="ph-bold ph-queue text-indigo-600 text-base sm:text-lg"></i>
             <div>
-              <span class="font-bold text-slate-800 text-xs sm:text-sm">Tài Sản So Sánh Trong Hàng Chờ Khảo Sát Mở Rộng (<span id="poolCountText">0</span> tin)</span>
+              <span class="font-bold text-slate-800 text-xs sm:text-sm">Danh mục TSSS hàng chờ (<span id="poolCountText">0</span> tin)</span>
               <span class="text-[11px] text-slate-500 block">Được cào ngầm để dự phòng. Bấm để bung mở / ẩn danh sách</span>
             </div>
           </div>
@@ -743,16 +742,17 @@
 
         <div id="poolDrawerContent" class="hidden p-3 sm:p-4 bg-slate-50/50">
         <div class="mb-2 text-[11px] text-rose-800 bg-rose-50 border border-rose-200 rounded-lg p-2">Tin gắn nhãn <b>"AI tạo"</b> là gợi ý do AI viết ra, có thể không có thật. Bấm "Tra cứu kiểm chứng" để tìm trên Google; chỉ khi đã xác nhận mới "Xác nhận & đưa lên" bảng tính giá.</div>
+          <div class="flex justify-end mb-2"><button id="btnPromoteAll" type="button" onclick="promoteAllFromPool()" class="text-[11px] bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm"><i class="ph-bold ph-arrow-fat-lines-up"></i> Chuyển tất cả lên DS TSSS chính</button></div>
           <div class="overflow-x-auto w-full">
             <table class="w-full text-left text-xs bg-white rounded-lg border border-slate-200 sticky-cols" style="min-width: 900px;">
               <thead class="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200 uppercase text-[10px]">
                 <tr>
                   <th class="py-2.5 px-2 text-center w-12">#</th>
-                  <th class="py-2.5 px-3">Địa Chỉ & Đặc Điểm</th>
+                  <th class="py-2.5 px-3">Đặc điểm TS</th>
                   <th class="py-2.5 px-2 text-center w-24">Ngày Đăng</th>
                   <th class="py-2.5 px-2 text-center w-20">DT (m²)</th>
                   <th class="py-2.5 px-3 text-right w-24">Giá Rao Bán</th>
-                  <th class="py-2.5 px-3 text-right w-28">Đơn Giá Dự Kiến</th>
+                  <th class="py-2.5 px-3 text-right w-28">Đơn giá rao</th>
                   <th class="py-2.5 px-2 text-center w-28">Nguồn Tin</th>
                   <th class="py-2.5 px-2 text-center w-28">Thao Tác</th>
                 </tr>
@@ -1052,8 +1052,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.35";
+    const APP_VERSION = "6.36";
     const APP_CHANGELOG = {
+      "6.36": "Đổi tên và gọn giao diện theo yêu cầu: bỏ neo cột STT (giữ neo cột Đặc điểm TS); cột \"Đặc điểm TS\" ở cả hai bảng; bảng chính thay cột Sau CK bằng \"Đơn giá rao\", hàng chờ đổi \"Đơn giá rao\"; nút \"Chuyển tất cả lên DS TSSS chính\" (có hộp hỏi xác nhận, tin AI vẫn gắn nhãn chưa kiểm chứng); đổi tên các khối (Tự động quét thông tin GCN, Thông tin tài sản mục tiêu, Danh mục TSSS chính thức / hàng chờ); gộp khối kênh lớn và hội nhóm FB thành một thẻ \"Nguồn tra tin\", phần dán tin rao gập sẵn; gộp Zoom Thửa + Bao Quát thành một nút \"Xem bao quát\".",
       "6.35": "Làm gọn: khối Ghi chú GCN (kèm Diện tích không tính giá, Trừ vào loại đất) và khối Công trình xây dựng thu gọn thành một dòng \"+ Thêm ...\" khi chưa có nội dung; tự mở khi có ghi chú, diện tích không tính giá hoặc diện tích sàn xây dựng (AI đọc ra cũng tự mở) và có thể bấm để mở/thu gọn.",
       "6.34": "Bảng Cảnh báo / Chú ý khi xem xét tài sản chuyển lên ngay dưới khối Vị trí thửa đất để thấy ngay khi vừa định vị (vẫn ẩn khi chưa có cảnh báo).",
       "6.33": "Gọn giao diện theo phản hồi: gộp \"Xác định\" và \"Vị trí hiện tại\" thành một nút \"Xác định vị trí\" (ô trống hoặc đang là tọa độ do app điền thì dùng GPS, ô có link/tọa độ bạn dán thì đọc link/tọa độ); bỏ nút \"Khảo sát nhanh tại vị trí\" (trùng nút Khảo Sát Giá) và nút \"Cập Nhật\" (các ô số đã tự tính lại); neo cố định cột STT và Địa chỉ ở bảng Danh mục chính và Hàng chờ khi trượt ngang (điện thoại thu hẹp cột Địa chỉ còn ~150 px).",
@@ -1149,17 +1150,17 @@
       if (!box) return;
       if (box.classList.contains('hidden')) {
         box.classList.remove('hidden');
-        if (btnText) btnText.innerText = `Ẩn Danh Sách Nhóm (${customFbGroups.length})`;
+        if (btnText) btnText.innerText = `Ẩn DS nhóm FB lấy tin (${customFbGroups.length})`;
       } else {
         box.classList.add('hidden');
-        if (btnText) btnText.innerText = `Hiện Danh Sách Nhóm (${customFbGroups.length})`;
+        if (btnText) btnText.innerText = `Hiện DS nhóm FB lấy tin (${customFbGroups.length})`;
       }
     }
 
     function renderFbGroupsChips() {
       const container = document.getElementById('fbGroupChipsList');
       const btnText = document.getElementById('toggleFbGroupBtnText');
-      if (btnText) btnText.innerText = `Hiện Danh Sách Nhóm (${customFbGroups.length})`;
+      if (btnText) btnText.innerText = `Hiện DS nhóm FB lấy tin (${customFbGroups.length})`;
       if (!container) return;
       fillManualSourceSelect();
 
@@ -1311,6 +1312,28 @@
       recalculateTargetValues();
       renderPoolListUI();
       showToast(`Đã đưa tài sản vào Bảng so sánh chính & tính lại đơn giá!`);
+    }
+
+    // v6.36: chuyển tất cả hàng chờ có đủ giá + diện tích lên bảng chính (hỏi xác nhận; tin AI vẫn được đánh dấu đã xác nhận bởi người dùng, trọng số thấp)
+    function promoteAllFromPool() {
+      const valid = backupCompsPool.filter(compIsValid), rest = backupCompsPool.length - valid.length;
+      if (!valid.length) { showToast('Hàng chờ không có tin nào đủ giá và diện tích để chuyển.'); return; }
+      const ai = valid.filter(c => c.origin === 'ai').length;
+      const flagged = valid.filter(c => c.matchLevel === 'huyen' || c.matchLevel === 'near' || c.outlier || c.poolReason === 'no_date').length;
+      const msg = `Chuyển ${valid.length} tin đủ giá và diện tích lên Danh mục TSSS chính thức?` +
+        (ai ? `\n\n- ${ai} tin do AI tạo CHƯA được kiểm chứng: bạn xác nhận là đã tra cứu/chấp nhận (trọng số thấp).` : '') +
+        (flagged ? `\n- ${flagged} tin đang bị gắn cờ (khác xã, lân cận, ngoại lai giá hoặc không rõ ngày) cũng sẽ được tính vào đơn giá.` : '') +
+        (rest ? `\n- ${rest} tin thiếu số liệu sẽ ở lại hàng chờ.` : '');
+      if (!window.confirm(msg)) return;
+      const keep = [];
+      backupCompsPool.forEach(c => {
+        if (!compIsValid(c)) { keep.push(c); return; }
+        if (c.origin === 'ai') { c.userConfirmed = true; c.sourceWeight = 0.5; }
+        currentComps.push(c);
+      });
+      backupCompsPool = keep;
+      renderMapElements(); recalculateTargetValues(); renderPoolListUI();
+      showToast(`Đã chuyển ${valid.length} tin lên Danh mục TSSS chính thức.`);
     }
 
     function demoteCompToPool(mainIndex) {
@@ -2068,6 +2091,22 @@
       if (map && targetCoords) map.setView([targetCoords.lat, targetCoords.lng], 16);
     }
 
+    // v6.36: một nút "Xem bao quát": vừa khít thửa + các tin so sánh trong 1 km quanh thửa; không zoom gần hơn mức 16 và không xa hơn mức 14
+    function haversineJs(a, b) { const R = 6371000, r = x => x * Math.PI / 180, dLat = r(b.lat - a.lat), dLng = r(b.lng - a.lng); const h = Math.sin(dLat / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLng / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); }
+    function overviewPoints() {
+      const pts = []; if (targetCoordsKnown && targetCoords && targetCoords.lat) pts.push([targetCoords.lat, targetCoords.lng]);
+      if (!pts.length) return null;
+      currentComps.concat(backupCompsPool).forEach(c => { if (typeof c.lat === 'number' && typeof c.lng === 'number' && haversineJs(targetCoords, { lat: c.lat, lng: c.lng }) <= 1000) pts.push([c.lat, c.lng]); });
+      return pts;
+    }
+    function viewOverview() {
+      if (!map) return;
+      const pts = overviewPoints();
+      if (!pts) { fitAllMarkersSafe(); return; }                       // chưa có vị trí thửa: bao quát các điểm đang có như cũ
+      if (pts.length === 1) { map.setView(pts[0], 16); return; }
+      map.fitBounds(L.latLngBounds(pts).pad(0.15), { maxZoom: 16 });
+      if (map.getZoom() < 14) map.setZoom(14);
+    }
     function fitAllMarkersSafe() {
       if (!map) return;
       const group = new L.featureGroup([targetMarker, ...compMarkers].filter(Boolean));
@@ -3168,6 +3207,7 @@ ${items}`;
       const post = decodeFbPostHash(location.hash); if (!post) return false;
       try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
       const box = document.getElementById('manualRawText'); if (!box) return false;
+      try { setCollapsible('pasteNews', true); } catch (e) {}
       if (post.u && box.value.includes(post.u)) { showToast('Bài này đã có trong ô dán tin.'); return true; }
       const entry = (post.u ? post.u + '\n' : '') + post.t;
       box.value = box.value.trim() ? box.value.trim() + '\n---\n' + entry : entry;
@@ -3621,7 +3661,9 @@ ${items}`;
       gcnNotes: { wrap: 'gcnNotesWrap', btn: 'btnToggleGcnNotes', open: 'Thu gọn ghi chú GCN', closed: 'Thêm ghi chú GCN / diện tích không tính giá',
         hasContent: () => !!valStr('targetPlanningNotice') || valNum('targetPlanningArea') > 0 },
       ctxd: { wrap: 'ctxdWrap', btn: 'btnToggleCtxd', open: 'Thu gọn công trình xây dựng', closed: 'Thêm công trình xây dựng trên đất',
-        hasContent: () => !!valStr('targetBuildingType') || valNum('targetBuildingArea') > 0 }
+        hasContent: () => !!valStr('targetBuildingType') || valNum('targetBuildingArea') > 0 },
+      pasteNews: { wrap: 'pasteNewsWrap', btn: 'btnTogglePaste', open: 'Thu gọn phần dán tin rao', closed: 'Dán tin rao từ Zalo / FB',
+        hasContent: () => !!valStr('manualRawText') }
     };
     function setCollapsible(key, open) {
       const c = COLLAPSIBLES[key], wrap = document.getElementById(c.wrap), btn = document.getElementById(c.btn); if (!wrap || !btn) return;
@@ -3705,9 +3747,9 @@ ${items}`;
           <td class="py-3 px-2 text-center text-slate-600">${fmtMaybe(comp.frontage, 'm')} × ${fmtMaybe(comp.depth, 'm')}</td>
           <td class="py-3 px-3 text-right font-bold text-slate-800 whitespace-nowrap">
             ${comp.rawPrice > 0 ? Number(comp.rawPrice).toFixed(2) + ' Tỷ' : '--'}
-            <span class="text-[10px] text-slate-500 font-normal block">${okc ? '(' + rawUnitPrice.toFixed(1) + ' tr/m²)' : '(thiếu số liệu)'}</span>
+            ${okc ? '' : '<span class="text-[10px] text-slate-500 font-normal block">(thiếu số liệu)</span>'}
           </td>
-          <td class="py-3 px-3 text-right font-bold text-emerald-700 whitespace-nowrap text-sm">${okc ? discountedUnitPrice.toFixed(2) : 'không tính'}</td>
+          <td class="py-3 px-3 text-right font-bold text-emerald-700 whitespace-nowrap text-sm">${okc ? rawUnitPrice.toFixed(1) + ' <span class="text-[10px] font-normal text-slate-500">tr/m²</span>' : 'không tính'}</td>
           <td class="py-3 px-2 text-center"><span title="${escHtml(sim.reasons.join('; '))}" class="inline-block px-1.5 py-0.5 rounded text-[11px] font-bold cursor-help ${score >= 90 ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${okc ? score + '%' : '--'}</span></td>
           <td class="py-3 px-2 text-center">
             <div class="flex flex-col items-center gap-1">
