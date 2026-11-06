@@ -28,6 +28,10 @@
     @media (max-width: 640px) {
       table.sticky-cols th:nth-child(2), table.sticky-cols td:not([colspan]):nth-child(2) { min-width: 150px !important; max-width: 170px !important; width: 160px; }
     }
+    /* v6.44: hàng nút gập của thẻ Nguồn tra tin */
+    .src-toggle { font-size: 11px; font-weight: 600; color: #334155; background: #fff; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.25rem 0.6rem; display: inline-flex; align-items: center; gap: 0.3rem; cursor: pointer; }
+    .src-toggle:hover { background: #f1f5f9; }
+    .src-toggle.active { background: #e0e7ff; border-color: #818cf8; color: #3730a3; }
     .report-paper {
       width: 100%;
       max-width: 800px;
@@ -177,15 +181,16 @@
       </div>
       
       <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ml-auto">
-        <button onclick="openApiKeyModal()" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-slate-600 flex items-center gap-1 transition shadow-sm cursor-pointer">
-          <i class="ph-bold ph-key"></i> <span id="apiKeyBtnText"><span class="text-emerald-300 font-bold">Free Tier</span></span>
-        </button>
-        <button onclick="lockAppNow()" type="button" title="Khóa ứng dụng ngay lập tức" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-lg border border-slate-600 flex items-center gap-1 transition cursor-pointer">
-          <i class="ph-bold ph-lock-key"></i> <span class="hidden sm:inline">Khóa</span>
-        </button>
-        <button onclick="resetAllData()" type="button" title="Làm mới dữ liệu" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs p-1.5 sm:px-2.5 sm:py-2 rounded-lg border border-slate-600 flex items-center gap-1 transition cursor-pointer">
-          <i class="ph-bold ph-arrow-counter-clockwise"></i> <span class="hidden md:inline">Làm Mới</span>
-        </button>
+        <div class="relative" id="gearWrap">
+          <button id="btnGear" onclick="toggleGearMenu(event)" type="button" aria-haspopup="true" aria-expanded="false" title="Cài đặt: khóa API, khóa ứng dụng, làm mới" class="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 rounded-lg border border-slate-600 flex items-center justify-center transition shadow-sm cursor-pointer">
+            <i class="ph-bold ph-gear text-base"></i>
+          </button>
+          <div id="gearMenu" role="menu" class="hidden absolute right-0 mt-2 w-56 bg-slate-800 border border-slate-600 rounded-xl shadow-2xl py-1.5 z-50 text-xs text-slate-100">
+            <button role="menuitem" onclick="gearAct(openApiKeyModal)" type="button" class="w-full text-left px-3 py-2.5 hover:bg-slate-700 flex items-center gap-2"><i class="ph-bold ph-key"></i> <span>Khóa API:</span> <span id="apiKeyBtnText"><span class="text-emerald-300 font-bold">Free Tier</span></span></button>
+            <button role="menuitem" onclick="gearAct(lockAppNow)" type="button" class="w-full text-left px-3 py-2.5 hover:bg-slate-700 flex items-center gap-2"><i class="ph-bold ph-lock-key"></i> <span>Khóa ứng dụng</span></button>
+            <button role="menuitem" onclick="gearAct(resetAllData)" type="button" class="w-full text-left px-3 py-2.5 hover:bg-slate-700 flex items-center gap-2"><i class="ph-bold ph-arrow-counter-clockwise"></i> <span>Làm mới dữ liệu</span></button>
+          </div>
+        </div>
         <button onclick="openPdfPreviewModal()" type="button" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg shadow text-[11px] sm:text-xs flex items-center gap-1 transition active:scale-95 cursor-pointer">
           <i class="ph-bold ph-eye text-sm"></i> <span class="hidden sm:inline">Xuất PDF</span><span class="sm:hidden">PDF</span>
         </button>
@@ -573,16 +578,17 @@
 
     <!-- KHỐI 4: THU THẬP TIN RAO ĐA KÊNH & QUẢN LÝ NHÓM FACEBOOK BĐS ĐỊA PHƯƠNG -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+      <div class="p-3.5 sm:p-4 bg-slate-50 border-b border-slate-200 space-y-2.5">
         <div class="flex items-center gap-2">
           <div class="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg flex-shrink-0"><i class="ph-bold ph-magnifying-glass text-base sm:text-xl"></i></div>
-          <div>
-            <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Nguồn tra tin</h3>
-          </div>
+          <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Nguồn tra tin</h3>
         </div>
-        <button onclick="toggleFbGroupManager()" type="button" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 bg-white border border-indigo-200 px-2.5 py-1 rounded-lg shadow-xs cursor-pointer">
-          <i class="ph-bold ph-list-dashes"></i> <span id="toggleFbGroupBtnText">Hiện DS nhóm FB lấy tin (11)</span>
-        </button>
+        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2" id="sourceToggleRow">
+          <button type="button" onclick="togglePanel('channels')" id="btnPanelChannels" class="src-toggle"><i class="ph-bold ph-plus-circle"></i> <span>Các kênh lớn đang lấy tin</span></button>
+          <button type="button" onclick="togglePanel('fbtool')" id="btnPanelFbtool" class="src-toggle"><i class="ph-bold ph-plus-circle"></i> <span>Nút lấy bài Facebook</span></button>
+          <button type="button" onclick="toggleCollapsible('pasteNews')" id="btnTogglePaste" class="src-toggle"><i class="ph-bold ph-plus-circle"></i> <span>Dán tin rao từ Zalo / FB</span></button>
+          <button type="button" onclick="toggleFbGroupManager()" id="btnToggleFbGroups" class="src-toggle"><i class="ph-bold ph-plus-circle"></i> <span id="toggleFbGroupBtnText">Hiện DS nhóm FB lấy tin (11)</span></button>
+        </div>
       </div>
 
       <!-- VÙNG QUẢN LÝ LINK NHÓM FACEBOOK BĐS (MẶC ĐỊNH ẨN ĐỂ TIẾT KIỆM DIỆN TÍCH) -->
@@ -605,12 +611,9 @@
       </div>
 
       <div class="p-3.5 sm:p-4 space-y-3">
-        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs space-y-2">
-          <div class="flex items-center justify-between gap-2">
-            <button type="button" onclick="togglePanel('channels')" id="btnPanelChannels" class="text-xs font-semibold text-slate-700 hover:underline flex items-center gap-1"><i class="ph-bold ph-plus-circle"></i> <span>Các kênh lớn đang lấy tin</span></button>
-            <span class="text-[10px] text-slate-400 font-normal hidden sm:inline">Tự gán từ khóa địa phương</span>
-          </div>
-          <div id="panelChannelsBody" class="hidden space-y-2">
+        <div id="panelChannelsBox" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs space-y-2">
+          <div class="font-bold text-slate-700 flex items-center gap-1.5"><i class="ph-bold ph-globe text-blue-600"></i> Các kênh lớn đang lấy tin <span class="text-[10px] text-slate-400 font-normal ml-auto hidden sm:inline">Tự gán từ khóa địa phương</span></div>
+          <div id="panelChannelsBody" class="space-y-2">
 
           <div class="grid grid-cols-2 gap-1.5 sm:gap-2">
             <a id="linkQuickFb" href="https://www.google.com/search?q=site:facebook.com/groups+b%C3%A1n+%C4%91%E1%BA%A5t" target="_blank" class="p-2 bg-white hover:bg-blue-50 border border-slate-200 rounded-lg flex items-center gap-1.5 text-[11px] font-semibold text-blue-700 shadow-sm truncate">
@@ -637,11 +640,9 @@
           </div>
           </div>
         </div>
-        <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 text-[11px] space-y-1.5">
-          <div class="flex items-center justify-between gap-2">
-            <button type="button" onclick="togglePanel('fbtool')" id="btnPanelFbtool" class="text-xs font-semibold text-slate-700 hover:underline flex items-center gap-1"><i class="ph-bold ph-plus-circle"></i> <span>Nút lấy bài Facebook (máy tính)</span></button>
-          </div>
-          <div id="panelFbtoolBody" class="hidden space-y-1.5">
+        <div id="panelFbtoolBox" class="hidden bg-sky-50 border border-sky-200 rounded-xl p-3 text-[11px] space-y-1.5">
+          <div class="font-bold text-sky-900 flex items-center gap-1.5"><i class="ph-bold ph-facebook-logo text-blue-600"></i> Nút lấy bài Facebook (máy tính)</div>
+          <div id="panelFbtoolBody" class="space-y-1.5">
           <div class="flex flex-wrap items-center gap-2">
             <a id="fbBookmarklet" href="#" onclick="return false" class="inline-block px-2.5 py-1 rounded bg-sky-600 text-white font-bold cursor-grab" title="Kéo nút này lên thanh dấu trang">Lấy bài FB → LendLand</a>
             <span class="text-slate-600">← kéo nút này lên thanh dấu trang (Ctrl+Shift+B để hiện thanh)</span>
@@ -661,7 +662,6 @@
           </div>
         </div>
         <div>
-          <button id="btnTogglePaste" type="button" onclick="toggleCollapsible('pasteNews')" class="text-xs font-semibold text-slate-700 hover:underline flex items-center gap-1"><i class="ph-bold ph-plus-circle"></i> <span>Dán tin rao từ Zalo / FB</span></button>
           <div id="pasteNewsWrap" class="hidden mt-2">
         <div class="space-y-2">
           <div class="flex items-center justify-between text-xs font-semibold text-slate-700">
@@ -1069,8 +1069,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.43";
+    const APP_VERSION = "6.44";
     const APP_CHANGELOG = {
+      "6.44": "Gọn giao diện: (1) thẻ Nguồn tra tin gom Các kênh lớn đang lấy tin, Nút lấy bài Facebook, Dán tin rao từ Zalo / FB và Hiện DS nhóm FB lấy tin thành một hàng nút ở tiêu đề (mở được nhiều mục cùng lúc); (2) khối Công trình xây dựng chỉ tự mở khi có loại/diện tích công trình thật, bỏ qua chữ mặc định AI hay điền (Nhà ở hoặc Đất trống); (3) nút PAYG, Khóa, Làm Mới gom vào menu bánh răng ở thanh trên (nút Xuất PDF giữ riêng).",
       "6.43": "Thống nhất nút gập: hai khung Các kênh lớn đang lấy tin và Nút lấy bài Facebook dùng dấu cộng/trừ trong vòng tròn cùng kiểu với Dán tin rao từ Zalo / FB (tiêu đề chính là nút bấm).",
       "6.42": "Thông báo rõ khi khóa bị từ chối: mã lỗi Gemini (400/401/403/429/5xx) dịch thành câu tiếng Việt nêu lý do có thể (hết hạn mức/credit, chưa bật thanh toán, khóa sai...), dùng cho trích xuất, đọc ảnh GCN và AI tìm tin; lỗi Google Geocoding (OVER_QUERY_LIMIT, REQUEST_DENIED) và Serper hết hạn mức cũng được dịch; hộp cảnh báo nổi có nút đóng hiện một lần mỗi phiên khi khóa trả phí/Google/Serper bị từ chối. App không đọc được số dư credit nên chỉ biết khi một lần gọi bị từ chối.",
       "6.41": "Hai khung \"Các kênh lớn đang lấy tin\" và \"Nút lấy bài Facebook\" thu gọn sẵn, có nút mũi tên để bung ra / thu gọn; app nhớ lựa chọn trên thiết bị.",
@@ -1172,12 +1173,15 @@
       const box = document.getElementById('fbGroupManagerContainer');
       const btnText = document.getElementById('toggleFbGroupBtnText');
       if (!box) return;
+      const gb = document.getElementById('btnToggleFbGroups'); const gi = gb && gb.querySelector('i');
       if (box.classList.contains('hidden')) {
         box.classList.remove('hidden');
         if (btnText) btnText.innerText = `Ẩn DS nhóm FB lấy tin (${customFbGroups.length})`;
+        if (gb) gb.classList.add('active'); if (gi) gi.className = 'ph-bold ph-minus-circle';
       } else {
         box.classList.add('hidden');
         if (btnText) btnText.innerText = `Hiện DS nhóm FB lấy tin (${customFbGroups.length})`;
+        if (gb) gb.classList.remove('active'); if (gi) gi.className = 'ph-bold ph-plus-circle';
       }
     }
 
@@ -3879,22 +3883,35 @@ ${items}`;
       gcnNotes: { wrap: 'gcnNotesWrap', btn: 'btnToggleGcnNotes', open: 'Thu gọn ghi chú GCN', closed: 'Thêm ghi chú GCN / diện tích không tính giá',
         hasContent: () => !!valStr('targetPlanningNotice') || valNum('targetPlanningArea') > 0 },
       ctxd: { wrap: 'ctxdWrap', btn: 'btnToggleCtxd', open: 'Thu gọn công trình xây dựng', closed: 'Thêm công trình xây dựng trên đất',
-        hasContent: () => !!valStr('targetBuildingType') || valNum('targetBuildingArea') > 0 },
-      pasteNews: { wrap: 'pasteNewsWrap', btn: 'btnTogglePaste', open: 'Thu gọn phần dán tin rao', closed: 'Dán tin rao từ Zalo / FB',
+        hasContent: () => isRealBuildingType(valStr('targetBuildingType')) || valNum('targetBuildingArea') > 0 },
+      pasteNews: { wrap: 'pasteNewsWrap', btn: 'btnTogglePaste', open: 'Dán tin rao từ Zalo / FB', closed: 'Dán tin rao từ Zalo / FB',
         hasContent: () => !!valStr('manualRawText') }
     };
+    // v6.44: chữ mặc định AI hay điền cho loại công trình không tính là có công trình
+    function isRealBuildingType(v) { const n = normVi(v); return !!n && !['nha o hoac dat trong', 'dat trong', 'khong co', 'khong', 'khong co dat trong', 'chua co', 'khong co cong trinh', 'trong'].includes(n); }
+    // v6.44: menu bánh răng ở thanh trên (Khóa API/PAYG, Khóa ứng dụng, Làm mới)
+    function closeGearMenu() { const m = document.getElementById('gearMenu'), b = document.getElementById('btnGear'); if (m) m.classList.add('hidden'); if (b) b.setAttribute('aria-expanded', 'false'); }
+    function toggleGearMenu(ev) {
+      if (ev) ev.stopPropagation();
+      const m = document.getElementById('gearMenu'), b = document.getElementById('btnGear'); if (!m) return;
+      const open = m.classList.contains('hidden'); m.classList.toggle('hidden', !open); if (b) b.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    function gearAct(fn) { closeGearMenu(); try { fn(); } catch (e) { console.error(e); } }
+    document.addEventListener('click', ev => { const w = document.getElementById('gearWrap'); if (w && !w.contains(ev.target)) closeGearMenu(); });
+    document.addEventListener('keydown', ev => { if (ev.key === 'Escape') closeGearMenu(); });
     function setCollapsible(key, open) {
       const c = COLLAPSIBLES[key], wrap = document.getElementById(c.wrap), btn = document.getElementById(c.btn); if (!wrap || !btn) return;
       wrap.classList.toggle('hidden', !open);
       btn.querySelector('span').textContent = open ? c.open : c.closed;
+      btn.classList.toggle('active', open);
       const ic = btn.querySelector('i'); if (ic) ic.className = open ? 'ph-bold ph-minus-circle' : 'ph-bold ph-plus-circle';
     }
     // v6.41: khung gập có nhớ lựa chọn trên thiết bị (Các kênh lớn, Nút lấy bài Facebook): mặc định thu gọn
-    const PANELS = { channels: { body: 'panelChannelsBody', btn: 'btnPanelChannels', store: 'llp_panel_channels', closed: 'Các kênh lớn đang lấy tin', open: 'Thu gọn các kênh lớn đang lấy tin' }, fbtool: { body: 'panelFbtoolBody', btn: 'btnPanelFbtool', store: 'llp_panel_fbtool', closed: 'Nút lấy bài Facebook (máy tính)', open: 'Thu gọn nút lấy bài Facebook' } };
+    const PANELS = { channels: { body: 'panelChannelsBox', btn: 'btnPanelChannels', store: 'llp_panel_channels' }, fbtool: { body: 'panelFbtoolBox', btn: 'btnPanelFbtool', store: 'llp_panel_fbtool' } };
     function setPanel(key, open, save) {
       const c = PANELS[key], body = document.getElementById(c.body), btn = document.getElementById(c.btn); if (!body || !btn) return;
       body.classList.toggle('hidden', !open);
-      btn.querySelector('span').textContent = open ? c.open : c.closed;
+      btn.classList.toggle('active', open);
       const ic = btn.querySelector('i'); if (ic) ic.className = open ? 'ph-bold ph-minus-circle' : 'ph-bold ph-plus-circle';
       if (save) { try { localStorage.setItem(c.store, open ? 'open' : 'closed'); } catch (e) {} }
     }
