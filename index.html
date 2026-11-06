@@ -1071,8 +1071,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.41";
+    const APP_VERSION = "6.42";
     const APP_CHANGELOG = {
+      "6.42": "Thông báo rõ khi khóa bị từ chối: mã lỗi Gemini (400/401/403/429/5xx) dịch thành câu tiếng Việt nêu lý do có thể (hết hạn mức/credit, chưa bật thanh toán, khóa sai...), dùng cho trích xuất, đọc ảnh GCN và AI tìm tin; lỗi Google Geocoding (OVER_QUERY_LIMIT, REQUEST_DENIED) và Serper hết hạn mức cũng được dịch; hộp cảnh báo nổi có nút đóng hiện một lần mỗi phiên khi khóa trả phí/Google/Serper bị từ chối. App không đọc được số dư credit nên chỉ biết khi một lần gọi bị từ chối.",
       "6.41": "Hai khung \"Các kênh lớn đang lấy tin\" và \"Nút lấy bài Facebook\" thu gọn sẵn, có nút mũi tên để bung ra / thu gọn; app nhớ lựa chọn trên thiết bị.",
       "6.40": "Sửa nhận bài Facebook qua clipboard: chuẩn hóa xuống dòng kiểu Windows (CRLF) làm các bài bị dính thành một; chỉ coi là trùng khi link là link riêng của bài, link chung (trang tìm kiếm) so theo nội dung; lần đọc clipboard có giới hạn 3 giây, không bị kẹt. Thêm dòng \"Ô này có N bài\", dòng trạng thái lần đọc clipboard gần nhất (đọc mấy bài, thêm mấy, đã có mấy, lỗi nếu có), và khi trích xuất liệt kê từng bài bị bỏ kèm đầu bài và lý do; bài bị bỏ ở lại trong ô để sửa thay vì bị xóa.",
       "6.39": "Ô nội dung tin rao (dán Zalo/FB) cao hơn mặc định (khoảng 8 dòng) và kéo giãn được chiều dọc bằng tay nắm ở góc dưới bên phải (tối thiểu 6 dòng, tối đa gần hết chiều cao màn hình).",
@@ -2231,7 +2232,7 @@
 
       try {
         const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-        if (!listResponse.ok) throw new Error("Mã API Key không hợp lệ hoặc bị chặn.");
+        if (!listResponse.ok) throw await geminiHttpError(listResponse);
         const listData = await listResponse.json();
         let validModels = (listData.models || []).filter(m => 
           m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")
@@ -2300,6 +2301,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
 
         let parsedData = null;
         let usedModelName = "";
+        let ocrHttpErr = null;
 
         for (const model of validModels) {
           try {
@@ -2310,6 +2312,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
               body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { temperature: 0.1 } })
             });
 
+            if (!genResponse.ok && !ocrHttpErr) { try { ocrHttpErr = await geminiHttpError(genResponse); } catch (e) {} }
             if (genResponse.ok) {
               const genData = await genResponse.json();
               const rawOutput = genData.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -2338,7 +2341,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
           `;
           showToast("AI đã đọc xong toàn bộ ảnh tài sản!");
         } else {
-          throw new Error("Không có model nào đọc được ảnh.");
+          throw ocrHttpErr || new Error("Không có model nào đọc được ảnh.");
         }
 
       } catch (err) {
@@ -2481,7 +2484,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
           validModels = [{ name: cachedModel }];
         } else {
           const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, { signal: run.ctrl.signal });
-          if (!listResponse.ok) throw new Error("API Key không hợp lệ");
+          if (!listResponse.ok) throw await geminiHttpError(listResponse);
           const listData = await listResponse.json();
           validModels = (listData.models || []).filter(m => 
             m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")
@@ -2564,7 +2567,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
 
             if (!res.ok && enableGrounding) {
               // Không tự chuyển sang chế độ AI không có Google Search (sẽ cho tin bịa). Ghi nhận lỗi và thử model khác.
-              groundingErrors.push(`${model.name}: HTTP ${res.status}`);
+              groundingErrors.push(await geminiHttpError(res));
               continue;
             }
 
@@ -2598,7 +2601,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
           setFloatingStatus('success', `Đã cào ${successMarket.comps.length} TSSS (${modeBadge}${searchBadge})`);
           showToast(`AI gợi ý ${successMarket.comps.length} tin (CHƯA kiểm chứng) - xem ở mục Hàng chờ, kiểm tra rồi mới đưa lên bảng.`);
         } else if (groundingErrors.length && enableGrounding) {
-          throw new Error("Google Search không khả dụng (" + groundingErrors[0] + "): không lấy tin để tránh tin do AI tự bịa. Thử lại sau, đổi sang khóa trả phí, hoặc dán tin thủ công.");
+          throw new Error((groundingErrors[0].keyProblem ? groundingErrors[0].message : "Google Search không khả dụng (" + groundingErrors[0].message + ")") + " Không lấy tin để tránh tin do AI tự bịa. Thử lại sau, đổi sang khóa trả phí, hoặc dán tin thủ công.");
         } else {
           throw new Error("Không lấy được dữ liệu thị trường từ AI");
         }
@@ -2999,6 +3002,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         const notSale = currentComps.filter(c => c.notSale);
         if (notSale.length) { notSale.forEach(c => { c.poolReason = 'not_sale'; }); currentComps = currentComps.filter(c => !c.notSale); backupCompsPool = notSale.concat(backupCompsPool); }
       }
+      { const q = [...(data.errors || []), ...(data.fetchlog || [])].find(m => /hết hạn mức|khoá sai|khóa sai/i.test(String(m))); if (q) showKeyAlert('serper', String(q).slice(0, 220)); }
       const mc = data.match_counts || {};
       const hints = [];
       const dg = data.diagnostics;
@@ -3030,11 +3034,45 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
     function normVi(s) { return String(s == null ? '' : s).toLowerCase().replace(/đ/g, 'd').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
     function aiExtractEnabled() { return localStorage.getItem('llp_ai_extract') !== 'false' && !!getActiveApiKey(); }
 
+    // v6.42: giải thích lỗi khóa bằng tiếng Việt (App không đọc được số dư credit, chỉ biết khi một lần gọi bị từ chối)
+    function geminiErrorText(status, bodyText) {
+      const t = String(bodyText || '').toLowerCase();
+      if (status === 429 || /resource_exhausted|quota/.test(t)) return `Khóa Gemini bị từ chối do hết hạn mức hoặc hết credit, hoặc gọi quá nhanh (HTTP ${status || 429}). Khóa trả phí: kiểm tra credit/thanh toán trong Google Cloud; khóa miễn phí: đợi ít phút hoặc chuyển sang khóa trả phí.`;
+      if (status === 403 || /permission_denied|billing/.test(t)) return `Khóa Gemini bị từ chối (HTTP ${status || 403}): có thể chưa bật thanh toán, credit đã hết, hoặc khóa bị giới hạn/không được phép dùng dịch vụ này.`;
+      if (status === 401 || /api key not valid|api_key_invalid|invalid api key/.test(t)) return `Khóa Gemini sai hoặc đã bị thu hồi (HTTP ${status || 401}). Hãy kiểm tra lại khóa trong Quản trị.`;
+      if (status === 400) return 'Gemini từ chối yêu cầu (HTTP 400): khóa không hợp lệ hoặc nội dung không được chấp nhận.';
+      if (status >= 500) return `Máy chủ Gemini đang lỗi tạm thời (HTTP ${status}), hãy thử lại sau.`;
+      return 'Gemini HTTP ' + status;
+    }
+    async function geminiHttpError(r) {
+      let body = ''; try { body = typeof r.text === 'function' ? await r.text() : ''; } catch (e) {}
+      const err = new Error(geminiErrorText(r.status, body)); err.status = r.status; err.keyProblem = [401, 403, 429].includes(r.status) || /api key|quota|billing/i.test(body);
+      if (err.keyProblem) showKeyAlert('gemini', err.message);
+      return err;
+    }
+    // Hộp cảnh báo nổi (đóng được), mỗi loại khóa chỉ hiện một lần mỗi phiên; Gemini chỉ cảnh báo nổi khi đang dùng chế độ trả phí
+    const keyAlertShown = {};
+    function showKeyAlert(kind, msg) {
+      if (keyAlertShown[kind]) return;
+      if (kind === 'gemini' && (localStorage.getItem('gemini_api_mode') || 'free') !== 'payg') return;
+      keyAlertShown[kind] = true;
+      let box = document.getElementById('keyAlertBox');
+      if (!box) {
+        box = document.createElement('div'); box.id = 'keyAlertBox';
+        box.className = 'fixed top-16 left-1/2 -translate-x-1/2 z-[110] w-[92vw] max-w-lg bg-rose-50 border border-rose-300 text-rose-900 rounded-xl shadow-2xl p-3 text-xs space-y-1.5';
+        box.setAttribute('role', 'alert'); document.body.appendChild(box);
+      }
+      const row = document.createElement('div'); row.className = 'flex items-start gap-2';
+      const label = { gemini: 'Khóa Gemini', google: 'Khóa Google (Geocoding)', serper: 'Nguồn Google (Serper)' }[kind] || 'Khóa';
+      const text = document.createElement('div'); text.className = 'flex-1'; text.innerHTML = '<b></b><div class="mt-0.5"></div>'; text.firstChild.textContent = label + ' bị từ chối'; text.lastChild.textContent = msg;
+      const close = document.createElement('button'); close.type = 'button'; close.textContent = '✕'; close.className = 'text-rose-700 font-bold px-1'; close.onclick = () => { row.remove(); if (!box.children.length) box.remove(); };
+      row.appendChild(text); row.appendChild(close); box.appendChild(row);
+    }
     async function pickGeminiModel(apiKey) {
       const cached = localStorage.getItem('gemini_cached_model');
       if (cached) return cached;
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-      if (!r.ok) throw new Error('API Key không hợp lệ');
+      if (!r.ok) throw await geminiHttpError(r);
       const valid = ((await r.json()).models || []).filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'));
       const score = n => n.includes('3.8-flash') ? 100 : n.includes('2.0-flash') ? 90 : n.includes('1.5-flash') ? 80 : (n.includes('flash') && !n.includes('2.5')) ? 70 : 50;
       valid.sort((a, b) => score(b.name) - score(a.name));
@@ -3051,7 +3089,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         delete body.generationConfig.responseMimeType;
         r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       }
-      if (!r.ok) throw new Error('Gemini HTTP ' + r.status);
+      if (!r.ok) throw await geminiHttpError(r);
       const j = await r.json();
       const text = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts && j.candidates[0].content.parts[0] && j.candidates[0].content.parts[0].text) || '';
       const m = text.match(/[\[{][\s\S]*[\]}]/);
@@ -3732,7 +3770,12 @@ ${items}`;
     async function reverseGeocodeGoogle(lat, lng, key) {
       const r = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&language=vi&key=${encodeURIComponent(key)}`);
       const j = await r.json();
-      if (j.status !== 'OK' || !j.results || !j.results.length) throw new Error('Google: ' + (j.status || 'lỗi') + (j.error_message ? ' - ' + j.error_message : ''));
+      if (j.status !== 'OK' || !j.results || !j.results.length) {
+        const st = j.status || 'lỗi';
+        const why = st === 'OVER_QUERY_LIMIT' ? 'khóa Google hết hạn mức hoặc hết credit' : st === 'REQUEST_DENIED' ? 'khóa Google bị từ chối (chưa bật Geocoding API/thanh toán, hoặc giới hạn khóa không khớp trang này)' : st === 'ZERO_RESULTS' ? 'không có kết quả cho vị trí này' : '';
+        if (st === 'OVER_QUERY_LIMIT' || st === 'REQUEST_DENIED') showKeyAlert('google', `${why} (${st})${j.error_message ? ': ' + j.error_message : ''}. App tự chuyển sang nguồn khác.`);
+        throw new Error(st + (why ? ' - ' + why : '') + (j.error_message ? ' - ' + j.error_message : ''));
+      }
       const comp = {};
       j.results.slice(0, 3).forEach(res => (res.address_components || []).forEach(c => (c.types || []).forEach(t => { if (!comp[t]) comp[t] = c.long_name; })));
       return { ward: comp.administrative_area_level_3 || comp.sublocality_level_1 || comp.sublocality || '', district: comp.administrative_area_level_2 || '',
