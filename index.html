@@ -642,6 +642,7 @@
             <span class="text-slate-600">← kéo nút này lên thanh dấu trang (Ctrl+Shift+B để hiện thanh)</span>
           </div>
           <label class="flex items-center gap-1.5 text-slate-700"><input type="checkbox" id="chkFbAutoPick" onchange="onFbAutoPickToggle(this.checked)"> Tự nhận bài FB khi quay lại tab này (trình duyệt sẽ hỏi quyền đọc clipboard một lần)</label>
+          <div id="fbPickStatus" class="hidden text-[11px] text-slate-500"></div>
           <details class="text-slate-700 leading-snug">
             <summary class="cursor-pointer font-semibold text-sky-800">Cách dùng</summary>
             <div class="mt-1 space-y-1">
@@ -664,7 +665,8 @@
             </button>
           </div>
           <select id="manualSourceGroup" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"><option value="">Nguồn: Zalo / khác</option></select>
-          <textarea id="manualRawText" rows="8" placeholder="Ví dụ: Cần bán đất hẻm 3m đường Hùng Vương P. Trần Quang Diệu, DT 55m2 thổ cư ODT, ngang 4.5m, giá 1 tỷ 150 triệu bớt lộc. Đăng ngày 28/10. LH 0905..." style="resize: vertical; min-height: 8rem; max-height: 85vh;" class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500"></textarea>
+          <textarea id="manualRawText" rows="8" placeholder="Ví dụ: Cần bán đất hẻm 3m đường Hùng Vương P. Trần Quang Diệu, DT 55m2 thổ cư ODT, ngang 4.5m, giá 1 tỷ 150 triệu bớt lộc. Đăng ngày 28/10. LH 0905..." style="resize: vertical; min-height: 8rem; max-height: 85vh;" oninput="updateManualCount()" class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500"></textarea>
+          <div id="manualCountNote" class="hidden text-[11px] text-slate-500"></div>
           <div class="flex justify-end">
             <button onclick="parseManualText()" type="button" class="bg-slate-800 hover:bg-slate-900 text-white font-medium text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 shadow cursor-pointer">
               <i class="ph-bold ph-plus-circle"></i> Trích Xuất Vào Bảng
@@ -1061,8 +1063,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.39";
+    const APP_VERSION = "6.40";
     const APP_CHANGELOG = {
+      "6.40": "Sửa nhận bài Facebook qua clipboard: chuẩn hóa xuống dòng kiểu Windows (CRLF) làm các bài bị dính thành một; chỉ coi là trùng khi link là link riêng của bài, link chung (trang tìm kiếm) so theo nội dung; lần đọc clipboard có giới hạn 3 giây, không bị kẹt. Thêm dòng \"Ô này có N bài\", dòng trạng thái lần đọc clipboard gần nhất (đọc mấy bài, thêm mấy, đã có mấy, lỗi nếu có), và khi trích xuất liệt kê từng bài bị bỏ kèm đầu bài và lý do; bài bị bỏ ở lại trong ô để sửa thay vì bị xóa.",
       "6.39": "Ô nội dung tin rao (dán Zalo/FB) cao hơn mặc định (khoảng 8 dòng) và kéo giãn được chiều dọc bằng tay nắm ở góc dưới bên phải (tối thiểu 6 dòng, tối đa gần hết chiều cao màn hình).",
       "6.38": "Lấy bài Facebook không mở tab mới: bấm biểu tượng ➜ LendLand (hoặc bôi đen + nút bookmarklet) sẽ SAO CHÉP link + nội dung bài vào clipboard (cộng dồn nhiều bài); tab app đang mở tự nhận khi bạn quay lại (ô tick \"Tự nhận bài FB khi quay lại tab này\", cần cho phép đọc clipboard), hoặc bấm Dán Clipboard; không sao chép được thì mở tab app như cũ. Chưa kiểm chứng trên Facebook/Chrome thật.",
       "6.37": "Nút lấy bài Facebook (bookmarklet) nay hiện biểu tượng \"➜ LendLand\" cạnh dòng ngày giờ của MỖI bài (kể cả trang kết quả tìm kiếm nhóm): bấm biểu tượng của bài nào thì link và nội dung bài đó được chuyển sang app; vẫn hỗ trợ bôi đen nội dung rồi bấm nút. Nút bookmarklet đưa ra ngoài phần gập, nằm ngay trong thẻ Nguồn tra tin. Chưa kiểm chứng trên Facebook thật.",
@@ -3278,30 +3281,56 @@ ${items}`;
     // v6.38: nhận bài Facebook qua clipboard (dòng đầu #LendLandFB, các bài cách nhau ---, dòng đầu mỗi bài là link nếu có)
     const FB_CLIP_MARK = '#LendLandFB';
     let lastIngestedClip = '', pickBusy = false;
+    const SPECIFIC_POST_LINK = /\/(posts|permalink|videos|reel|photo)\/|story_fbid=|permalink\.php/i;
+    const squashWs = x => String(x || '').replace(/\s+/g, ' ').trim();
+    function setFbPickStatus(msg) {
+      const el = document.getElementById('fbPickStatus'); if (!el) return;
+      const d = new Date(), p2 = n => String(n).padStart(2, '0');
+      el.textContent = `Lần đọc clipboard gần nhất (${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}): ${msg}`; el.classList.remove('hidden');
+    }
+    function updateManualCount() {
+      const box = document.getElementById('manualRawText'), note = document.getElementById('manualCountNote'); if (!box || !note) return;
+      const v = box.value.trim(); const n = v ? (splitPosts(v).length || 1) : 0;
+      note.textContent = n ? `Ô này có ${n} bài` : ''; note.classList.toggle('hidden', !n);
+    }
     function ingestFbClipboard(text, announce) {
-      text = String(text || '');
+      text = String(text || '').replace(/\r\n?/g, '\n');                  // Windows trả clipboard với CRLF: chuẩn hóa để tách đúng các bài
       if (!text.startsWith(FB_CLIP_MARK)) return false;
-      if (text === lastIngestedClip) return false;                       // đã nhận rồi: không thêm lại bài người dùng đã xóa
+      if (text === lastIngestedClip) { setFbPickStatus('nội dung clipboard không đổi so với lần trước, không thêm lại.'); return false; }
       const box = document.getElementById('manualRawText'); if (!box) return false;
       const entries = text.slice(FB_CLIP_MARK.length).split(/\n---\n/).map(x => x.trim().slice(0, 20000)).filter(Boolean);
-      let added = 0;
+      let added = 0, had = 0;
       entries.forEach(e => {
         const m = /^(https?:\/\/\S+)/.exec(e); const u = m ? safeHttpUrl(m[1]) : '';
-        if (u && box.value.includes(u)) return;
+        let dup;
+        if (u && SPECIFIC_POST_LINK.test(u)) dup = box.value.includes(u);                 // link riêng của bài: so theo link
+        else { const snip = squashWs(e.replace(/^https?:\/\/\S+/, '')).slice(0, 60); dup = snip.length >= 20 && squashWs(box.value).includes(snip); }   // link chung/không có link: so theo nội dung
+        if (dup) { had++; return; }
         box.value = box.value.trim() ? box.value.trim() + '\n---\n' + e : e; added++;
       });
       lastIngestedClip = text;
       try { setCollapsible('pasteNews', true); } catch (e) {}
-      if (added) { try { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} showToast(`Đã nhận ${added} bài Facebook từ clipboard. Kiểm tra rồi bấm Trích Xuất Vào Bảng.`); }
-      else if (announce) showToast('Các bài này đã có trong ô dán tin.');
+      updateManualCount();
+      setFbPickStatus(`clipboard có ${entries.length} bài: thêm ${added}${had ? `, ${had} đã có trong ô` : ''}.`);
+      if (added) { try { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} showToast(`Clipboard có ${entries.length} bài: thêm ${added}${had ? `, ${had} đã có` : ''}. Kiểm tra rồi bấm Trích Xuất Vào Bảng.`); }
+      else if (announce) showToast(`Clipboard có ${entries.length} bài, đều đã có trong ô dán tin.`);
       return added > 0;
     }
     async function pickFbFromClipboard(fromUser) {
-      if (pickBusy || !navigator.clipboard || !navigator.clipboard.readText) { if (fromUser) showToast('Trình duyệt này không cho đọc clipboard: hãy bấm Dán Clipboard hoặc dán tay.'); return false; }
+      if (pickBusy || !navigator.clipboard || !navigator.clipboard.readText) {
+        if (fromUser) showToast('Trình duyệt này không cho đọc clipboard: hãy bấm Dán Clipboard hoặc dán tay.');
+        setFbPickStatus(pickBusy ? 'đang đọc (lần trước chưa xong).' : 'trình duyệt không cho đọc clipboard.');
+        return false;
+      }
       pickBusy = true;
-      try { return ingestFbClipboard(await navigator.clipboard.readText(), fromUser); }
-      catch (e) { if (fromUser) showToast('Không đọc được clipboard: hãy cho phép trình duyệt đọc clipboard cho trang này.'); return false; }
-      finally { pickBusy = false; }
+      try {
+        const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('quá 3 giây không đọc được (tab chưa được tiêu điểm hoặc đang chờ cấp quyền)')), 3000));
+        return ingestFbClipboard(await Promise.race([navigator.clipboard.readText(), timeout]), fromUser);
+      } catch (e) {
+        setFbPickStatus('không đọc được clipboard: ' + String((e && e.message) || e));
+        if (fromUser) showToast('Không đọc được clipboard: hãy cho phép trình duyệt đọc clipboard cho trang này.');
+        return false;
+      } finally { pickBusy = false; }
     }
     function onFbAutoPickToggle(on) {
       try { localStorage.setItem('llp_fb_autopick', on ? 'true' : 'false'); } catch (e) {}
@@ -3309,7 +3338,7 @@ ${items}`;
     }
     function onAppReturn() {
       let on = false; try { on = localStorage.getItem('llp_fb_autopick') === 'true'; } catch (e) {}
-      if (on && document.visibilityState === 'visible') pickFbFromClipboard(false);
+      if (on && document.visibilityState === 'visible') { pickFbFromClipboard(false); setTimeout(() => { if (document.hasFocus && document.hasFocus()) pickFbFromClipboard(false); }, 600); }
     }
     window.addEventListener('focus', onAppReturn);
     document.addEventListener('visibilitychange', onAppReturn);
@@ -3343,6 +3372,7 @@ ${items}`;
       const entry = (post.u ? post.u + '\n' : '') + post.t;
       box.value = box.value.trim() ? box.value.trim() + '\n---\n' + entry : entry;
       try { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+      updateManualCount();
       showToast('Đã nhận bài Facebook từ nút. Kiểm tra nội dung rồi bấm Trích Xuất Vào Bảng.');
       return true;
     }
@@ -3382,9 +3412,13 @@ ${items}`;
       applyAiToComp(comp, ai);
       return { comp };
     }
-    function finishManualAdd(added, errors, dups) {
-      document.getElementById('manualRawText').value = '';
+    function finishManualAdd(added, errors, dups, skipped, total) {
+      const box = document.getElementById('manualRawText');
+      // bài bị bỏ vì thiếu số liệu/không phải tin bán ở lại trong ô để người dùng sửa; bài đã thêm hoặc trùng thì xóa khỏi ô
+      const keep = (skipped || []).filter(x => !x.dup).map(x => x.t);
+      box.value = keep.join('\n---\n'); updateManualCount();
       renderMapElements(); recalculateTargetValues();
+      if (skipped && skipped.length) showBackendLog([`Trích xuất tin dán: ${total} bài, thêm ${added}, bỏ ${skipped.length}:`, ...skipped.map(x => `- Bài ${x.i + 1} («${x.head}…»): ${x.why}`)]);
       if (!added) {
         showToast(dups ? `Không thêm tin mới: ${dups} tin đã có trong bảng (trùng)` + (errors.length ? `; ${errors.length} tin thiếu giá/diện tích` : '') + '.'
                        : 'Không đọc được ' + errors[0] + ' trong tin. Hãy bổ sung vào nội dung rồi thử lại.');
@@ -3394,16 +3428,17 @@ ${items}`;
     }
     function manualAddChunks(chunks, aiList) {
       const gi = valStr('manualSourceGroup'); const group = gi !== '' ? customFbGroups[Number(gi)] : null;
-      let added = 0, dups = 0; const errors = [];
+      let added = 0, dups = 0; const errors = [], skipped = [];
       chunks.forEach((t, i) => {
+        const head = squashWs(stripUrls(t)).slice(0, 50);
         const r = buildManualComp(t, parsePostRegex(stripUrls(t)), (aiList && aiList[i]) || {}, group);
-        if (r.error) { errors.push(r.error); return; }
-        if ((aiList && aiList[i] && aiList[i].is_sale === false)) { errors.push('thông tin bán (tin cho thuê/tìm mua)'); return; }
+        if (r.error) { errors.push(r.error); skipped.push({ i, t, head, why: 'không đọc được ' + r.error }); return; }
+        if ((aiList && aiList[i] && aiList[i].is_sale === false)) { errors.push('thông tin bán (tin cho thuê/tìm mua)'); skipped.push({ i, t, head, why: 'không phải tin bán (cho thuê/tìm mua)' }); return; }
         const key = `${r.comp.area}|${r.comp.rawPrice}|${normVi(stripUrls(t)).slice(0, 60)}`;
-        if (currentComps.concat(backupCompsPool).some(c => c._key === key)) { dups++; return; }
+        if (currentComps.concat(backupCompsPool).some(c => c._key === key)) { dups++; skipped.push({ i, t, head, why: 'trùng tin đã có trong bảng', dup: true }); return; }
         r.comp._key = key; currentComps.push(r.comp); added++;
       });
-      finishManualAdd(added, errors, dups);
+      finishManualAdd(added, errors, dups, skipped, chunks.length);
     }
     function parseManualText() {
       const text = document.getElementById('manualRawText').value.trim();
@@ -4183,8 +4218,9 @@ ${items}`;
     async function pasteFromClipboard() {
       try {
         const text = await navigator.clipboard.readText();
-        if (text.startsWith(FB_CLIP_MARK)) { lastIngestedClip = ''; ingestFbClipboard(text, true); return; }
+        if (text.replace(/\r\n?/g, '\n').startsWith(FB_CLIP_MARK)) { lastIngestedClip = ''; ingestFbClipboard(text, true); return; }
         document.getElementById('manualRawText').value = text;
+        updateManualCount();
         showToast("Đã dán văn bản từ bộ nhớ tạm!");
       } catch (err) { showToast("Vui lòng cấp quyền clipboard."); }
     }
