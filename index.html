@@ -30,6 +30,8 @@
     @media (max-width: 640px) {
       table.sticky-cols th:nth-child(2), table.sticky-cols td:not([colspan]):nth-child(2) { min-width: 150px !important; max-width: 170px !important; width: 160px; }
     }
+    /* v6.49: chế độ Khách (chỉ xem): các nút bị chặn mờ đi */
+    body.guest-mode .guest-blocked { opacity: 0.45; cursor: not-allowed !important; }
     /* v6.44: hàng nút gập của thẻ Nguồn tra tin */
     .src-toggle { font-size: 11px; font-weight: 600; color: #334155; background: #fff; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.25rem 0.6rem; display: inline-flex; align-items: center; gap: 0.3rem; cursor: pointer; }
     .src-toggle:hover { background: #f1f5f9; }
@@ -199,8 +201,8 @@
             <i class="ph-bold ph-gear text-base"></i>
           </button>
           <div id="gearMenu" role="menu" class="hidden absolute right-0 mt-2 w-56 bg-slate-800 border border-slate-600 rounded-xl shadow-2xl py-1.5 z-50 text-xs text-slate-100">
-            <button role="menuitem" onclick="gearAct(openApiKeyModal)" type="button" class="w-full text-left px-3 py-2.5 hover:bg-slate-700 flex items-center gap-2"><i class="ph-bold ph-key"></i> <span>Thiết lập App:</span> <span id="apiKeyBtnText"><span class="text-emerald-300 font-bold">Free Tier</span></span></button>
-            <button role="menuitem" onclick="gearAct(lockAppNow)" type="button" class="w-full text-left px-3 py-2.5 hover:bg-slate-700 flex items-center gap-2"><i class="ph-bold ph-lock-key"></i> <span>Khóa ứng dụng</span></button>
+            <button role="menuitem" id="gearSettingsItem" onclick="gearAct(openApiKeyModal)" type="button" class="guest-blocked w-full text-left px-3 py-2.5 hover:bg-slate-700 flex items-center gap-2"><i class="ph-bold ph-key"></i> <span>Thiết lập App:</span> <span id="apiKeyBtnText"><span class="text-emerald-300 font-bold">Free Tier</span></span></button>
+            <button role="menuitem" onclick="gearAct(lockAppNow)" type="button" class="w-full text-left px-3 py-2.5 hover:bg-slate-700 flex items-center gap-2"><i class="ph-bold ph-lock-key"></i> <span id="gearLockLabel">Khóa ứng dụng</span></button>
             <button role="menuitem" onclick="gearAct(resetAllData)" type="button" class="w-full text-left px-3 py-2.5 hover:bg-slate-700 flex items-center gap-2"><i class="ph-bold ph-arrow-counter-clockwise"></i> <span>Làm mới dữ liệu</span></button>
           </div>
         </div>
@@ -210,6 +212,10 @@
       </div>
     </div>
   </header>
+  <div id="guestBanner" class="hidden no-print bg-amber-400 text-slate-900 text-xs sm:text-sm font-semibold px-3 py-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-amber-500">
+    <span class="flex items-center gap-1.5"><i class="ph-bold ph-eye"></i> Chế độ Khách: chỉ xem giao diện (không tra tin, không đọc ảnh GCN, không dùng khóa API)</span>
+    <button type="button" onclick="lockAppNow()" class="bg-slate-900 hover:bg-slate-700 text-white font-bold px-3 py-1 rounded-lg text-xs">Thoát chế độ Khách</button>
+  </div>
 
   <!-- NỘI DUNG CHÍNH -->
   <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 w-full flex-grow space-y-4 sm:space-y-6 no-print">
@@ -227,7 +233,7 @@
       <div class="p-4 sm:p-6">
         <input type="file" id="gcnFileInput" accept="image/*,application/pdf" multiple class="hidden" onchange="handleFileSelected(event)">
         
-        <label for="gcnFileInput" class="block border-2 border-dashed border-indigo-300 hover:border-indigo-600 rounded-xl p-4 sm:p-6 text-center transition bg-indigo-50/20 hover:bg-indigo-50/50 cursor-pointer">
+        <label for="gcnFileInput" id="gcnUploadLabel" onclick="if (guestBlock('đọc ảnh GCN bằng AI')) { event.preventDefault(); }" class="guest-blocked block border-2 border-dashed border-indigo-300 hover:border-indigo-600 rounded-xl p-4 sm:p-6 text-center transition bg-indigo-50/20 hover:bg-indigo-50/50 cursor-pointer">
           <div class="w-10 h-10 sm:w-12 sm:h-12 mx-auto rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl sm:text-2xl mb-2 shadow-inner">
             <i class="ph-bold ph-cloud-arrow-up"></i>
           </div>
@@ -439,7 +445,7 @@
           </div>
           
           <div class="flex items-center gap-2">
-            <button onclick="triggerManualSurvey()" id="btnManualSurvey" type="button" class="flex-2 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-md active:scale-95 cursor-pointer">
+            <button onclick="triggerManualSurvey()" id="btnManualSurvey" type="button" class="guest-blocked flex-2 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-md active:scale-95 cursor-pointer">
               <i class="ph-bold ph-magnifying-glass-plus text-base text-amber-300"></i> Khảo Sát Giá Thị Trường & Tìm TSSS
             </button>
             <button onclick="stopSurvey()" id="btnStopSurvey" type="button" class="hidden flex-none bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition items-center justify-center gap-1.5 shadow-md active:scale-95 cursor-pointer">
@@ -1091,8 +1097,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.48";
+    const APP_VERSION = "6.49";
     const APP_CHANGELOG = {
+      "6.49": "Mã PIN Khách (song song với PIN chính thức): vào app ở chế độ chỉ xem giao diện để tham quan/thảo luận. Chế độ Khách không dùng khóa API (kể cả khóa lưu sẵn trên máy), không mở Két Cloud, không tra tin/khảo sát, không đọc ảnh GCN bằng AI, không mở Thiết lập App; có banner cam kèm nút Thoát, các nút bị chặn mờ đi và bấm vào sẽ giải thích. Code chỉ lưu bản băm SHA-256 (có muối) của mã Khách; đây là chế độ xem chứ không phải rào bảo mật.",
       "6.48": "Thanh thông báo nổi theo từng bước khi bấm Xác định vị trí hiện tại: Đang lấy vị trí GPS → Đang tra xã/phường, huyện, tỉnh và/hoặc Đang tìm đường gần vị trí → Đã xác định vị trí xong (tự tắt sau vài giây); báo lỗi khi không lấy được GPS; không ghi đè thanh trạng thái đang dùng cho khảo sát. File cap-nhat.bat sửa lỗi tự đóng cửa sổ và hiện danh sách thay đổi sau khi cập nhật.",
       "6.47": "(1) Khối Vị trí thửa đất chuyển ra khỏi thẻ Thông tin tài sản, đặt ngay trên thẻ Bản đồ GIS; nút đổi tên thành Xác định vị trí hiện tại. (2) Xác định được tọa độ thì bản đồ tự zoom mức 17 vào vị trí (cập nhật lại kích thước bản đồ trước khi zoom và căn lại sau 0,35 giây). (3) Nút Thiết lập App ở màn hình khóa có nền, viền để nhận ra là nút bấm. (4) Logo mới: ngôi nhà cách điệu (SVG) thay biểu tượng khiên ở thanh trên, màn hình khóa và biểu tượng tab trình duyệt.",
       "6.46": "Thêm Footer ở trang giao diện chính: tên app, số phiên bản (tự cập nhật theo APP_VERSION) và © duycongta@gmail.com; không in ra báo cáo.",
@@ -1422,13 +1429,45 @@
       return { binId, masterKey };
     }
 
+    // === v6.49: CHẾ ĐỘ KHÁCH (chỉ xem giao diện) ===
+    // Mã PIN Khách song song với PIN chính thức. Chỉ lưu băm SHA-256 có muối; đây là chế độ xem, không phải rào bảo mật (mã nguồn công khai).
+    const GUEST_SALT = 'LendLandGuest|';
+    const GUEST_PIN_SHA256 = '7e64ff7b2c303995284d63ce06395f43ab99bceeb6b0f6f67b7d4f44c7bc7021';
+    function isGuest() { try { return sessionStorage.getItem('llp_guest') === 'true'; } catch (e) { return false; } }
+    function isGuestPin(pin) {
+      try { return typeof CryptoJS !== 'undefined' && CryptoJS.SHA256(GUEST_SALT + String(pin)).toString() === GUEST_PIN_SHA256; } catch (e) { return false; }
+    }
+    // Trả true (và báo lý do) nếu đang ở chế độ Khách và việc này bị chặn
+    function guestBlock(what) {
+      if (!isGuest()) return false;
+      showToast(`Chế độ Khách chỉ xem giao diện: không ${what}. Thoát chế độ Khách và nhập mã PIN chính thức để dùng.`);
+      return true;
+    }
+    function applyGuestUi() {
+      const on = isGuest();
+      document.body.classList.toggle('guest-mode', on);
+      const b = document.getElementById('guestBanner'); if (b) b.classList.toggle('hidden', !on);
+      const l = document.getElementById('gearLockLabel'); if (l) l.textContent = on ? 'Thoát chế độ Khách' : 'Khóa ứng dụng';
+    }
+    function enterGuestMode() {
+      try { sessionStorage.removeItem('llp_session_unlocked'); sessionStorage.setItem('llp_guest', 'true'); } catch (e) {}
+      const o = document.getElementById('lockScreenOverlay'); if (o) o.classList.add('hidden');
+      const e = document.getElementById('pinErrorMsg'); if (e) e.classList.add('hidden');
+      const p = document.getElementById('pinInput'); if (p) p.value = '';
+      applyGuestUi();
+      showToast('Đã vào chế độ Khách: chỉ xem giao diện.');
+    }
+
     // === QUẢN LÝ PHIÊN (sessionStorage) & MÀN HÌNH KHÓA AN TOÀN ===
     function checkAuthLockStatus() {
       try {
         const lockOverlay = document.getElementById('lockScreenOverlay');
         const isSessionUnlocked = sessionStorage.getItem('llp_session_unlocked') === 'true';
 
-        if (isSessionUnlocked) {
+        if (isGuest()) {
+          if (lockOverlay) lockOverlay.classList.add('hidden');
+          applyGuestUi();
+        } else if (isSessionUnlocked) {
           if (lockOverlay) lockOverlay.classList.add('hidden');
           checkSavedApiKey();
         } else {
@@ -1457,7 +1496,7 @@
     }
 
     function lockAppNow() {
-      sessionStorage.removeItem('llp_session_unlocked');
+      sessionStorage.removeItem('llp_session_unlocked'); sessionStorage.removeItem('llp_guest'); applyGuestUi();
       const p = document.getElementById('pinInput');
       if (p) p.value = '';
       const lockOverlay = document.getElementById('lockScreenOverlay');
@@ -1486,6 +1525,7 @@
         return;
       }
 
+      if (isGuestPin(pin)) { enterGuestMode(); return; }          // PIN Khách: vào chế độ chỉ xem, không đụng khóa API/Két Cloud
       const localKey = localStorage.getItem('gemini_api_key') || localStorage.getItem('gemini_api_key_free');
       if ((pin === '888999' || pin === '101908') && localKey) {
         successUnlock();
@@ -1581,6 +1621,7 @@
     }
 
     function successUnlock() {
+      sessionStorage.removeItem('llp_guest'); applyGuestUi();
       sessionStorage.setItem('llp_session_unlocked', 'true');
       const errBox = document.getElementById('pinErrorMsg');
       if (errBox) errBox.classList.add('hidden');
@@ -1599,6 +1640,7 @@
       const n = document.getElementById('advLockedNote'); if (n) n.classList.toggle('hidden', !locked);
     }
     function openApiKeyModal() {
+      if (isGuest()) { guestBlock('mở Thiết lập App / khóa API'); return; }
       try {
         const modal = document.getElementById('apiKeyModal');
         if (!modal) return;
@@ -1734,6 +1776,7 @@
     }
 
     function getActiveApiKey() {
+      if (isGuest()) return '';                                   // chế độ Khách không dùng khóa nào, kể cả khóa lưu sẵn trên máy
       const mode = localStorage.getItem('gemini_api_mode') || 'free';
       return mode === 'payg' ? (localStorage.getItem('gemini_api_key_payg') || localStorage.getItem('gemini_api_key') || '') : (localStorage.getItem('gemini_api_key_free') || localStorage.getItem('gemini_api_key') || '');
     }
@@ -2205,6 +2248,7 @@
 
     // === XỬ LÝ QUÉT & ĐỌC GCN (FILE/PDF) ===
     function handleFileSelected(event) {
+      if (guestBlock('đọc ảnh GCN bằng AI')) { try { event.target.value = ''; } catch (e) {} return; }
       const files = Array.from(event.target.files || []);
       if (files.length === 0) return;
       uploadedFilesList = files;
@@ -2238,6 +2282,7 @@
     }
 
     async function executeOCRWithRealAI() {
+      if (guestBlock('đọc ảnh GCN bằng AI')) return;
       if (uploadedFilesList.length === 0) return;
 
       const apiKey = getActiveApiKey();
@@ -2487,6 +2532,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
     }
 
     async function generateSmartCompsForArea(target) {
+      if (guestBlock('tra tin / khảo sát giá')) return;
       updateMultiChannelSearchLinks(target.ward, target.districtProvince);
 
       // v6.11: ưu tiên TIN THẬT từ máy chủ khảo giá (Python). Đủ tin thì không cần gọi AI (trừ khi bật "luôn chạy AI")
@@ -2984,6 +3030,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
     }
     // Lấy tin THẬT từ máy chủ Python; trả về {ok, usable, error, cancelled}
     async function fetchRealComps() {
+      if (isGuest()) return { ok: false, usable: 0, cancelled: true };
       const run = surveyRun = { id: 'j' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), ctrl: null, cancelled: false, snapshot: { cur: currentComps.slice(), pool: backupCompsPool.slice() } };
       setSurveyButtons(true);
       try { return await fetchRealCompsInner(run); }
@@ -3117,6 +3164,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       return valid[0].name;
     }
     async function callGeminiJSON(prompt) {
+      if (isGuest()) throw new Error('Chế độ Khách không dùng AI');
       const apiKey = getActiveApiKey();
       const model = await pickGeminiModel(apiKey);
       const url = `https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=${apiKey}`;
@@ -4144,6 +4192,7 @@ ${items}`;
     }
 
     function triggerManualSurvey() {
+      if (guestBlock('tra tin / khảo sát giá')) return;
       const ward = document.getElementById('targetWard').value.trim();
       const dist = document.getElementById('targetDistrictProvince').value.trim();
       const area = parseFloat(document.getElementById('targetArea').value) || 0;
