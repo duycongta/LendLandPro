@@ -606,10 +606,12 @@
 
       <div class="p-3.5 sm:p-4 space-y-3">
         <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs space-y-2">
-          <div class="font-bold text-slate-700 flex items-center justify-between">
+          <div class="font-bold text-slate-700 flex items-center justify-between gap-2">
             <span class="flex items-center gap-1.5"><i class="ph-bold ph-globe text-blue-600"></i> Các kênh lớn đang lấy tin</span>
-            <span class="text-[10px] text-slate-400 font-normal">Tự gán từ khóa địa phương</span>
+            <span class="text-[10px] text-slate-400 font-normal hidden sm:inline">Tự gán từ khóa địa phương</span>
+            <button type="button" onclick="togglePanel('channels')" id="btnPanelChannels" class="text-[11px] font-semibold text-indigo-700 hover:underline flex items-center gap-1 whitespace-nowrap"><i class="ph-bold ph-caret-down"></i> <span>Hiện</span></button>
           </div>
+          <div id="panelChannelsBody" class="hidden space-y-2">
 
           <div class="grid grid-cols-2 gap-1.5 sm:gap-2">
             <a id="linkQuickFb" href="https://www.google.com/search?q=site:facebook.com/groups+b%C3%A1n+%C4%91%E1%BA%A5t" target="_blank" class="p-2 bg-white hover:bg-blue-50 border border-slate-200 rounded-lg flex items-center gap-1.5 text-[11px] font-semibold text-blue-700 shadow-sm truncate">
@@ -634,10 +636,15 @@
               <i class="ph-bold ph-google-logo"></i> Dorking
             </a>
           </div>
+          </div>
         </div>
         <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 text-[11px] space-y-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-bold text-sky-900 flex items-center gap-1.5"><i class="ph-bold ph-facebook-logo text-blue-600"></i> Nút lấy bài Facebook (máy tính)</span>
+            <button type="button" onclick="togglePanel('fbtool')" id="btnPanelFbtool" class="text-[11px] font-semibold text-sky-800 hover:underline flex items-center gap-1 whitespace-nowrap"><i class="ph-bold ph-caret-down"></i> <span>Hiện</span></button>
+          </div>
+          <div id="panelFbtoolBody" class="hidden space-y-1.5">
           <div class="flex flex-wrap items-center gap-2">
-            <span class="font-bold text-sky-900">Nút lấy bài Facebook (máy tính):</span>
             <a id="fbBookmarklet" href="#" onclick="return false" class="inline-block px-2.5 py-1 rounded bg-sky-600 text-white font-bold cursor-grab" title="Kéo nút này lên thanh dấu trang">Lấy bài FB → LendLand</a>
             <span class="text-slate-600">← kéo nút này lên thanh dấu trang (Ctrl+Shift+B để hiện thanh)</span>
           </div>
@@ -653,6 +660,7 @@
               <p class="text-slate-500">Không kéo được nút? <button type="button" onclick="copyBookmarkletCode()" class="underline text-sky-700">sao chép mã</button>, tạo dấu trang mới và dán mã vào ô địa chỉ (URL). Facebook hay đổi cấu trúc trang nên biểu tượng có thể không hiện ở một số kiểu trang: khi đó dùng cách bôi đen.</p>
             </div>
           </details>
+          </div>
         </div>
         <div>
           <button id="btnTogglePaste" type="button" onclick="toggleCollapsible('pasteNews')" class="text-xs font-semibold text-slate-700 hover:underline flex items-center gap-1"><i class="ph-bold ph-plus-circle"></i> <span>Dán tin rao từ Zalo / FB</span></button>
@@ -1063,8 +1071,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.40";
+    const APP_VERSION = "6.41";
     const APP_CHANGELOG = {
+      "6.41": "Hai khung \"Các kênh lớn đang lấy tin\" và \"Nút lấy bài Facebook\" thu gọn sẵn, có nút mũi tên để bung ra / thu gọn; app nhớ lựa chọn trên thiết bị.",
       "6.40": "Sửa nhận bài Facebook qua clipboard: chuẩn hóa xuống dòng kiểu Windows (CRLF) làm các bài bị dính thành một; chỉ coi là trùng khi link là link riêng của bài, link chung (trang tìm kiếm) so theo nội dung; lần đọc clipboard có giới hạn 3 giây, không bị kẹt. Thêm dòng \"Ô này có N bài\", dòng trạng thái lần đọc clipboard gần nhất (đọc mấy bài, thêm mấy, đã có mấy, lỗi nếu có), và khi trích xuất liệt kê từng bài bị bỏ kèm đầu bài và lý do; bài bị bỏ ở lại trong ô để sửa thay vì bị xóa.",
       "6.39": "Ô nội dung tin rao (dán Zalo/FB) cao hơn mặc định (khoảng 8 dòng) và kéo giãn được chiều dọc bằng tay nắm ở góc dưới bên phải (tối thiểu 6 dòng, tối đa gần hết chiều cao màn hình).",
       "6.38": "Lấy bài Facebook không mở tab mới: bấm biểu tượng ➜ LendLand (hoặc bôi đen + nút bookmarklet) sẽ SAO CHÉP link + nội dung bài vào clipboard (cộng dồn nhiều bài); tab app đang mở tự nhận khi bạn quay lại (ô tick \"Tự nhận bài FB khi quay lại tab này\", cần cho phép đọc clipboard), hoặc bấm Dán Clipboard; không sao chép được thì mở tab app như cũ. Chưa kiểm chứng trên Facebook/Chrome thật.",
@@ -3344,6 +3353,7 @@ ${items}`;
     document.addEventListener('visibilitychange', onAppReturn);
     function appBaseUrl() { return location.href.split('#')[0]; }
     function initBookmarklet() {
+      try { initPanels(); } catch (e) {}
       const a = document.getElementById('fbBookmarklet'); if (!a) return;
       a.setAttribute('href', 'javascript:' + encodeURIComponent(bookmarkletSource(appBaseUrl())));
       try { const c = document.getElementById('chkFbAutoPick'); if (c) c.checked = localStorage.getItem('llp_fb_autopick') === 'true'; } catch (e) {}
@@ -3837,6 +3847,17 @@ ${items}`;
       btn.querySelector('span').textContent = open ? c.open : c.closed;
       const ic = btn.querySelector('i'); if (ic) ic.className = open ? 'ph-bold ph-minus-circle' : 'ph-bold ph-plus-circle';
     }
+    // v6.41: khung gập có nhớ lựa chọn trên thiết bị (Các kênh lớn, Nút lấy bài Facebook): mặc định thu gọn
+    const PANELS = { channels: { body: 'panelChannelsBody', btn: 'btnPanelChannels', store: 'llp_panel_channels' }, fbtool: { body: 'panelFbtoolBody', btn: 'btnPanelFbtool', store: 'llp_panel_fbtool' } };
+    function setPanel(key, open, save) {
+      const c = PANELS[key], body = document.getElementById(c.body), btn = document.getElementById(c.btn); if (!body || !btn) return;
+      body.classList.toggle('hidden', !open);
+      btn.querySelector('span').textContent = open ? 'Thu gọn' : 'Hiện';
+      const ic = btn.querySelector('i'); if (ic) ic.className = open ? 'ph-bold ph-caret-up' : 'ph-bold ph-caret-down';
+      if (save) { try { localStorage.setItem(c.store, open ? 'open' : 'closed'); } catch (e) {} }
+    }
+    function togglePanel(key) { const body = document.getElementById(PANELS[key].body); setPanel(key, !!body && body.classList.contains('hidden'), true); }
+    function initPanels() { Object.keys(PANELS).forEach(k => { let v = ''; try { v = localStorage.getItem(PANELS[k].store) || ''; } catch (e) {} setPanel(k, v === 'open', false); }); }
     function toggleCollapsible(key) { const wrap = document.getElementById(COLLAPSIBLES[key].wrap); setCollapsible(key, !!wrap && wrap.classList.contains('hidden')); }
     // Chỉ TỰ MỞ khi có nội dung (không tự đóng, tránh đóng khi đang gõ)
     function syncCollapsibles() { Object.keys(COLLAPSIBLES).forEach(k => { const w = document.getElementById(COLLAPSIBLES[k].wrap); if (w && w.classList.contains('hidden') && COLLAPSIBLES[k].hasContent()) setCollapsible(k, true); }); }
