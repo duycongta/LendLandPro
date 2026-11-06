@@ -1091,8 +1091,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.47";
+    const APP_VERSION = "6.48";
     const APP_CHANGELOG = {
+      "6.48": "Thanh thông báo nổi theo từng bước khi bấm Xác định vị trí hiện tại: Đang lấy vị trí GPS → Đang tra xã/phường, huyện, tỉnh và/hoặc Đang tìm đường gần vị trí → Đã xác định vị trí xong (tự tắt sau vài giây); báo lỗi khi không lấy được GPS; không ghi đè thanh trạng thái đang dùng cho khảo sát. File cap-nhat.bat sửa lỗi tự đóng cửa sổ và hiện danh sách thay đổi sau khi cập nhật.",
       "6.47": "(1) Khối Vị trí thửa đất chuyển ra khỏi thẻ Thông tin tài sản, đặt ngay trên thẻ Bản đồ GIS; nút đổi tên thành Xác định vị trí hiện tại. (2) Xác định được tọa độ thì bản đồ tự zoom mức 17 vào vị trí (cập nhật lại kích thước bản đồ trước khi zoom và căn lại sau 0,35 giây). (3) Nút Thiết lập App ở màn hình khóa có nền, viền để nhận ra là nút bấm. (4) Logo mới: ngôi nhà cách điệu (SVG) thay biểu tượng khiên ở thanh trên, màn hình khóa và biểu tượng tab trình duyệt.",
       "6.46": "Thêm Footer ở trang giao diện chính: tên app, số phiên bản (tự cập nhật theo APP_VERSION) và © duycongta@gmail.com; không in ra báo cáo.",
       "6.45": "Đổi \"Quản trị Két Cloud & Admin\" thành \"Thiết lập App\": khi CHƯA mở khóa (từ màn hình khóa) chỉ hiện API Key Gói Miễn Phí, API Key Gói Trả Phí, nút Lưu và Cấu hình JSONBin.io; trong app (sau khi mở khóa, từ menu bánh răng) hiện đủ mọi thiết lập (Google Search Grounding, máy chủ khảo giá, khóa Google Maps, tùy chọn AI, đổi PIN/Admin). Mục đầu menu bánh răng cũng đổi thành Thiết lập App.",
@@ -3605,6 +3606,9 @@ ${items}`;
       try { map.invalidateSize(); map.setView([lat, lng], 17, { animate: true }); } catch (e) {}
       setTimeout(() => { try { if (map && targetCoordsKnown && Math.abs(targetCoords.lat - lat) < 1e-9 && Math.abs(targetCoords.lng - lng) < 1e-9) { map.invalidateSize(); map.setView([lat, lng], 17); } } catch (e) {} }, 350);
     }
+    // v6.48: thanh thông báo nổi theo bước khi xác định vị trí (không ghi đè khi đang khảo sát)
+    function locStatus(state, msg) { try { if (surveyRun) return; } catch (e) {} setFloatingStatus(state, msg); }
+    let locPipeId = 0;
     function setTargetLocation(lat, lng, info) {
       targetCoords = { lat, lng }; targetCoordsKnown = true; targetLocationInfo = info || { source: 'input' };
       const inp = document.getElementById('targetLocationInput');
@@ -3613,8 +3617,23 @@ ${items}`;
       setLocationStatus(`Đã xác định: <b>${lat.toFixed(6)}, ${lng.toFixed(6)}</b>${acc} · <a class="underline text-sky-700" target="_blank" rel="noopener" href="${mapsLinkFor(lat.toFixed(6), lng.toFixed(6))}">Mở Google Maps</a>`, 'text-emerald-800');
       renderMapElements();
       zoomMapToLocation(lat, lng);
-      suggestRoadsAt(lat, lng);
-      if (localStorage.getItem('llp_geo_fill') !== 'false') return fillAddressFromCoords(lat, lng).then(g => { showAdminNames(); return g; });
+      const myPipe = ++locPipeId, pend = []; let problem = '';
+      const setMsg = () => {
+        if (myPipe !== locPipeId) return;
+        if (pend.length) locStatus('survey', 'Đang ' + pend.join(' và ') + '...');
+        else if (problem) locStatus('error', 'Đã xác định vị trí; ' + problem);
+        else locStatus('success', 'Đã xác định vị trí xong');
+      };
+      const run = (label, p, onDone) => {
+        pend.push(label); setMsg();
+        const done = (r) => { pend.splice(pend.indexOf(label), 1); if (onDone) onDone(r); setMsg(); return r; };
+        return p.then(done, e => { done(null); throw e; });
+      };
+      const roadsP = run('tìm đường gần vị trí', suggestRoadsAt(lat, lng), ok => { if (ok === false) problem += (problem ? '; ' : '') + 'chưa tìm được tên đường'; });
+      roadsP.catch(() => {});
+      if (localStorage.getItem('llp_geo_fill') !== 'false') {
+        return run('tra xã/phường, huyện, tỉnh', fillAddressFromCoords(lat, lng).then(g => { showAdminNames(); return g; }), g => { if (!g) problem += (problem ? '; ' : '') + 'chưa tra được xã/phường'; });
+      }
     }
     // ---- v6.25: gợi ý đường/hẻm gần vị trí + khảo sát nhanh ----
     let lastRoadSuggestions = [];
@@ -3705,13 +3724,13 @@ ${items}`;
     async function suggestRoadsAt(lat, lng) {
       const myReq = ++roadReqId;                // hai lần gọi chạy chồng nhau: chỉ lần mới nhất được hiển thị
       const box = document.getElementById('roadSuggest'), list = document.getElementById('roadSuggestList'), note = document.getElementById('roadSuggestNote');
-      if (!box || !list) return;
+      if (!box || !list) return true;
       box.classList.remove('hidden'); list.innerHTML = ''; note.textContent = 'Đang tìm đường gần vị trí...';
       try {
         const res = await fetchRoadsNear(lat, lng);
-        if (myReq !== roadReqId) return;
+        if (myReq !== roadReqId) return true;
         lastRoadSuggestions = res.roads;
-        if (!res.roads.length) { note.textContent = 'Không thấy đường có tên trong bán kính 150 m (hẻm thường chưa có tên trên bản đồ). Hãy nhập tay ô Đường.'; return; }
+        if (!res.roads.length) { note.textContent = 'Không thấy đường có tên trong bán kính 150 m (hẻm thường chưa có tên trên bản đồ). Hãy nhập tay ô Đường.'; return false; }
         list.innerHTML = '';
         res.roads.forEach((r, i) => {
           const b = document.createElement('button'); b.type = 'button';
@@ -3720,10 +3739,12 @@ ${items}`;
           b.onclick = () => pickRoad(i); list.appendChild(b);
         });
         note.textContent = `Nguồn: ${res.source}. GPS điện thoại sai số vài đến vài chục mét nên có thể chọn nhầm đường song song: hãy đối chiếu thực tế.`;
+        return true;
       } catch (e) {
-        if (myReq !== roadReqId) return;
+        if (myReq !== roadReqId) return true;
         lastRoadSuggestions = [];
         note.textContent = 'Không tra được đường gần đây (' + String(e.message || e).replace(/Failed to fetch/g, 'không kết nối được máy chủ khảo giá') + '). Hãy nhập tay ô Đường.';
+        return false;
       }
     }
     function resetTargetLocation() {
@@ -3779,22 +3800,25 @@ ${items}`;
       geoWatchState = null;
       try { navigator.geolocation.clearWatch(st.id); } catch (e) {}
       if (st.best) setTargetLocation(st.best.lat, st.best.lng, { source: 'gps', accuracy: st.best.acc });
-      else setLocationStatus('Chưa lấy được vị trí. Hãy ra nơi thoáng hoặc thử lại.', 'text-rose-700');
+      else { setLocationStatus('Chưa lấy được vị trí. Hãy ra nơi thoáng hoặc thử lại.', 'text-rose-700'); locStatus('error', 'Chưa lấy được vị trí GPS'); }
     }
     function useCurrentLocation() {
-      if (!navigator.geolocation) { setLocationStatus('Thiết bị/trình duyệt này không hỗ trợ định vị.', 'text-rose-700'); return; }
+      if (!navigator.geolocation) { setLocationStatus('Thiết bị/trình duyệt này không hỗ trợ định vị.', 'text-rose-700'); locStatus('error', 'Thiết bị không hỗ trợ định vị'); return; }
       if (geoWatchState) finishGeoWatch();
       setLocationStatus('Đang lấy vị trí... (cho phép trình duyệt truy cập vị trí khi được hỏi)', 'text-slate-600');
+      locStatus('survey', 'Đang lấy vị trí GPS...');
       const st = { best: null, id: null }; geoWatchState = st;
       st.id = navigator.geolocation.watchPosition(pos => {
         const acc = pos.coords.accuracy || 9999;
         if (!st.best || acc < st.best.acc) st.best = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc };
         setLocationStatus(`Đang cải thiện độ chính xác... hiện sai số khoảng <b>${Math.round(st.best.acc)} m</b>`, 'text-slate-600');
+        locStatus('survey', `Đang lấy vị trí GPS, sai số khoảng ${Math.round(st.best.acc)} m...`);
         if (st.best.acc <= 20 && geoWatchState === st) finishGeoWatch();
       }, err => {
         if (geoWatchState === st) { geoWatchState = null; try { navigator.geolocation.clearWatch(st.id); } catch (e) {} }
         const msg = err && err.code === 1 ? 'Bạn đã từ chối quyền truy cập vị trí. Hãy cho phép trong cài đặt trình duyệt (iPhone: Cài đặt > Quyền riêng tư > Dịch vụ định vị > Safari).' : 'Không lấy được vị trí (' + ((err && err.message) || 'lỗi') + ').';
         setLocationStatus(msg, 'text-rose-700');
+        locStatus('error', err && err.code === 1 ? 'Không có quyền truy cập vị trí' : 'Không lấy được vị trí GPS');
       }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
       setTimeout(() => { if (geoWatchState === st) finishGeoWatch(); }, 15000);   // sau 15 giây dùng kết quả tốt nhất đang có
     }
