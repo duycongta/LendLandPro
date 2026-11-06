@@ -94,7 +94,7 @@
 
       <div class="pt-2 border-t border-slate-100 flex justify-center text-xs text-slate-400">
         <button onclick="openApiKeyModal()" type="button" class="hover:text-emerald-600 transition flex items-center gap-1.5 py-1 font-medium cursor-pointer">
-          <i class="ph-bold ph-gear"></i> Quản trị Két Cloud & Admin
+          <i class="ph-bold ph-gear"></i> Thiết lập App
         </button>
       </div>
       <div class="text-[11px] text-slate-400 pt-1">© duycongta@gmail.com</div>
@@ -186,7 +186,7 @@
             <i class="ph-bold ph-gear text-base"></i>
           </button>
           <div id="gearMenu" role="menu" class="hidden absolute right-0 mt-2 w-56 bg-slate-800 border border-slate-600 rounded-xl shadow-2xl py-1.5 z-50 text-xs text-slate-100">
-            <button role="menuitem" onclick="gearAct(openApiKeyModal)" type="button" class="w-full text-left px-3 py-2.5 hover:bg-slate-700 flex items-center gap-2"><i class="ph-bold ph-key"></i> <span>Khóa API:</span> <span id="apiKeyBtnText"><span class="text-emerald-300 font-bold">Free Tier</span></span></button>
+            <button role="menuitem" onclick="gearAct(openApiKeyModal)" type="button" class="w-full text-left px-3 py-2.5 hover:bg-slate-700 flex items-center gap-2"><i class="ph-bold ph-key"></i> <span>Thiết lập App:</span> <span id="apiKeyBtnText"><span class="text-emerald-300 font-bold">Free Tier</span></span></button>
             <button role="menuitem" onclick="gearAct(lockAppNow)" type="button" class="w-full text-left px-3 py-2.5 hover:bg-slate-700 flex items-center gap-2"><i class="ph-bold ph-lock-key"></i> <span>Khóa ứng dụng</span></button>
             <button role="menuitem" onclick="gearAct(resetAllData)" type="button" class="w-full text-left px-3 py-2.5 hover:bg-slate-700 flex items-center gap-2"><i class="ph-bold ph-arrow-counter-clockwise"></i> <span>Làm mới dữ liệu</span></button>
           </div>
@@ -790,12 +790,13 @@
     <div class="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto max-h-[95vh] overflow-y-auto border border-slate-100">
       <div class="flex items-center justify-between border-b pb-2.5">
         <h3 class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5">
-          <i class="ph-bold ph-vault text-indigo-600 text-lg"></i> <span>Quản Trị Két Cloud & Phân Quyền Admin (v<span data-app-version></span>)</span>
+          <i class="ph-bold ph-vault text-indigo-600 text-lg"></i> <span>Thiết lập App (v<span data-app-version></span>)</span>
         </h3>
         <button onclick="closeApiKeyModal()" type="button" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"><i class="ph-bold ph-x text-lg"></i></button>
       </div>
 
       <div class="space-y-3 text-xs">
+        <div id="advLockedNote" class="hidden text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5">Các thiết lập nâng cao (máy chủ khảo giá, khóa Google Maps, tùy chọn AI, đổi PIN) hiện sau khi bạn mở khóa ứng dụng, trong menu bánh răng ở thanh trên.</div>
         <div id="boxModeFree" onclick="selectApiModeDirect('free')" class="border-2 border-indigo-500 rounded-xl p-2.5 sm:p-3 bg-indigo-50/40 cursor-pointer transition shadow-xs">
           <div class="flex items-center justify-between mb-1">
             <label class="flex items-center gap-2 font-bold text-slate-800 cursor-pointer pointer-events-none">
@@ -825,7 +826,7 @@
           </button>
         </div>
 
-        <div class="border border-indigo-100 rounded-xl p-2.5 bg-indigo-50/40 flex items-center justify-between">
+        <div class="adv-only border border-indigo-100 rounded-xl p-2.5 bg-indigo-50/40 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <i class="ph-bold ph-globe-hemisphere-east text-indigo-600 text-lg flex-shrink-0"></i>
             <div>
@@ -839,7 +840,7 @@
           </label>
         </div>
 
-        <div class="border border-emerald-200 rounded-xl p-3 bg-emerald-50/40 space-y-2">
+        <div class="adv-only border border-emerald-200 rounded-xl p-3 bg-emerald-50/40 space-y-2">
           <div class="font-bold text-slate-800 text-xs flex items-center gap-1"><i class="ph-bold ph-database text-emerald-600"></i> Máy chủ khảo giá (Python) - tin so sánh thật</div>
           <div class="flex gap-2">
             <input type="text" id="backendUrlInput" placeholder="http://localhost:8000" class="flex-grow border border-slate-300 rounded-lg p-2 font-mono text-[11px] bg-white">
@@ -871,7 +872,7 @@
           </div>
         </div>
 
-        <div class="border border-rose-200 rounded-xl p-3 bg-rose-50/50 space-y-2.5">
+        <div class="adv-only border border-rose-200 rounded-xl p-3 bg-rose-50/50 space-y-2.5">
           <div class="font-bold text-rose-800 text-xs flex items-center justify-between">
             <span class="flex items-center gap-1"><i class="ph-bold ph-shield-warning text-base"></i> Đổi Mã PIN App & Thu Hồi Quyền PIN Cũ</span>
             <span class="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold border border-rose-200">Admin Only</span>
@@ -1069,8 +1070,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.44";
+    const APP_VERSION = "6.45";
     const APP_CHANGELOG = {
+      "6.45": "Đổi \"Quản trị Két Cloud & Admin\" thành \"Thiết lập App\": khi CHƯA mở khóa (từ màn hình khóa) chỉ hiện API Key Gói Miễn Phí, API Key Gói Trả Phí, nút Lưu và Cấu hình JSONBin.io; trong app (sau khi mở khóa, từ menu bánh răng) hiện đủ mọi thiết lập (Google Search Grounding, máy chủ khảo giá, khóa Google Maps, tùy chọn AI, đổi PIN/Admin). Mục đầu menu bánh răng cũng đổi thành Thiết lập App.",
       "6.44": "Gọn giao diện: (1) thẻ Nguồn tra tin gom Các kênh lớn đang lấy tin, Nút lấy bài Facebook, Dán tin rao từ Zalo / FB và Hiện DS nhóm FB lấy tin thành một hàng nút ở tiêu đề (mở được nhiều mục cùng lúc); (2) khối Công trình xây dựng chỉ tự mở khi có loại/diện tích công trình thật, bỏ qua chữ mặc định AI hay điền (Nhà ở hoặc Đất trống); (3) nút PAYG, Khóa, Làm Mới gom vào menu bánh răng ở thanh trên (nút Xuất PDF giữ riêng).",
       "6.43": "Thống nhất nút gập: hai khung Các kênh lớn đang lấy tin và Nút lấy bài Facebook dùng dấu cộng/trừ trong vòng tròn cùng kiểu với Dán tin rao từ Zalo / FB (tiêu đề chính là nút bấm).",
       "6.42": "Thông báo rõ khi khóa bị từ chối: mã lỗi Gemini (400/401/403/429/5xx) dịch thành câu tiếng Việt nêu lý do có thể (hết hạn mức/credit, chưa bật thanh toán, khóa sai...), dùng cho trích xuất, đọc ảnh GCN và AI tìm tin; lỗi Google Geocoding (OVER_QUERY_LIMIT, REQUEST_DENIED) và Serper hết hạn mức cũng được dịch; hộp cảnh báo nổi có nút đóng hiện một lần mỗi phiên khi khóa trả phí/Google/Serper bị từ chối. App không đọc được số dư credit nên chỉ biết khi một lần gọi bị từ chối.",
@@ -1565,11 +1567,19 @@
     }
 
     // === GIAO DIỆN MODAL QUẢN TRỊ ADMIN ===
+    // v6.45: Thiết lập App có 2 mức: chưa mở khóa (màn hình khóa) chỉ hiện khóa Gemini + JSONBin; đã vào app hiện đủ
+    function isAppLocked() { const o = document.getElementById('lockScreenOverlay'); return !!o && !o.classList.contains('hidden'); }
+    function applySettingsLevel() {
+      const locked = isAppLocked();
+      document.querySelectorAll('#apiKeyModal .adv-only').forEach(e => e.classList.toggle('hidden', locked));
+      const n = document.getElementById('advLockedNote'); if (n) n.classList.toggle('hidden', !locked);
+    }
     function openApiKeyModal() {
       try {
         const modal = document.getElementById('apiKeyModal');
         if (!modal) return;
         modal.classList.remove('hidden');
+        applySettingsLevel();
 
         const mode = localStorage.getItem('gemini_api_mode') || 'free';
         const keyFree = localStorage.getItem('gemini_api_key_free') || '';
