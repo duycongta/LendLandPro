@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>LendLand Pro - Thẩm Định Giá BĐS Tín Dụng</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='1' x2='1' y2='0'><stop offset='0' stop-color='%23059669'/><stop offset='1' stop-color='%2314b8a6'/></linearGradient></defs><rect width='64' height='64' rx='15' fill='url(%23g)'/><path fill='%23fff' d='M32 11.5 8.5 31.2c-.9.8-.4 2.3.8 2.3H15V50.5c0 1.4 1.1 2.5 2.5 2.5h29c1.4 0 2.5-1.1 2.5-2.5V33.5h5.7c1.2 0 1.7-1.5.8-2.3L32 11.5Z'/><rect x='40.5' y='14' width='5' height='10' rx='1' fill='%23fff'/><path fill='%230d9488' d='M27 53V40.5a5 5 0 0 1 10 0V53H27Z'/></svg>">
+  <meta name="theme-color" content="#059669">
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -65,11 +67,22 @@
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col relative select-none sm:select-auto">
 
+  <!-- v6.47: LOGO NGÔI NHÀ CÁCH ĐIỆU (dùng lại bằng <use href="#llpLogo">) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs><linearGradient id="llpLogoGrad" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#059669"/><stop offset="1" stop-color="#14b8a6"/></linearGradient></defs>
+    <symbol id="llpLogo" viewBox="0 0 64 64">
+      <rect width="64" height="64" rx="15" fill="url(#llpLogoGrad)"/>
+      <path fill="#fff" d="M32 11.5 8.5 31.2c-.9.8-.4 2.3.8 2.3H15V50.5c0 1.4 1.1 2.5 2.5 2.5h29c1.4 0 2.5-1.1 2.5-2.5V33.5h5.7c1.2 0 1.7-1.5.8-2.3L32 11.5Z"/>
+      <rect x="40.5" y="14" width="5" height="10" rx="1" fill="#fff"/>
+      <path fill="#0d9488" d="M27 53V40.5a5 5 0 0 1 10 0V53H27Z"/>
+    </symbol>
+  </svg>
+
   <!-- MÀN HÌNH KHÓA TỐI GIẢN (z-50) -->
   <div id="lockScreenOverlay" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 sm:p-7 shadow-2xl border border-slate-100 text-center space-y-5">
-      <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center text-3xl shadow-lg">
-        <i class="ph-bold ph-shield-check"></i>
+      <div class="w-14 h-14 mx-auto rounded-2xl shadow-lg" id="lockLogo">
+        <svg class="w-full h-full" viewBox="0 0 64 64" role="img" aria-label="LendLand Pro"><use href="#llpLogo"/></svg>
       </div>
 
       <div class="space-y-1">
@@ -93,7 +106,7 @@
       </button>
 
       <div class="pt-2 border-t border-slate-100 flex justify-center text-xs text-slate-400">
-        <button onclick="openApiKeyModal()" type="button" class="hover:text-emerald-600 transition flex items-center gap-1.5 py-1 font-medium cursor-pointer">
+        <button onclick="openApiKeyModal()" type="button" class="bg-slate-100 hover:bg-emerald-50 hover:border-emerald-400 hover:text-emerald-700 text-slate-700 border border-slate-300 rounded-xl px-4 py-2 shadow-sm transition flex items-center gap-1.5 font-semibold cursor-pointer">
           <i class="ph-bold ph-gear"></i> Thiết lập App
         </button>
       </div>
@@ -167,8 +180,8 @@
   <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md no-print border-b border-slate-700">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 min-h-[4rem] flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center space-x-2.5 overflow-hidden min-w-[210px] flex-1 sm:flex-initial">
-        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-600 flex items-center justify-center font-bold text-lg sm:text-xl shadow-inner flex-shrink-0">
-          <i class="ph-bold ph-shield-check"></i>
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl shadow-inner flex-shrink-0" id="headerLogo">
+          <svg class="w-full h-full" viewBox="0 0 64 64" role="img" aria-label="LendLand Pro"><use href="#llpLogo"/></svg>
         </div>
         <div class="truncate">
           <div class="font-bold text-sm sm:text-base tracking-wide flex items-center gap-1.5 flex-wrap">
@@ -282,29 +295,6 @@
           <div>
             <label class="block text-emerald-800 font-bold mb-1">Huyện/TP & Tỉnh *</label>
             <input type="text" id="targetDistrictProvince" placeholder="TP Quy Nhơn, Bình Định" class="w-full font-semibold border-2 border-emerald-400 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30" oninput="updateTargetOverview()">
-          </div>
-        </div>
-
-        <!-- v6.18: VỊ TRÍ THỬA ĐẤT (link Google Maps / tọa độ / GPS) -->
-        <div class="border border-sky-200 bg-sky-50/40 rounded-xl p-3.5 sm:p-4 space-y-2">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <div class="flex items-center gap-1.5 font-bold text-slate-800 text-[11px] sm:text-xs uppercase tracking-wide"><i class="ph-bold ph-map-pin text-sky-600 text-base"></i> Vị trí thửa đất</div>
-            <label class="flex items-center gap-1.5 text-[11px] text-slate-600"><input type="checkbox" id="chkGeoFill" checked onchange="try{localStorage.setItem('llp_geo_fill', this.checked ? 'true' : 'false')}catch(e){}"> Tự điền Xã/Huyện/Tỉnh từ tọa độ</label>
-          </div>
-          <div class="flex flex-col sm:flex-row gap-2">
-            <input type="text" id="targetLocationInput" placeholder="Để trống rồi bấm Xác định vị trí = dùng GPS. Hoặc dán link Google Maps / tọa độ, ví dụ: 13°47'42.2&quot;N 109°11'25.2&quot;E hoặc 13.795063, 109.190325" class="flex-grow border border-slate-300 rounded-lg p-2.5 text-xs bg-white" onkeydown="if(event.key==='Enter'){applyLocationInput();}">
-            <div class="flex gap-2">
-              <button onclick="locatePlot()" id="btnLocate" type="button" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs px-4 py-2 rounded-lg whitespace-nowrap flex items-center gap-1.5" title="Ô trống: dùng GPS thiết bị. Ô có link/tọa độ: đọc link/tọa độ."><i class="ph-bold ph-crosshair"></i> Xác định vị trí</button>
-            </div>
-          </div>
-          <div id="locationStatus" class="hidden text-[11px] leading-snug"></div>
-          <div id="geoNote" class="hidden text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 leading-snug"></div>
-          <div id="adminNamesNote" class="hidden text-[11px] leading-snug text-slate-700"></div>
-          <div id="roadSuggest" class="hidden text-[11px] leading-snug bg-sky-50 border border-sky-200 rounded-lg p-2 space-y-1">
-            <div class="font-semibold text-sky-900">Đường/hẻm gần vị trí này (chạm để điền ô Đường, nhớ đối chiếu thực tế):</div>
-            <div id="roadSuggestList" class="flex flex-wrap gap-1.5"></div>
-            <label class="flex items-center gap-1.5 text-slate-700"><input type="checkbox" id="chkInAlley"> Tôi đang ở trong hẻm (ô Đường sẽ ghi "Hẻm ... đường X", số hẻm bạn nhập tay)</label>
-            <div id="roadSuggestNote" class="text-slate-500"></div>
           </div>
         </div>
 
@@ -533,6 +523,29 @@
         </div>
       </div>
     </div>
+
+    <!-- v6.18/v6.47: VỊ TRÍ THỬA ĐẤT (link Google Maps / tọa độ / GPS) - đặt ngay trên bản đồ GIS -->
+        <div id="locationCard" class="border border-sky-200 bg-sky-50/60 rounded-xl p-3.5 sm:p-4 space-y-2 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5 font-bold text-slate-800 text-[11px] sm:text-xs uppercase tracking-wide"><i class="ph-bold ph-map-pin text-sky-600 text-base"></i> Vị trí thửa đất</div>
+            <label class="flex items-center gap-1.5 text-[11px] text-slate-600"><input type="checkbox" id="chkGeoFill" checked onchange="try{localStorage.setItem('llp_geo_fill', this.checked ? 'true' : 'false')}catch(e){}"> Tự điền Xã/Huyện/Tỉnh từ tọa độ</label>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input type="text" id="targetLocationInput" placeholder="Để trống rồi bấm Xác định vị trí hiện tại = dùng GPS. Hoặc dán link Google Maps / tọa độ, ví dụ: 13°47'42.2&quot;N 109°11'25.2&quot;E hoặc 13.795063, 109.190325" class="flex-grow border border-slate-300 rounded-lg p-2.5 text-xs bg-white" onkeydown="if(event.key==='Enter'){applyLocationInput();}">
+            <div class="flex gap-2">
+              <button onclick="locatePlot()" id="btnLocate" type="button" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs px-4 py-2 rounded-lg whitespace-nowrap flex items-center gap-1.5" title="Ô trống: dùng GPS thiết bị. Ô có link/tọa độ: đọc link/tọa độ."><i class="ph-bold ph-crosshair"></i> Xác định vị trí hiện tại</button>
+            </div>
+          </div>
+          <div id="locationStatus" class="hidden text-[11px] leading-snug"></div>
+          <div id="geoNote" class="hidden text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 leading-snug"></div>
+          <div id="adminNamesNote" class="hidden text-[11px] leading-snug text-slate-700"></div>
+          <div id="roadSuggest" class="hidden text-[11px] leading-snug bg-sky-50 border border-sky-200 rounded-lg p-2 space-y-1">
+            <div class="font-semibold text-sky-900">Đường/hẻm gần vị trí này (chạm để điền ô Đường, nhớ đối chiếu thực tế):</div>
+            <div id="roadSuggestList" class="flex flex-wrap gap-1.5"></div>
+            <label class="flex items-center gap-1.5 text-slate-700"><input type="checkbox" id="chkInAlley"> Tôi đang ở trong hẻm (ô Đường sẽ ghi "Hẻm ... đường X", số hẻm bạn nhập tay)</label>
+            <div id="roadSuggestNote" class="text-slate-500"></div>
+          </div>
+        </div>
 
     <!-- KHỐI 3: BẢN ĐỒ GIS (CÓ NÚT MỞ GOOGLE MAPS) -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -1078,8 +1091,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.46";
+    const APP_VERSION = "6.47";
     const APP_CHANGELOG = {
+      "6.47": "(1) Khối Vị trí thửa đất chuyển ra khỏi thẻ Thông tin tài sản, đặt ngay trên thẻ Bản đồ GIS; nút đổi tên thành Xác định vị trí hiện tại. (2) Xác định được tọa độ thì bản đồ tự zoom mức 17 vào vị trí (cập nhật lại kích thước bản đồ trước khi zoom và căn lại sau 0,35 giây). (3) Nút Thiết lập App ở màn hình khóa có nền, viền để nhận ra là nút bấm. (4) Logo mới: ngôi nhà cách điệu (SVG) thay biểu tượng khiên ở thanh trên, màn hình khóa và biểu tượng tab trình duyệt.",
       "6.46": "Thêm Footer ở trang giao diện chính: tên app, số phiên bản (tự cập nhật theo APP_VERSION) và © duycongta@gmail.com; không in ra báo cáo.",
       "6.45": "Đổi \"Quản trị Két Cloud & Admin\" thành \"Thiết lập App\": khi CHƯA mở khóa (từ màn hình khóa) chỉ hiện API Key Gói Miễn Phí, API Key Gói Trả Phí, nút Lưu và Cấu hình JSONBin.io; trong app (sau khi mở khóa, từ menu bánh răng) hiện đủ mọi thiết lập (Google Search Grounding, máy chủ khảo giá, khóa Google Maps, tùy chọn AI, đổi PIN/Admin). Mục đầu menu bánh răng cũng đổi thành Thiết lập App.",
       "6.44": "Gọn giao diện: (1) thẻ Nguồn tra tin gom Các kênh lớn đang lấy tin, Nút lấy bài Facebook, Dán tin rao từ Zalo / FB và Hiện DS nhóm FB lấy tin thành một hàng nút ở tiêu đề (mở được nhiều mục cùng lúc); (2) khối Công trình xây dựng chỉ tự mở khi có loại/diện tích công trình thật, bỏ qua chữ mặc định AI hay điền (Nhà ở hoặc Đất trống); (3) nút PAYG, Khóa, Làm Mới gom vào menu bánh răng ở thanh trên (nút Xuất PDF giữ riêng).",
@@ -3585,6 +3599,12 @@ ${items}`;
       return `${targetCoords.lat.toFixed(6)}, ${targetCoords.lng.toFixed(6)} (${src}${acc}) - ${mapsLinkFor(targetCoords.lat.toFixed(6), targetCoords.lng.toFixed(6))}`;
     }
     // Đặt vị trí thật của tài sản: cập nhật ghim, ô nhập, trạng thái; tùy chọn tự điền địa danh
+    // v6.47: xác định được vị trí thì bản đồ tự zoom mức 17 vào đó (cập nhật lại kích thước bản đồ trước khi zoom, căn lại sau 0,35 giây phòng bố cục còn dịch chuyển)
+    function zoomMapToLocation(lat, lng) {
+      if (!map) return;
+      try { map.invalidateSize(); map.setView([lat, lng], 17, { animate: true }); } catch (e) {}
+      setTimeout(() => { try { if (map && targetCoordsKnown && Math.abs(targetCoords.lat - lat) < 1e-9 && Math.abs(targetCoords.lng - lng) < 1e-9) { map.invalidateSize(); map.setView([lat, lng], 17); } } catch (e) {} }, 350);
+    }
     function setTargetLocation(lat, lng, info) {
       targetCoords = { lat, lng }; targetCoordsKnown = true; targetLocationInfo = info || { source: 'input' };
       const inp = document.getElementById('targetLocationInput');
@@ -3592,7 +3612,7 @@ ${items}`;
       const acc = info && info.accuracy ? ` · sai số khoảng <b>${Math.round(info.accuracy)} m</b>${info.accuracy > 30 ? ' (khá lớn: nên dời ghim về đúng thửa)' : ''}` : '';
       setLocationStatus(`Đã xác định: <b>${lat.toFixed(6)}, ${lng.toFixed(6)}</b>${acc} · <a class="underline text-sky-700" target="_blank" rel="noopener" href="${mapsLinkFor(lat.toFixed(6), lng.toFixed(6))}">Mở Google Maps</a>`, 'text-emerald-800');
       renderMapElements();
-      if (map) map.setView([lat, lng], 17);
+      zoomMapToLocation(lat, lng);
       suggestRoadsAt(lat, lng);
       if (localStorage.getItem('llp_geo_fill') !== 'false') return fillAddressFromCoords(lat, lng).then(g => { showAdminNames(); return g; });
     }
