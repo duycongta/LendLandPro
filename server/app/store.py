@@ -27,3 +27,9 @@ def load_all() -> list[Listing]:
         for (d,) in c.execute("SELECT data FROM listing"):
             d = json.loads(d); d.pop("price_per_m2", None); out.append(Listing(**d))
     return out
+
+
+def known_urls() -> set:
+    """Các link đã lưu trong máy chủ: dùng để cào tăng dần (gặp tin đã lưu thì dừng, khỏi tải lại)."""
+    with _conn() as c:
+        return {u for (u,) in c.execute("SELECT url FROM listing WHERE url!=''")}

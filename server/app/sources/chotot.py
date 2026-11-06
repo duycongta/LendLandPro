@@ -42,10 +42,13 @@ class Chotot(Source):
         r.raise_for_status()
         return r.json().get("ads", [])
 
-    def _paged(self, limit, max_age_days, **filters) -> list[Listing]:
-        """Phân trang lùi theo thời gian (API trả tin mới nhất trước) tới khi đủ `limit`,
-        hết tin, hoặc gặp tin cũ hơn `max_age_days`."""
-        out, offset, stop = [], 0, False
+    known_urls: set = frozenset()       # link đã lưu (máy chủ gán trước mỗi lần thu thập); dùng cho cào tăng dần
+    STOP_AFTER_KNOWN = 8                # gặp liên tiếp ngần này tin đã lưu thì dừng (API trả tin mới nhất trước)
+
+    def _paged(self, limit, max_age_days, incremental=False, **filters) -> list[Listing]:
+        """Phân trang lùi theo thời gian (API trả tin mới nhất trước) tới khi đủ `limit`, hết tin, gặp tin cũ hơn `max_age_days`,
+        hoặc (incremental) gặp liên tiếp nhiều tin ĐÃ LƯU: khi đó các tin cũ hơn gần như chắc đã có, khỏi tải lại."""
+        out, offset, stop, consec = [], 0, False, 0
         cutoff = (dt.datetime.now() - dt.timedelta(days=max_age_days)).timestamp() * 1000 if max_age_days else None
         while len(out) < limit and not stop:
             ads = self._page(o=offset, **filters)
@@ -56,13 +59,20 @@ class Chotot(Source):
                 if cutoff and a.get("list_time") and a["list_time"] < cutoff:
                     stop = True
                     break
+                if incremental and f"https://www.nhatot.com/{a.get('list_id')}.htm" in self.known_urls:
+                    consec += 1
+                    if consec >= self.STOP_AFTER_KNOWN:
+                        stop = True
+                        break
+                    continue
+                consec = 0
                 out.append(_to_listing(a, self.name, now))
             offset += len(ads)
             cancel.sleep(1.5)   # lịch sự với máy chủ nguồn
         return out[:limit]
 
-    def search(self, keywords: str, limit: int = 50, max_age_days: int | None = None) -> list[Listing]:
-        return self._paged(limit, max_age_days, q=keywords)
+    def search(self, keywords: str, limit: int = 50, max_age_days: int | None = None, incremental: bool = False) -> list[Listing]:
+        return self._paged(limit, max_age_days, incremental, q=keywords)
 
     def discover_regions(self, names: list[str], allowed: set | None = None) -> dict[int, str]:
         """Từ tên địa danh người dùng nhập, tìm mã tỉnh (region_v2) Chợ Tốt dùng: tìm theo từ khoá rồi lấy mã tỉnh của các tin mà tên
@@ -115,13 +125,13 @@ class Chotot(Source):
                     cancel.sleep(1.0)
         return wards, areas
 
-    def search_codes(self, region_v2: int, area_v2=None, ward=None, limit: int = 100, max_age_days: int | None = None):
+    def search_codes(self, region_v2: int, area_v2=None, ward=None, limit: int = 100, max_age_days: int | None = None, incremental: bool = False):
         f = {"region_v2": region_v2}
         if area_v2:
             f["area_v2"] = area_v2
         if ward:
             f["ward"] = ward
-        return self._paged(limit, max_age_days, **f)
+        return self._paged(limit, max_age_days, incremental, **f)
 
-    def search_region(self, region_v2: int, limit: int, max_age_days: int | None = None) -> list[Listing]:
-        return self._paged(limit, max_age_days, region_v2=region_v2)
+    def search_region(self, region_v2: int, limit: int, max_age_days: int | None = None, incremental: bool = False) -> list[Listing]:
+        return self._paged(limit, max_age_days, incremental, region_v2=region_v2)

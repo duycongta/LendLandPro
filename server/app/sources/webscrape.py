@@ -63,6 +63,7 @@ def next_page_url(html: str, current_url: str):
 
 class WebSource(Source):
     keyword_search = False
+    known_urls: set = frozenset()       # link đã lưu: trang huyện toàn tin đã lưu thì dừng (cào tăng dần)
     parser = staticmethod(lambda html, only_land=True: [])
     min_delay = 2.0
 
@@ -103,8 +104,12 @@ class WebSource(Source):
             cards = self.parser(html, only_land=False)
             for l in cards:
                 l.kind = guess_kind(l.url, l.title)
-            out.extend(cards); n += len(cards)
+            fresh = [l for l in cards if l.url not in self.known_urls]
+            out.extend(fresh); n += len(fresh)
             cancel.sleep(self.min_delay)
+            if cards and not fresh:             # cả trang đều là tin đã lưu -> các trang sau cũ hơn, dừng
+                log.append(f"{self.name} · trang huyện '{huyen}': gặp tin đã lưu, dừng sớm")
+                break
             if not cards or (cutoff and all(l.posted_at and l.posted_at < cutoff for l in cards if l.posted_at)):
                 break
             url = next_page_url(html, url)

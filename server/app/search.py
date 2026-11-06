@@ -1,5 +1,6 @@
+import re
 from .models import Listing
-from .textnorm import AdminMap, norm, contains_phrase, core_name, province_aliases, province_conflict
+from .textnorm import AdminMap, norm, contains_phrase, core_name, province_aliases, province_conflict, norm_loc, core_loc, mentions_ward, district_conflict
 
 def location_terms(admin: AdminMap, xa: str, huyen: str, tinh: str):
     return [admin.aliases(x) for x in (xa, huyen, tinh) if x.strip()]
@@ -54,20 +55,54 @@ def filter_listings(items, groups, need=1, area=None, tol=0.5, land_type="", fro
     return uniq
 
 
-LEVEL_ORDER = {"thon": 0, "xa": 1, "huyen": 2, "near": 3}
+LEVEL_ORDER = {"thon": 0, "xa": 1, "xa_moi": 2, "huyen": 3, "near": 4}
+
+NOT_RESIDENTIAL = re.compile(r"(?<![a-z0-9])(can ho|chung cu|condotel|officetel|khach san|nha xuong|kho xuong|nha hang|resort|biet thu nghi duong)(?![a-z0-9])")
+
+def parse_kinds(kind) -> set:
+    """kind có thể là một loại ('dat') hoặc nhiều loại cách nhau dấu phẩy ('dat,nha')."""
+    return {k.strip() for k in str(kind or "").split(",") if k.strip()}
+
+def kind_ok(l: Listing, kinds: set) -> bool:
+    """Chọn loại tài sản thì tin không rõ loại bị loại; khi KHÔNG cần căn hộ thì loại cả tin có chữ căn hộ/chung cư/khách sạn/nhà xưởng... trong tiêu đề."""
+    if not kinds:
+        return True
+    if l.kind not in kinds:
+        return False
+    if "can_ho" not in kinds and NOT_RESIDENTIAL.search(norm(l.title)):
+        return False
+    return True
+
+def ward_level(l: Listing, admin: AdminMap, xa: str, hay_loc: str):
+    """'exact': tin nhắc đúng phường/xã người dùng nhập (hoặc đơn vị cũ nằm trong nó nếu đó là tên mới);
+    'parent': chỉ nhắc phường/xã MỚI chứa phường cũ người dùng nhập (khác phường cũ); None: không nhắc. Luôn cần tiền tố phường/xã."""
+    typed = core_loc(xa)
+    if mentions_ward(hay_loc, typed):
+        return "exact"
+    if any(mentions_ward(hay_loc, core_loc(c)) for c in admin.children(xa)):
+        return "exact"
+    if any(mentions_ward(hay_loc, core_loc(c)) for c in admin.parents(xa)):
+        return "parent"
+    return None
 
 def classify_location(l: Listing, admin: AdminMap, xa: str, huyen: str, tinh: str, thon: str = "", scope: str = "ward"):
-    """Cấp khớp địa danh của tin so với tài sản: 'thon' (cùng thôn/xóm) > 'xa' (cùng xã/phường) > 'huyen' (cùng huyện, khác xã; chỉ khi
-    scope='district') hoặc None (loại). Bắt buộc cùng xã/phường (hoặc cùng huyện nếu người dùng không nhập xã) và không thuộc tỉnh khác."""
+    """Cấp khớp địa danh: 'thon' (cùng thôn/xóm) > 'xa' (cùng xã/phường như đã nhập) > 'xa_moi' (chỉ cùng phường MỚI, khác phường cũ; chỉ để
+    tham khảo) > 'huyen' (cùng huyện, khác xã; chỉ khi scope='district') hoặc None (loại).
+    Bắt buộc không thuộc tỉnh khác, không thuộc huyện/TP khác; khớp xã/phường cần tiền tố phường/xã (không nhận trùng tên đường hay tên thành phố)."""
     # Địa chỉ + tiêu đề là nơi đáng tin; chỉ dùng mô tả khi tin không có địa chỉ (tin Google/nhập tay)
     hay = norm(l.address + " " + l.title + ("" if l.address else " " + l.description))
+    hay_loc = norm_loc(l.address + " " + l.title + ("" if l.address else " " + l.description))
     allowed = province_aliases(admin, tinh)
     if allowed and province_conflict(hay, allowed):
         return None
     def hit(name):
         return any(contains_phrase(hay, a) for a in admin.aliases(name))
+    typed_districts = ({core_loc(huyen)} | {core_loc(a) for a in admin.aliases(huyen)}) if huyen.strip() else set()
     if xa.strip():
-        if hit(xa):
+        lvl = ward_level(l, admin, xa, hay_loc)
+        if lvl and not district_conflict(l.raw, hay_loc, typed_districts):
+            if lvl == "parent":
+                return "xa_moi"
             full = norm(l.address + " " + l.title + " " + l.description)
             t = core_name(thon) if thon.strip() else ""
             return "thon" if (t and contains_phrase(full, t)) else "xa"
@@ -87,7 +122,7 @@ def select_comps(items, admin, xa, huyen, tinh, thon="", scope="ward", area=None
             continue
         if area and l.area_m2 and not (area * (1 - tol) <= l.area_m2 <= area * (1 + tol)):
             continue
-        if kind and l.kind != kind:                  # có chọn loại tài sản thì tin không rõ loại cũng bị loại (tránh khách sạn, nhà xưởng...)
+        if not kind_ok(l, parse_kinds(kind)):        # có chọn loại tài sản thì tin không rõ loại cũng bị loại (tránh khách sạn, nhà xưởng, căn hộ...)
             continue
         if land_type and l.land_type and l.land_type != land_type:
             continue
@@ -142,9 +177,25 @@ def select_near(items, exclude_urls, admin, tinh, lat, lng, radius_m, area=None,
             continue
         if area and l.area_m2 and not (area * (1 - tol) <= l.area_m2 <= area * (1 + tol)):
             continue
-        if kind and l.kind != kind:
+        if not kind_ok(l, parse_kinds(kind)):
             continue
         if land_type and l.land_type and l.land_type != land_type:
             continue
         out.append((l, d))
     return sorted(out, key=lambda t: t[1])
+
+
+def relevance(l: Listing, lv: str, dist_m, radius_m: float, area, street: str, kinds: set, tier: int):
+    """Điểm 'sát thửa' 0-100 minh bạch, kèm từng thành phần: cấp địa danh, cùng đường, diện tích gần, khoảng cách (nếu có tọa độ), ngày đăng, đúng loại."""
+    parts = {}
+    parts["địa danh"] = {"thon": 30, "xa": 22, "xa_moi": 8, "near": 10, "huyen": 0}.get(lv, 0)
+    if street and same_street(l, street):
+        parts["cùng đường"] = 18
+    if area and l.area_m2:
+        parts["diện tích"] = round(15 * max(0.0, 1 - abs(l.area_m2 - area) / area))
+    if dist_m is not None and radius_m:
+        parts["khoảng cách"] = round(20 * max(0.0, 1 - dist_m / radius_m))
+    parts["ngày đăng"] = {0: 8, 1: 4, 2: 1}.get(tier, 0)
+    if kinds and l.kind in kinds:
+        parts["đúng loại"] = 4
+    return min(100, sum(parts.values())), parts

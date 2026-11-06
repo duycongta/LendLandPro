@@ -49,12 +49,57 @@ class AdminMap:
                 m.new2old.setdefault(n, set()).add(o)
         return m
 
+    def children(self, name: str) -> set[str]:
+        """Đơn vị cũ được gộp VÀO đơn vị tên này (nếu tên này là tên mới)."""
+        return set(self.new2old.get(core_name(name), set()))
+
+    def parents(self, name: str) -> set[str]:
+        """Đơn vị mới CHỨA đơn vị tên này (nếu tên này là tên cũ)."""
+        return set(self.old2new.get(core_name(name), set()))
+
     def aliases(self, name: str) -> set[str]:
         """Tên người dùng nhập + mọi tên cũ/mới tương ứng (dạng đã chuẩn hoá)."""
         c = core_name(name)
         if not c:
             return set()
         return {c} | self.old2new.get(c, set()) | self.new2old.get(c, set())
+
+def norm_loc(s: str) -> str:
+    """Chuẩn hoá địa chỉ để so khớp đơn vị hành chính: bỏ dấu, thường, 'qui'->'quy', GIỮ dấu phẩy làm ngăn cách."""
+    s = strip_accents(s or "").lower()
+    s = re.sub(r"\bqui\b", "quy", s)
+    s = re.sub(r"[^a-z0-9,]+", " ", s)
+    s = re.sub(r"\s*,\s*", " , ", s)
+    return re.sub(r"\s+", " ", s).strip()
+
+def core_loc(name: str) -> str:
+    """Tên đơn vị bỏ tiền tố hành chính, đã chuẩn hoá như norm_loc (không dấu phẩy)."""
+    return norm_loc(core_name(name)).replace(" , ", " ").strip(" ,")
+
+WARD_PREFIX = r"(?:phuong|p|xa|x|thi tran|tt)"
+
+def mentions_ward(hay_loc: str, core: str) -> bool:
+    """Tin có nhắc XÃ/PHƯỜNG tên `core` với tiền tố hành chính (phường/p./xã/thị trấn) và không phải tên dài hơn (Quy Nhơn Nam khác Quy Nhơn).
+    Tên đường ('Đường Quang Trung', 'Quang Trung, Phường Bồng Sơn') và tên thành phố ('Thành phố Quy Nhơn') KHÔNG được tính."""
+    if not core:
+        return False
+    return re.search(rf"(?<![a-z0-9]){WARD_PREFIX}\s+{re.escape(core)}(?![a-z0-9])(?!\s+(?:nam|bac|dong|tay)(?![a-z0-9]))", hay_loc) is not None
+
+DIST_MARK = re.compile(r"(?<![a-z0-9])(?:thanh pho|tp|thi xa|tx|huyen|quan)\s+([a-z0-9]+(?:\s+[a-z0-9]+){0,2})")
+
+def district_conflict(listing_raw: dict, hay_loc: str, typed_cores: set) -> bool:
+    """True nếu tin chắc chắn thuộc HUYỆN/TP khác (dữ liệu có cấu trúc của nguồn hoặc cụm 'huyện/thị xã/thành phố X' trong địa chỉ)."""
+    typed = {t for t in typed_cores if t}
+    if not typed:
+        return False
+    raw = listing_raw if isinstance(listing_raw, dict) else {}
+    names = [core_loc(n) for n in (raw.get("area_name"), raw.get("area_name_v3")) if n]
+    if names:
+        return not any(n in typed or any(n.startswith(t + " ") or t.startswith(n + " ") for t in typed) for n in names)
+    marks = DIST_MARK.findall(hay_loc)
+    if not marks:
+        return False
+    return not any(m == t or m.startswith(t + " ") for m in marks for t in typed)
 
 def contains_phrase(haystack_norm: str, phrase_norm: str) -> bool:
     return bool(phrase_norm) and re.search(rf"(?<![a-z0-9]){re.escape(phrase_norm)}(?![a-z0-9])", haystack_norm) is not None

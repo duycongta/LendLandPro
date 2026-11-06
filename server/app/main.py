@@ -7,7 +7,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import store
-from .search import build_keywords, location_terms, filter_listings, same_street, rank, select_comps, select_near, listing_coords, haversine_m
+from .search import build_keywords, location_terms, filter_listings, same_street, rank, select_comps, select_near, listing_coords, haversine_m, parse_kinds, relevance, LEVEL_ORDER
 from . import geo, cancel
 from .textnorm import core_name, norm, province_aliases, province_conflict
 from .learn import learn_pairs
@@ -77,18 +77,43 @@ def qdict(xa, huyen, tinh, area, land_type, discount, need, duong="", months=0, 
     return dict(tol=tol, months=months, duong=duong.strip(), xa=xa.strip(), huyen=huyen.strip(), tinh=tinh.strip(), area=area or 0,
                 land_type=land_type, discount=discount, need=need, kind=kind)
 
+KEYWORD_CAP = 60        # tối đa tin cho mỗi truy vấn rộng (từ khóa, trang huyện, cả khu vực): các truy vấn rộng nhiều tin không đúng phường
+MIN_WARD_HITS = 10      # truy vấn theo mã phường/xã đã cho từng này tin thì bỏ qua các truy vấn từ khóa rộng
+
+def build_keywords_list(xa, huyen, duong):
+    """Từ khóa tìm kiếm ít và không trùng: xã/phường người nhập, 'đường + xã', tối đa 2 tên phường MỚI chứa phường đó; tên huyện chỉ khi không nhập xã."""
+    from .textnorm import core_name, norm
+    out, seen_norm, seen_core = [], set(), set()
+    def add(k):
+        k = (k or "").strip()
+        if not k or norm(k) in seen_norm:
+            return
+        c = core_name(k)
+        if c in seen_core:
+            return                                   # 'quang trung' trùng lõi với 'Phường Quang Trung'
+        seen_norm.add(norm(k)); seen_core.add(c); out.append(k)
+    if xa.strip():
+        add(xa)
+        if duong.strip():
+            add(f"{duong.strip()} {xa.strip()}")
+        for p_ in sorted(admin.parents(xa))[:2]:     # tên phường mới (đã học từ tin) để không bỏ sót tin chỉ ghi tên mới
+            add(p_)
+    elif huyen.strip():
+        add(huyen)
+        if duong.strip():
+            add(f"{duong.strip()} {huyen.strip()}")
+    return out
+
 def collect_live(q, xa, huyen, tinh, duong, land_type, months, maxn, src, errors):
-    """Thu thập tin mới từ các nguồn trực tuyến, lưu vào SQLite; ghi nhật ký vào q["fetchlog"], lỗi vào errors."""
-    # từ khoá tìm: dùng cả tên cũ và mới của xã/huyện để không bỏ sót
-    # Từ khoá ngắn (chỉ địa danh) cho kết quả rộng hơn từ khoá dài; lọc chính xác làm ở bước sau
-    kws = set()
-    for x in (xa, huyen):
-        if x.strip():
-            kws.add(x.strip())
-    if duong.strip():
-        kws.add(f"{duong.strip()} {xa.strip() or huyen.strip()}".strip())
-    for a in admin.aliases(xa) | admin.aliases(huyen):
-        kws.add(a)
+    """Thu thập tin mới từ các nguồn trực tuyến, lưu vào SQLite; ghi nhật ký vào q["fetchlog"], lỗi vào errors.
+    Tiết kiệm: truy vấn theo mã phường/xã (chính xác, ít tin) làm trước; truy vấn từ khóa rộng chỉ khi ít hơn MIN_WARD_HITS tin; mỗi truy vấn rộng
+    tối đa KEYWORD_CAP tin và dừng sớm khi gặp tin đã lưu (cào tăng dần)."""
+    known = store.known_urls()
+    for s_ in SOURCES.values():
+        s_.known_urls = known
+    kws = build_keywords_list(xa, huyen, duong)
+    cap = min(maxn, KEYWORD_CAP)
+    max_age = 30 * months or None
     chosen = set(src) if src else set(SOURCES)
     for name, source in SOURCES.items():
         if name not in chosen:
@@ -100,37 +125,41 @@ def collect_live(q, xa, huyen, tinh, duong, land_type, months, maxn, src, errors
                 errors.append(f"Nguồn {name}: {e}")
         if hasattr(source, "fetch_area"):
             try:
-                store.save(source.fetch_area(tinh or "Gia Lai", maxn, 30 * months or None, q["fetchlog"], huyen=huyen))
+                store.save(source.fetch_area(tinh or "Gia Lai", cap, max_age, q["fetchlog"], huyen=huyen))
             except Exception as e:
                 errors.append(f"Nguồn {name}: {e}")
         if not source.keyword_search:
             continue
+        ward_hits = 0
         if hasattr(source, "discover_regions"):
             # Lọc theo khu vực (đầy đủ hơn tìm theo từ khoá, vì nhiều tin không ghi địa danh trong tiêu đề)
             try:
                 from .textnorm import province_aliases
                 regs = source.discover_regions([x for x in (xa, huyen, tinh) if x.strip()], allowed=province_aliases(admin, tinh))
                 for code, rname in regs.items():
-                    got = source.search_region(code, limit=maxn, max_age_days=30 * months or None)
-                    store.save(got)
-                    q["fetchlog"].append(f"{name} · toàn bộ khu vực '{rname}' (mã {code}): lấy về {len(got)} tin mới nhất")
-                    # Lấy sâu theo đúng phường/xã và huyện (mã Chợ Tốt) để không bỏ sót tin của khu vực tài sản
+                    # Mã phường/xã và huyện (Chợ Tốt) trước: chính xác và ít tin
                     wards, areas = source.discover_codes(code, admin.aliases(xa) if xa.strip() else set(), admin.aliases(huyen) if huyen.strip() else set())
                     for area_c, ward_c in sorted(wards):
-                        got = source.search_codes(code, area_c, ward_c, limit=maxn, max_age_days=30 * months or None)
-                        store.save(got); q["fetchlog"].append(f"{name} · theo phường/xã (mã {ward_c}): lấy về {len(got)} tin")
+                        got = source.search_codes(code, area_c, ward_c, limit=maxn, max_age_days=max_age)
+                        store.save(got); ward_hits += len(got); q["fetchlog"].append(f"{name} · theo phường/xã (mã {ward_c}): lấy về {len(got)} tin")
                     for area_c in sorted(areas - {a for a, _ in wards}):
-                        got = source.search_codes(code, area_c, None, limit=maxn, max_age_days=30 * months or None)
-                        store.save(got); q["fetchlog"].append(f"{name} · theo huyện (mã {area_c}): lấy về {len(got)} tin")
+                        got = source.search_codes(code, area_c, None, limit=cap, max_age_days=max_age, incremental=True)
+                        store.save(got); q["fetchlog"].append(f"{name} · theo huyện (mã {area_c}): lấy về {len(got)} tin mới")
+                    if not wards and not areas:      # không xác định được phường/huyện: mới lấy tin mới nhất cả khu vực
+                        got = source.search_region(code, limit=cap, max_age_days=max_age, incremental=True)
+                        store.save(got); q["fetchlog"].append(f"{name} · toàn bộ khu vực '{rname}' (mã {code}): lấy về {len(got)} tin mới nhất")
                 if not regs:
                     q["fetchlog"].append(f"{name}: không xác định được mã khu vực từ địa danh đã nhập")
             except Exception as e:
                 errors.append(f"Nguồn {name} (lọc khu vực): {e}")
+        if ward_hits >= MIN_WARD_HITS:
+            q["fetchlog"].append(f"{name}: đã có {ward_hits} tin theo mã phường/xã, bỏ qua tìm theo từ khóa rộng để nhanh và đỡ tốn")
+            continue
         for kw in kws:
             try:
-                got = source.search(kw, limit=maxn, max_age_days=30 * months or None)
+                got = source.search(kw, limit=cap, max_age_days=max_age, incremental=True)
                 store.save(got)
-                q["fetchlog"].append(f"{name} · '{kw}': lấy về {len(got)} tin")
+                q["fetchlog"].append(f"{name} · '{kw}': lấy về {len(got)} tin mới")
             except Exception as e:
                 errors.append(f"Nguồn {name} (từ khoá '{kw}'): {e}")
 
@@ -206,7 +235,7 @@ def listing_to_api(l):
         "lat": lat if ok_coord else None, "lng": lng if ok_coord else None,
     }
 
-API_VERSION = 11     # 11: /api/roads mở rộng bán kính 60->150 m khi trống. 10: /api/reverse chuẩn hóa tổ/khu phố->hamlet, hạ ưu tiên tên tiếng Anh. 9: /api/reverse có chuỗi dự phòng. 8: thêm /api/roads. 7: thêm job + /api/cancel (dừng khảo sát). 6: thêm diagnostics trong /api/comps. 5: thêm /api/reverse. 4: thêm /api/resolve, /api/admin_names, lat/lng/radius_m + distance_m. 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
+API_VERSION = 12     # 12: so khớp phường nghiêm ngặt (xa_moi), lọc loại tài sản nhiều loại, bán kính 1.5 km, điểm sát thửa (score), limit mặc định 25, cào ít và tăng dần. 11: /api/roads mở rộng bán kính 60->150 m khi trống. 10: /api/reverse chuẩn hóa tổ/khu phố->hamlet, hạ ưu tiên tên tiếng Anh. 9: /api/reverse có chuỗi dự phòng. 8: thêm /api/roads. 7: thêm job + /api/cancel (dừng khảo sát). 6: thêm diagnostics trong /api/comps. 5: thêm /api/reverse. 4: thêm /api/resolve, /api/admin_names, lat/lng/radius_m + distance_m. 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
 
 @app.get("/api/health")
 def api_health():
@@ -215,8 +244,8 @@ def api_health():
 @app.get("/api/comps")
 def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", tinh: str = "Gia Lai", area: float = 0, kind: str = "",
               land_type: str = "", months: int = 6, tol: float = 50, discount: float = 10, scope: str = "ward",
-              live: int = 0, maxn: int = 100, limit: int = 60, src: str = "",
-              lat: float = 0, lng: float = 0, radius_m: float = 1000, job: str = ""):
+              live: int = 0, maxn: int = 100, limit: int = 25, src: str = "",
+              lat: float = 0, lng: float = 0, radius_m: float = 1500, job: str = ""):
     """Tin so sánh THẬT (có link), đã qua các bộ lọc chất lượng:
     - bắt buộc cùng xã/phường và không thuộc tỉnh khác; cùng thôn/xóm, cùng đường xếp trước (scope=district: thêm tin cùng huyện, khác xã);
     - gộp tin trùng (cùng SĐT+diện tích+giá, hoặc nội dung giống nhau), giữ bản từ nguồn tin cậy hơn;
@@ -249,40 +278,49 @@ def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", ti
     if scope != "district":
         deduped = [t for t in deduped if t[1] != "huyen"]
     have_pt = bool(lat and lng and geo.in_vietnam(lat, lng))
+    radius = min(max(radius_m, 100), 5000)
+    kinds = parse_kinds(kind)
     near_pairs = []
     if have_pt:          # tin khác xã nhưng có tọa độ thật trong bán kính -> chỉ vào Hàng chờ, kèm khoảng cách
         taken = {l.url for l, _, _ in deduped}
         near_pairs = [(l, "near", {"dup_count": 0, "also_on": []}) for l, _ in
-                      select_near(rec, taken, admin_eff, tinh, lat, lng, min(max(radius_m, 100), 5000), area or None, tol / 100, land_type, kind)]
+                      select_near(rec, taken, admin_eff, tinh, lat, lng, radius, area or None, tol / 100, land_type, kind)]
         deduped = deduped + near_pairs
-    # ngoại lai về đơn giá: tính trên tin cùng xã/phường có ngày rõ
-    base = [l.price_per_m2 for l, lv, _ in deduped if lv not in ("huyen", "near") and recency_tier(l) <= 2 and l.price_per_m2]
+    # khoảng cách thật (chỉ nguồn có tọa độ, và chỉ khi đã ghim vị trí thửa)
+    dist = {}
+    if have_pt:
+        for l, _, _ in deduped:
+            c = listing_coords(l)
+            if c:
+                dist[l.url] = haversine_m(lat, lng, c[0], c[1])
+    def far(l, lv):
+        return lv in ("thon", "xa") and dist.get(l.url) is not None and dist[l.url] > radius      # cùng phường nhưng ngoài bán kính quanh thửa
+    # ngoại lai về đơn giá: tính trên tin cùng xã/phường đúng tên, trong bán kính, có ngày rõ
+    base = [l.price_per_m2 for l, lv, _ in deduped if lv in ("thon", "xa") and not far(l, lv) and recency_tier(l) <= 2 and l.price_per_m2]
     bounds = price_bounds(base)
     rows = []
     for l, lv, info in deduped:
         tier = recency_tier(l); ppm = l.price_per_m2
         outlier = bool(bounds and ppm and (ppm < bounds[0] or ppm > bounds[1]))
-        reason = ("near_ward" if lv == "near" else "district" if lv == "huyen" else "no_date" if tier == 3 else "outlier" if outlier else
-                  "incomplete" if not (l.price_vnd and l.area_m2) else "")
-        rows.append((l, lv, info, tier, outlier, reason, source_weight(l.source, weights)))
+        reason = ("near_ward" if lv == "near" else "new_ward" if lv == "xa_moi" else "district" if lv == "huyen" else "far" if far(l, lv) else
+                  "no_date" if tier == 3 else "outlier" if outlier else "incomplete" if not (l.price_vnd and l.area_m2) else "")
+        score, parts = relevance(l, lv, dist.get(l.url), radius, area or None, duong, kinds, tier)
+        rows.append((l, lv, info, tier, outlier, reason, source_weight(l.source, weights), score, parts))
     def key(r):
-        l, lv, info, tier, outlier, reason, w = r
-        st_ = 0 if (duong and same_street(l, duong)) else 1
-        d = abs(l.area_m2 - area) / area if (area and l.area_m2) else 9
-        return ({"thon": 0, "xa": 1, "huyen": 2, "near": 3}[lv], 0 if reason == "" else 1, st_, tier, -w, d)
+        l, lv, info, tier, outlier, reason, w, score, parts = r
+        return (0 if reason == "" else 1, -score, LEVEL_ORDER[lv], tier, -w)
     rows.sort(key=key)
     ok_rows = [r for r in rows if r[5] == ""]
     res = summarize([r[0] for r in ok_rows], discount=discount / 100)
     wmed = weighted_median([(r[0].price_per_m2, r[6]) for r in ok_rows])
-    counts = {lv: sum(1 for r in rows if r[1] == lv) for lv in ("thon", "xa", "huyen", "near")}
+    counts = {lv: sum(1 for r in rows if r[1] == lv) for lv in ("thon", "xa", "xa_moi", "huyen", "near")}
     out = []
-    for l, lv, info, tier, outlier, reason, w in rows[:limit]:
+    for l, lv, info, tier, outlier, reason, w, score, parts in rows[:max(1, limit)]:
         d = listing_to_api(l)
         d.update(match_level=lv, weight=w, outlier=outlier, date_tier=tier, dup_count=info["dup_count"], also_on=info["also_on"],
-                 eligible_main=(reason == ""), pool_reason=reason, distance_m=None)
-        c = listing_coords(l) if have_pt else None
-        if c:
-            d["distance_m"] = round(haversine_m(lat, lng, c[0], c[1]))
+                 eligible_main=(reason == ""), pool_reason=reason, distance_m=None, score=score, score_parts=parts)
+        if l.url in dist:
+            d["distance_m"] = round(dist[l.url])
         out.append(d)
     return {
         "api_version": API_VERSION,

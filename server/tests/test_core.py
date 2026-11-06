@@ -333,9 +333,9 @@ def test_api_version_and_user_scenario(monkeypatch, tmp_path):
     ]
     store.save([Listing("chotot", f"https://x/{n}", t, address=a, price_vnd=pr, area_m2=ar, kind="dat", posted_at=_ago(10)) for n, a, t, pr, ar in rows])
     c = TestClient(m.app)
-    assert c.get("/api/health").json()["api_version"] == 11 and "folder" in c.get("/api/health").json()
+    assert c.get("/api/health").json()["api_version"] == 12 and "folder" in c.get("/api/health").json()
     r = c.get("/api/comps", params={"xa": "Xã Phước Sơn", "huyen": "Huyện Tuy Phước", "tinh": "Tỉnh Bình Định", "thon": "Thôn Xuân Phương", "area": 751.4, "kind": "dat", "tol": 50}).json()
-    assert r["api_version"] == 11
+    assert r["api_version"] == 12
     assert [i["url"].split("/")[-1] for i in r["items"]] == ["6"] and r["items"][0]["match_level"] == "thon"
 
 
@@ -352,7 +352,10 @@ def test_learned_admin_mapping_matches_new_name_listing(monkeypatch, tmp_path):
     store.save([ct, bd, other])
     assert ("Xã Phước Sơn", "Xã Tuy Phước Đông") in learn_pairs([ct])
     r = TestClient(m.app).get("/api/comps", params={"xa": "Xã Phước Sơn", "huyen": "Huyện Tuy Phước", "tinh": "Bình Định", "area": 105, "kind": "dat"}).json()
-    assert {i["url"].split("/")[-1] for i in r["items"]} == {"ct", "bd"} and r["quality"]["learned_admin_pairs"] == 1
+    by = {i["url"].split("/")[-1]: i for i in r["items"]}
+    assert set(by) == {"ct", "bd"} and r["quality"]["learned_admin_pairs"] == 1
+    # v6.50: tin chỉ ghi tên MỚI vẫn được nhận nhưng chỉ ở mức "cùng phường mới" (Hàng chờ), tin ghi đúng tên đã nhập mới là cùng xã/phường
+    assert by["ct"]["match_level"] == "xa" and by["bd"]["match_level"] == "xa_moi" and by["bd"]["eligible_main"] is False and by["bd"]["pool_reason"] == "new_ward"
 
 
 def test_webscrape_district_urls_and_pagination(monkeypatch):
@@ -671,3 +674,133 @@ def test_roads_endpoint_expands_radius(monkeypatch):
     monkeypatch.setattr(geo, "fetch_overpass_roads", fake)
     j = TestClient(m.app).get("/api/roads", params={"lat": 13.8, "lng": 109.2}).json()
     assert calls == [60, 150] and j["ok"] and j["roads"][0]["name"] == "Đường Xa" and j["radius_m"] == 150
+
+
+def _mk(n, address, title="Bán đất đẹp", kind="dat", area=47, price=2e9, raw=None, days=10):
+    l = Listing("chotot", f"https://x/{n}", f"{title} {n}", address=address, price_vnd=price, area_m2=area, kind=kind, posted_at=_ago(days))
+    if raw: l.raw = raw
+    return l
+
+def test_strict_ward_levels():
+    """Phường nhập là tên CŨ (Quang Trung). Chỉ tin nhắc đúng tên (có tiền tố phường/xã) mới là 'xa'; chỉ tên phường MỚI -> 'xa_moi';
+    trùng tên thành phố hay tên đường (Hoài Nhơn) -> loại."""
+    import app.main as m
+    from app.search import classify_location
+    adm = m.admin.with_pairs({("Phường Quang Trung", "Phường Quy Nhơn Nam"), ("Phường Ngô Mây", "Phường Quy Nhơn Nam"), ("Phường Hải Cảng", "Phường Quy Nhơn")})
+    args = ("Phường Quang Trung", "Thành phố Quy Nhơn", "Gia Lai")
+    cl = lambda l: classify_location(l, adm, *args)
+    assert cl(_mk(1, "Đường số 8, Phường Quang Trung, Phường Quy Nhơn Nam, Thành phố Qui Nhơn, Bình Định")) == "xa"
+    assert cl(_mk(2, "Nguyễn Thị Minh Khai, Phường Ngô Mây, Phường Quy Nhơn Nam, Thành phố Qui Nhơn, Bình Định")) == "xa_moi"       # cùng phường mới, khác phường cũ
+    assert cl(_mk(3, "76 Trần Hưng Đạo, Phường Hải Cảng, Phường Quy Nhơn, Thành phố Qui Nhơn, Bình Định")) is None                  # chỉ trùng tên thành phố/phường khác
+    assert cl(_mk(4, "quang trung, Phường Bồng Sơn, Thị xã Hoài Nhơn, Bình Định, Gia Lai")) is None                                  # tên đường ở huyện khác
+    assert cl(_mk(5, "Đường Quang Trung, Thành phố Quy Nhơn")) is None                                                                 # tên đường, không có tiền tố phường
+    assert cl(_mk(6, "P. Quang Trung, TP. Quy Nhơn")) == "xa"                                                                           # viết tắt p. và tp.
+    assert cl(_mk(7, "Phường Quang Trung, Thành phố Pleiku, Gia Lai")) is None                                                         # đúng tên phường nhưng thuộc TP khác
+    assert cl(_mk(8, "Phường Quang Trung", raw={"area_name": "Thị xã Hoài Nhơn"})) is None                                            # dữ liệu có cấu trúc của nguồn
+    assert cl(_mk(9, "Phường Quang Trung", raw={"area_name": "Thành phố Qui Nhơn"})) == "xa"
+    # tên dài hơn không bị nhận nhầm: phường Quy Nhơn khác phường Quy Nhơn Nam
+    assert classify_location(_mk(10, "Phường Quy Nhơn Nam, Thành phố Quy Nhơn"), adm, "Phường Quy Nhơn", "Thành phố Quy Nhơn", "Gia Lai") is None
+    assert classify_location(_mk(11, "Phường Quy Nhơn, Thành phố Quy Nhơn"), adm, "Phường Quy Nhơn", "Thành phố Quy Nhơn", "Gia Lai") == "xa"
+    # nhập tên MỚI: đơn vị cũ nằm trong nó được coi là cùng phường
+    assert classify_location(_mk(12, "Phường Ngô Mây, Thành phố Quy Nhơn"), adm, "Phường Quy Nhơn Nam", "Thành phố Quy Nhơn", "Gia Lai") == "xa"
+
+def test_kind_filter_multi_and_exclusions():
+    from app.search import kind_ok, parse_kinds
+    assert parse_kinds("dat,nha") == {"dat", "nha"} and parse_kinds("") == set()
+    assert kind_ok(_mk(1, "x", kind="nha"), {"dat", "nha"}) and kind_ok(_mk(2, "x", kind="dat"), {"dat", "nha"})
+    assert not kind_ok(_mk(3, "x", kind="can_ho"), {"dat", "nha"})
+    assert not kind_ok(_mk(4, "x", kind="nha", title="Bán nhà hàng mặt tiền"), {"dat", "nha"})
+    assert not kind_ok(_mk(5, "x", kind="nha", title="Bán căn hộ FLC"), {"dat", "nha"}) and not kind_ok(_mk(6, "x", kind="nha", title="Khách sạn 3 sao"), {"dat"})
+    assert kind_ok(_mk(7, "x", kind="can_ho", title="Bán căn hộ FLC"), {"can_ho"})
+    assert not kind_ok(_mk(8, "x", kind="", title="Bán đất"), {"dat"}) and kind_ok(_mk(9, "x", kind="", title="Bán đất"), set())
+
+def test_api_ranks_by_relevance_radius_and_limit(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+    import app.main as m, app.store as store
+    monkeypatch.setattr(store, "DB", tmp_path / "r.sqlite")
+    adm_addr = lambda w: f"Đường A, Phường {w}, Thành phố Quy Nhơn, Bình Định"
+    near_raw = {"latitude": 13.7791, "longitude": 109.2259}       # ~ trong bán kính
+    far_raw = {"latitude": 13.8100, "longitude": 109.2259}        # ~3,4 km
+    items = [
+        _mk(1, adm_addr("Quang Trung") + ", Đường số 8", raw=near_raw, area=48, title="Bán đất Đường số 8"),        # đúng phường + gần + cùng đường
+        _mk(2, adm_addr("Quang Trung"), raw=near_raw, area=60),                                                          # đúng phường + gần
+        _mk(3, adm_addr("Quang Trung"), raw=far_raw, area=48),                                                           # đúng phường nhưng xa > 1,5 km
+        _mk(4, adm_addr("Quang Trung"), kind="can_ho", title="Bán căn hộ FLC", area=47),                                  # căn hộ: loại
+        _mk(5, adm_addr("Quang Trung"), area=47, price=2.1e9),                                                           # không tọa độ: giữ
+    ]
+    store.save(items)
+    c = TestClient(m.app)
+    r = c.get("/api/comps", params={"xa": "Phường Quang Trung", "huyen": "Thành phố Quy Nhơn", "tinh": "Gia Lai", "area": 47.55, "kind": "dat,nha", "duong": "Đường số 8",
+                                    "lat": 13.7791, "lng": 109.2259}).json()
+    by = {i["url"].split("/")[-1]: i for i in r["items"]}
+    assert "4" not in by                                                                                                  # căn hộ bị loại khi có nhà
+    assert by["3"]["pool_reason"] == "far" and by["3"]["eligible_main"] is False and by["3"]["distance_m"] > 3000
+    assert by["1"]["eligible_main"] and by["1"]["score_parts"]["cùng đường"] == 18 and by["1"]["distance_m"] < 50
+    order = [i["url"].split("/")[-1] for i in r["items"]]
+    assert order[0] == "1" and order.index("3") > order.index("2") and r["items"][0]["score"] >= r["items"][1]["score"]    # điểm cao xếp trước, tin ngoài bán kính xuống cuối
+    assert by["5"]["eligible_main"] and by["5"]["distance_m"] is None                                                    # không tọa độ không bị phạt bán kính
+    assert len(c.get("/api/comps", params={"xa": "Phường Quang Trung", "huyen": "Thành phố Quy Nhơn", "tinh": "Gia Lai", "limit": 2}).json()["items"]) == 2
+    # chỉ căn hộ khi thửa là căn hộ
+    r2 = c.get("/api/comps", params={"xa": "Phường Quang Trung", "huyen": "Thành phố Quy Nhơn", "tinh": "Gia Lai", "kind": "can_ho"}).json()
+    assert [i["url"].split("/")[-1] for i in r2["items"]] == ["4"]
+
+
+def test_keywords_list_is_short_and_deduped():
+    import app.main as m
+    adm_backup = m.admin
+    try:
+        m.admin = m.admin.with_pairs({("Phường Quang Trung", "Phường Quy Nhơn Nam"), ("Phường Quang Trung", "Phường Quy Nhơn")})
+        kw = m.build_keywords_list("Phường Quang Trung", "Thành phố Quy Nhơn", "Đường số 8")
+        assert kw[0] == "Phường Quang Trung" and kw[1] == "Đường số 8 Phường Quang Trung" and len(kw) <= 4 and len(set(k.lower() for k in kw)) == len(kw)
+        assert "Thành phố Quy Nhơn" not in kw                                    # có xã thì không tìm theo tên thành phố (nhiều tin không liên quan)
+        assert m.build_keywords_list("", "Thành phố Quy Nhơn", "") == ["Thành phố Quy Nhơn"]
+        assert m.build_keywords_list("", "", "") == []
+    finally:
+        m.admin = adm_backup
+
+def test_chotot_incremental_stops_on_known(monkeypatch):
+    from app.sources.chotot import Chotot
+    import app.cancel as cancel
+    monkeypatch.setattr(cancel, "sleep", lambda s: None)
+    c = Chotot(); pages = []
+    ad = lambda i: {"list_id": i, "subject": f"Bán đất {i}", "price": 1e9, "size": 50, "category": 1040, "list_time": 4102444800000}
+    def fake(**p):
+        pages.append(p.get("o", 0)); o = p.get("o", 0)
+        return [ad(1000 + o + j) for j in range(20)] if o < 100 else []
+    monkeypatch.setattr(c, "_page", fake)
+    c.known_urls = frozenset()
+    assert len(c._paged(60, None, incremental=True)) == 60 and pages == [0, 20, 40]            # chưa có gì lưu: lấy đủ
+    pages.clear(); c.known_urls = {f"https://www.nhatot.com/{1000 + j}.htm" for j in range(20)}   # trang đầu toàn tin đã lưu
+    out = c._paged(60, None, incremental=True)
+    assert out == [] and pages == [0]                                                           # dừng ngay sau trang đầu
+    pages.clear(); assert len(c._paged(60, None, incremental=False)) == 60 and pages == [0, 20, 40]   # không tăng dần: vẫn lấy như cũ
+    # tin mới xen đầu trang rồi tới tin cũ: lấy tin mới, dừng khi gặp 8 tin đã lưu liên tiếp
+    pages.clear(); c.known_urls = {f"https://www.nhatot.com/{1000 + j}.htm" for j in range(5, 20)}
+    got = c._paged(60, None, incremental=True)
+    assert [l.url.split("/")[-1].replace(".htm", "") for l in got] == [str(1000 + j) for j in range(5)] and pages == [0]
+
+def test_collect_live_precise_first_and_caps(monkeypatch):
+    import app.main as m, app.store as store
+    saved = []; calls = []
+    monkeypatch.setattr(store, "save", lambda items: saved.append(len(items)))
+    monkeypatch.setattr(store, "known_urls", lambda: {"u1"})
+    class Fake:
+        name = "chotot"; keyword_search = True; known_urls = frozenset()
+        def __init__(s, ward_n): s.ward_n = ward_n
+        def discover_regions(s, names, allowed=None): return {7043: "Bình Định"}
+        def discover_codes(s, region, wa, da): return ({(1, 2)}, {1})
+        def search_codes(s, region, area=None, ward=None, limit=100, max_age_days=None, incremental=False):
+            calls.append(("codes", ward, limit, incremental)); return [object()] * (s.ward_n if ward else 3)
+        def search_region(s, *a, **k): calls.append(("region",)); return []
+        def search(s, kw, limit=50, max_age_days=None, incremental=False): calls.append(("kw", kw, limit, incremental)); return []
+    for ward_n, expect_kw in ((7, True), (12, False)):
+        calls.clear(); saved.clear()
+        f = Fake(ward_n); monkeypatch.setattr(m, "SOURCES", {"chotot": f})
+        q = {"fetchlog": []}
+        m.collect_live(q, "Phường Quang Trung", "Thành phố Quy Nhơn", "Gia Lai", "Đường số 8", "", 6, 200, [], [])
+        assert calls[0][0] == "codes" and calls[0][1] == 2 and calls[0][2] == 200 and calls[0][3] is False        # mã phường: chính xác, không giới hạn 60, không tăng dần
+        assert ("region",) not in calls                                                                              # có mã phường/huyện thì không lấy cả khu vực
+        kw_calls = [c for c in calls if c[0] == "kw"]
+        assert bool(kw_calls) is expect_kw
+        assert all(c[2] <= 60 and c[3] is True for c in kw_calls) and len(kw_calls) <= 4
+        assert f.known_urls == {"u1"}

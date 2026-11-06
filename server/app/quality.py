@@ -52,7 +52,7 @@ def same_property(a: Listing, b: Listing) -> bool:
 
 def dedupe_semantic(pairs, weights=None):
     """pairs: [(Listing, level)] -> ([(Listing, level, info)], số tin đã gộp). Giữ bản có trọng số nguồn cao nhất, rồi mới nhất."""
-    LV = {"thon": 0, "xa": 1, "huyen": 2}
+    LV = {"thon": 0, "xa": 1, "xa_moi": 2, "huyen": 3, "near": 4}
     groups = []
     for l, lv in pairs:
         for g in groups:
