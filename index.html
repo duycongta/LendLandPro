@@ -664,7 +664,7 @@
             </button>
           </div>
           <select id="manualSourceGroup" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"><option value="">Nguồn: Zalo / khác</option></select>
-          <textarea id="manualRawText" rows="3" placeholder="Ví dụ: Cần bán đất hẻm 3m đường Hùng Vương P. Trần Quang Diệu, DT 55m2 thổ cư ODT, ngang 4.5m, giá 1 tỷ 150 triệu bớt lộc. Đăng ngày 28/10. LH 0905..." class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500"></textarea>
+          <textarea id="manualRawText" rows="8" placeholder="Ví dụ: Cần bán đất hẻm 3m đường Hùng Vương P. Trần Quang Diệu, DT 55m2 thổ cư ODT, ngang 4.5m, giá 1 tỷ 150 triệu bớt lộc. Đăng ngày 28/10. LH 0905..." style="resize: vertical; min-height: 8rem; max-height: 85vh;" class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500"></textarea>
           <div class="flex justify-end">
             <button onclick="parseManualText()" type="button" class="bg-slate-800 hover:bg-slate-900 text-white font-medium text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 shadow cursor-pointer">
               <i class="ph-bold ph-plus-circle"></i> Trích Xuất Vào Bảng
@@ -1061,8 +1061,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.38";
+    const APP_VERSION = "6.39";
     const APP_CHANGELOG = {
+      "6.39": "Ô nội dung tin rao (dán Zalo/FB) cao hơn mặc định (khoảng 8 dòng) và kéo giãn được chiều dọc bằng tay nắm ở góc dưới bên phải (tối thiểu 6 dòng, tối đa gần hết chiều cao màn hình).",
       "6.38": "Lấy bài Facebook không mở tab mới: bấm biểu tượng ➜ LendLand (hoặc bôi đen + nút bookmarklet) sẽ SAO CHÉP link + nội dung bài vào clipboard (cộng dồn nhiều bài); tab app đang mở tự nhận khi bạn quay lại (ô tick \"Tự nhận bài FB khi quay lại tab này\", cần cho phép đọc clipboard), hoặc bấm Dán Clipboard; không sao chép được thì mở tab app như cũ. Chưa kiểm chứng trên Facebook/Chrome thật.",
       "6.37": "Nút lấy bài Facebook (bookmarklet) nay hiện biểu tượng \"➜ LendLand\" cạnh dòng ngày giờ của MỖI bài (kể cả trang kết quả tìm kiếm nhóm): bấm biểu tượng của bài nào thì link và nội dung bài đó được chuyển sang app; vẫn hỗ trợ bôi đen nội dung rồi bấm nút. Nút bookmarklet đưa ra ngoài phần gập, nằm ngay trong thẻ Nguồn tra tin. Chưa kiểm chứng trên Facebook thật.",
       "6.36": "Đổi tên và gọn giao diện theo yêu cầu: bỏ neo cột STT (giữ neo cột Đặc điểm TS); cột \"Đặc điểm TS\" ở cả hai bảng; bảng chính thay cột Sau CK bằng \"Đơn giá rao\", hàng chờ đổi \"Đơn giá rao\"; nút \"Chuyển tất cả lên DS TSSS chính\" (có hộp hỏi xác nhận, tin AI vẫn gắn nhãn chưa kiểm chứng); đổi tên các khối (Tự động quét thông tin GCN, Thông tin tài sản mục tiêu, Danh mục TSSS chính thức / hàng chờ); gộp khối kênh lớn và hội nhóm FB thành một thẻ \"Nguồn tra tin\", phần dán tin rao gập sẵn; gộp Zoom Thửa + Bao Quát thành một nút \"Xem bao quát\".",
