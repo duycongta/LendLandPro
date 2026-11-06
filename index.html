@@ -785,6 +785,14 @@
     </div>
   </main>
 
+  <!-- v6.46: FOOTER THÔNG TIN APP (không in) -->
+  <footer id="appFooter" class="no-print max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 pb-6 pt-2 text-center text-[11px] text-slate-500">
+    <div class="border-t border-slate-200 pt-3 space-y-0.5">
+      <div class="font-semibold text-slate-600">LendLand Pro · Tiện ích khảo sát giá BĐS tín dụng (V<span data-app-version></span>)</div>
+      <div>© duycongta@gmail.com</div>
+    </div>
+  </footer>
+
   <!-- MODAL CẤU HÌNH & QUẢN TRỊ ADMIN (z-[60]) -->
   <div id="apiKeyModal" class="hidden fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto max-h-[95vh] overflow-y-auto border border-slate-100">
@@ -1070,8 +1078,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.45";
+    const APP_VERSION = "6.46";
     const APP_CHANGELOG = {
+      "6.46": "Thêm Footer ở trang giao diện chính: tên app, số phiên bản (tự cập nhật theo APP_VERSION) và © duycongta@gmail.com; không in ra báo cáo.",
       "6.45": "Đổi \"Quản trị Két Cloud & Admin\" thành \"Thiết lập App\": khi CHƯA mở khóa (từ màn hình khóa) chỉ hiện API Key Gói Miễn Phí, API Key Gói Trả Phí, nút Lưu và Cấu hình JSONBin.io; trong app (sau khi mở khóa, từ menu bánh răng) hiện đủ mọi thiết lập (Google Search Grounding, máy chủ khảo giá, khóa Google Maps, tùy chọn AI, đổi PIN/Admin). Mục đầu menu bánh răng cũng đổi thành Thiết lập App.",
       "6.44": "Gọn giao diện: (1) thẻ Nguồn tra tin gom Các kênh lớn đang lấy tin, Nút lấy bài Facebook, Dán tin rao từ Zalo / FB và Hiện DS nhóm FB lấy tin thành một hàng nút ở tiêu đề (mở được nhiều mục cùng lúc); (2) khối Công trình xây dựng chỉ tự mở khi có loại/diện tích công trình thật, bỏ qua chữ mặc định AI hay điền (Nhà ở hoặc Đất trống); (3) nút PAYG, Khóa, Làm Mới gom vào menu bánh răng ở thanh trên (nút Xuất PDF giữ riêng).",
       "6.43": "Thống nhất nút gập: hai khung Các kênh lớn đang lấy tin và Nút lấy bài Facebook dùng dấu cộng/trừ trong vòng tròn cùng kiểu với Dán tin rao từ Zalo / FB (tiêu đề chính là nút bấm).",
