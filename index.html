@@ -606,10 +606,9 @@
 
       <div class="p-3.5 sm:p-4 space-y-3">
         <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs space-y-2">
-          <div class="font-bold text-slate-700 flex items-center justify-between gap-2">
-            <span class="flex items-center gap-1.5"><i class="ph-bold ph-globe text-blue-600"></i> Các kênh lớn đang lấy tin</span>
+          <div class="flex items-center justify-between gap-2">
+            <button type="button" onclick="togglePanel('channels')" id="btnPanelChannels" class="text-xs font-semibold text-slate-700 hover:underline flex items-center gap-1"><i class="ph-bold ph-plus-circle"></i> <span>Các kênh lớn đang lấy tin</span></button>
             <span class="text-[10px] text-slate-400 font-normal hidden sm:inline">Tự gán từ khóa địa phương</span>
-            <button type="button" onclick="togglePanel('channels')" id="btnPanelChannels" class="text-[11px] font-semibold text-indigo-700 hover:underline flex items-center gap-1 whitespace-nowrap"><i class="ph-bold ph-caret-down"></i> <span>Hiện</span></button>
           </div>
           <div id="panelChannelsBody" class="hidden space-y-2">
 
@@ -640,8 +639,7 @@
         </div>
         <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 text-[11px] space-y-1.5">
           <div class="flex items-center justify-between gap-2">
-            <span class="font-bold text-sky-900 flex items-center gap-1.5"><i class="ph-bold ph-facebook-logo text-blue-600"></i> Nút lấy bài Facebook (máy tính)</span>
-            <button type="button" onclick="togglePanel('fbtool')" id="btnPanelFbtool" class="text-[11px] font-semibold text-sky-800 hover:underline flex items-center gap-1 whitespace-nowrap"><i class="ph-bold ph-caret-down"></i> <span>Hiện</span></button>
+            <button type="button" onclick="togglePanel('fbtool')" id="btnPanelFbtool" class="text-xs font-semibold text-slate-700 hover:underline flex items-center gap-1"><i class="ph-bold ph-plus-circle"></i> <span>Nút lấy bài Facebook (máy tính)</span></button>
           </div>
           <div id="panelFbtoolBody" class="hidden space-y-1.5">
           <div class="flex flex-wrap items-center gap-2">
@@ -1071,8 +1069,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.42";
+    const APP_VERSION = "6.43";
     const APP_CHANGELOG = {
+      "6.43": "Thống nhất nút gập: hai khung Các kênh lớn đang lấy tin và Nút lấy bài Facebook dùng dấu cộng/trừ trong vòng tròn cùng kiểu với Dán tin rao từ Zalo / FB (tiêu đề chính là nút bấm).",
       "6.42": "Thông báo rõ khi khóa bị từ chối: mã lỗi Gemini (400/401/403/429/5xx) dịch thành câu tiếng Việt nêu lý do có thể (hết hạn mức/credit, chưa bật thanh toán, khóa sai...), dùng cho trích xuất, đọc ảnh GCN và AI tìm tin; lỗi Google Geocoding (OVER_QUERY_LIMIT, REQUEST_DENIED) và Serper hết hạn mức cũng được dịch; hộp cảnh báo nổi có nút đóng hiện một lần mỗi phiên khi khóa trả phí/Google/Serper bị từ chối. App không đọc được số dư credit nên chỉ biết khi một lần gọi bị từ chối.",
       "6.41": "Hai khung \"Các kênh lớn đang lấy tin\" và \"Nút lấy bài Facebook\" thu gọn sẵn, có nút mũi tên để bung ra / thu gọn; app nhớ lựa chọn trên thiết bị.",
       "6.40": "Sửa nhận bài Facebook qua clipboard: chuẩn hóa xuống dòng kiểu Windows (CRLF) làm các bài bị dính thành một; chỉ coi là trùng khi link là link riêng của bài, link chung (trang tìm kiếm) so theo nội dung; lần đọc clipboard có giới hạn 3 giây, không bị kẹt. Thêm dòng \"Ô này có N bài\", dòng trạng thái lần đọc clipboard gần nhất (đọc mấy bài, thêm mấy, đã có mấy, lỗi nếu có), và khi trích xuất liệt kê từng bài bị bỏ kèm đầu bài và lý do; bài bị bỏ ở lại trong ô để sửa thay vì bị xóa.",
@@ -3891,12 +3890,12 @@ ${items}`;
       const ic = btn.querySelector('i'); if (ic) ic.className = open ? 'ph-bold ph-minus-circle' : 'ph-bold ph-plus-circle';
     }
     // v6.41: khung gập có nhớ lựa chọn trên thiết bị (Các kênh lớn, Nút lấy bài Facebook): mặc định thu gọn
-    const PANELS = { channels: { body: 'panelChannelsBody', btn: 'btnPanelChannels', store: 'llp_panel_channels' }, fbtool: { body: 'panelFbtoolBody', btn: 'btnPanelFbtool', store: 'llp_panel_fbtool' } };
+    const PANELS = { channels: { body: 'panelChannelsBody', btn: 'btnPanelChannels', store: 'llp_panel_channels', closed: 'Các kênh lớn đang lấy tin', open: 'Thu gọn các kênh lớn đang lấy tin' }, fbtool: { body: 'panelFbtoolBody', btn: 'btnPanelFbtool', store: 'llp_panel_fbtool', closed: 'Nút lấy bài Facebook (máy tính)', open: 'Thu gọn nút lấy bài Facebook' } };
     function setPanel(key, open, save) {
       const c = PANELS[key], body = document.getElementById(c.body), btn = document.getElementById(c.btn); if (!body || !btn) return;
       body.classList.toggle('hidden', !open);
-      btn.querySelector('span').textContent = open ? 'Thu gọn' : 'Hiện';
-      const ic = btn.querySelector('i'); if (ic) ic.className = open ? 'ph-bold ph-caret-up' : 'ph-bold ph-caret-down';
+      btn.querySelector('span').textContent = open ? c.open : c.closed;
+      const ic = btn.querySelector('i'); if (ic) ic.className = open ? 'ph-bold ph-minus-circle' : 'ph-bold ph-plus-circle';
       if (save) { try { localStorage.setItem(c.store, open ? 'open' : 'closed'); } catch (e) {} }
     }
     function togglePanel(key) { const body = document.getElementById(PANELS[key].body); setPanel(key, !!body && body.classList.contains('hidden'), true); }
