@@ -92,7 +92,8 @@
     @keyframes llpDot{0%,20%{opacity:.15}50%,100%{opacity:1}}
     .llp-ai-blink{display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:800;letter-spacing:.02em;color:#c7d2fe;background:rgba(129,140,248,.28);border-radius:8px;padding:2px 6px;animation:llpBlink 1.1s ease-in-out infinite}
     @keyframes llpBlink{0%,100%{opacity:1;box-shadow:0 0 8px rgba(165,180,252,.75)}50%{opacity:.3;box-shadow:none}}
-    @media (prefers-reduced-motion:reduce){.llp-dots i,.llp-ai-blink{animation:none}}
+    i.animate-spin{display:inline-block}   /* <i> mặc định inline nên không xoay được */
+    .llp-spin{animation:llpSpin .9s linear infinite;flex:none}@keyframes llpSpin{to{transform:rotate(360deg)}}   /* các chỉ báo đang chạy luôn chuyển động (kể cả khi hệ điều hành tắt hiệu ứng) vì là phản hồi trạng thái */
 </style>
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col relative select-none sm:select-auto">
@@ -198,13 +199,6 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- THANH TRẠNG THÁI NỔI -->
-  <div id="floatingStatusBar" class="hidden fixed bottom-16 right-4 sm:right-6 z-40 px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md max-w-xs sm:max-w-sm">
-    <div id="floatingStatusIcon"></div>
-    <span id="floatingStatusText" class="truncate">Đang xử lý dữ liệu...</span>
-    <button id="floatingStopBtn" type="button" onclick="stopFloating()" class="hidden flex-none ml-1 px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold">Dừng</button>
   </div>
 
   <!-- HEADER LIVE -->
@@ -1116,10 +1110,17 @@
     </div>
   </div>
 
-  <!-- TOAST NOTIFICATION -->
-  <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 border border-slate-700 max-w-sm">
+  <!-- v6.55: NGĂN XẾP THÔNG BÁO NỔI (thanh nào hiện trước nằm trên, thanh hiện sau nằm dưới, không che nhau) -->
+  <div id="llpNoticeStack" class="no-print fixed right-4 sm:right-6 bottom-4 z-[60] flex flex-col items-end gap-2 pointer-events-none" style="max-width:calc(100vw - 2rem)">
+    <div id="floatingStatusBar" class="hidden pointer-events-auto px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md max-w-xs sm:max-w-sm">
+    <div id="floatingStatusIcon"></div>
+    <span id="floatingStatusText" class="truncate">Đang xử lý dữ liệu...</span>
+    <button id="floatingStopBtn" type="button" onclick="stopFloating()" class="hidden flex-none ml-1 px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold">Dừng</button>
+  </div>
+    <div id="toastNotification" class="hidden pointer-events-auto transform translate-y-4 opacity-0 transition-all duration-300 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 border border-slate-700 max-w-sm">
     <i class="ph-bold ph-bell text-emerald-400 text-base flex-shrink-0"></i>
     <span id="toastMessage">Thông báo</span>
+  </div>
   </div>
 
   <script>
@@ -1132,8 +1133,9 @@
       const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
       sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
     })();
-    const APP_VERSION = "6.54";
+    const APP_VERSION = "6.55";
     const APP_CHANGELOG = {
+      "6.55": "Thanh thông báo nổi: vòng xoay tự vẽ (SVG) luôn quay, không phụ thuộc font biểu tượng/hiệu ứng hệ điều hành; thanh nổi và thông báo Toast xếp thành ngăn xếp ở góc phải dưới: thanh xuất hiện trước nằm trên, thanh sau nằm dưới, không che nhau.",
       "6.54": "Thanh thông báo nổi: dấu ... nhấp nháy cuối câu, bước có A.I hiện biểu tượng A.I chớp tắt, bước thường vòng xoay; thanh Đang tìm đường có nút Dừng (giữ vị trí đã ghim); Xem trước báo cáo trên điện thoại vừa khung màn hình, nút Hủy/Đóng và Xuất file luôn hiện ở đáy không cần kéo.",
       "6.53": "Thông báo nổi khi AI quét tin có Google Search đổi thành \"A.I đang quét tin từ nguồn Internet\".",
       "6.52": "Logo động (nhà có chữ $ nhỏ trong cửa; sau ~5 giây phóng to vào cửa, chữ $ to dần kèm 3 tia sao lóe rồi thu nhỏ về ngôi nhà) ở màn hình đăng nhập và thanh menu, ảnh tĩnh có $ là logo chính; khóa cuộn nền khi màn hình khóa mở để không lộ khoảng trắng trên điện thoại; thông báo nổi tìm TSSS đổi thành \"A.I đang tra tin rao bán TSSS ...\".",
@@ -2267,10 +2269,11 @@
       if (window._floatHideTimer) { clearTimeout(window._floatHideTimer); window._floatHideTimer = null; }   // trạng thái mới huỷ lệnh tự tắt của trạng thái cũ
       const fstop = document.getElementById('floatingStopBtn');
       if (state === 'hide') {
-        bar.classList.add('hidden');
+        bar.classList.add('hidden'); bar.style.order = '';
         if (fstop) fstop.classList.add('hidden');
         return;
       }
+      if (bar.classList.contains('hidden') || !bar.style.order) bar.style.order = String(++window._noticeSeq || (window._noticeSeq = 1));   // v6.55: xuất hiện trước -> nằm trên
       bar.classList.remove('hidden');
       const running = state === 'ocr' || state === 'survey';
       if (text) {
@@ -2284,19 +2287,19 @@
       if (fstop) fstop.classList.toggle('hidden', !(running && ((opts && opts.stop) || surveyRun)));
 
       if (state === 'ocr' || state === 'survey') {
-        bar.className = "fixed bottom-16 right-4 sm:right-6 z-40 px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md bg-indigo-950/90 border-indigo-500 text-white max-w-xs sm:max-w-sm";
+        bar.className = "pointer-events-auto px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md bg-indigo-950/90 border-indigo-500 text-white max-w-xs sm:max-w-sm";
         const isAi = /(^|[^A-Za-z])A\.?I([^A-Za-z]|$)|Gemini/.test(String(msg || ''));
         if (icon) icon.innerHTML = isAi
           ? `<span class="llp-ai-blink" aria-hidden="true"><i class="ph-fill ph-sparkle"></i>A.I</span>`
-          : `<i class="ph-bold ph-spinner animate-spin text-indigo-300 text-base"></i>`;
+          : `<svg class="llp-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="rgba(165,180,252,.25)" stroke-width="3"/><path d="M12 3a9 9 0 0 1 9 9" stroke="#a5b4fc" stroke-width="3" stroke-linecap="round"/></svg>`;
       } else if (state === 'success') {
-        bar.className = "fixed bottom-16 right-4 sm:right-6 z-40 px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md bg-emerald-950/90 border-emerald-500 text-white max-w-xs sm:max-w-sm";
+        bar.className = "pointer-events-auto px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md bg-emerald-950/90 border-emerald-500 text-white max-w-xs sm:max-w-sm";
         if (icon) icon.innerHTML = `<i class="ph-bold ph-check-circle text-emerald-400 text-base"></i>`;
-        window._floatHideTimer = setTimeout(() => bar.classList.add('hidden'), 3500);
+        window._floatHideTimer = setTimeout(() => { bar.classList.add('hidden'); bar.style.order = ''; }, 3500);
       } else if (state === 'error') {
-        bar.className = "fixed bottom-16 right-4 sm:right-6 z-40 px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md bg-rose-950/90 border-rose-500 text-white max-w-xs sm:max-w-sm";
+        bar.className = "pointer-events-auto px-4 py-2.5 rounded-2xl shadow-2xl border text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 backdrop-blur-md bg-rose-950/90 border-rose-500 text-white max-w-xs sm:max-w-sm";
         if (icon) icon.innerHTML = `<i class="ph-bold ph-warning-circle text-rose-400 text-base"></i>`;
-        window._floatHideTimer = setTimeout(() => bar.classList.add('hidden'), 4000);
+        window._floatHideTimer = setTimeout(() => { bar.classList.add('hidden'); bar.style.order = ''; }, 4000);
       }
     }
 
@@ -4537,8 +4540,14 @@ ${items}`;
       const text = document.getElementById('toastMessage');
       if (!toast || !text) return;
       text.innerText = msg;
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
+      clearTimeout(window._toastT1); clearTimeout(window._toastT2);
+      if (toast.classList.contains('hidden')) toast.style.order = String(++window._noticeSeq || (window._noticeSeq = 1));   // v6.55: hiện sau -> nằm dưới thanh đang có
+      toast.classList.remove('hidden'); void toast.offsetWidth;
+      toast.classList.remove('translate-y-4', 'opacity-0');
+      window._toastT1 = setTimeout(() => {
+        toast.classList.add('translate-y-4', 'opacity-0');
+        window._toastT2 = setTimeout(() => { toast.classList.add('hidden'); toast.style.order = ''; }, 320);
+      }, 3000);
     }
   </script>
 </body>
