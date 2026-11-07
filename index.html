@@ -1125,8 +1125,9 @@
       const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
       sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
     })();
-    const APP_VERSION = "6.52";
+    const APP_VERSION = "6.53";
     const APP_CHANGELOG = {
+      "6.53": "Thông báo nổi khi AI quét tin có Google Search đổi thành \"A.I đang quét tin từ nguồn Internet\".",
       "6.52": "Logo động (nhà có chữ $ nhỏ trong cửa; sau ~5 giây phóng to vào cửa, chữ $ to dần kèm 3 tia sao lóe rồi thu nhỏ về ngôi nhà) ở màn hình đăng nhập và thanh menu, ảnh tĩnh có $ là logo chính; khóa cuộn nền khi màn hình khóa mở để không lộ khoảng trắng trên điện thoại; thông báo nổi tìm TSSS đổi thành \"A.I đang tra tin rao bán TSSS ...\".",
       "6.51": "Khung Google AI Overview tự lập nhận định từ số liệu tin thật sau khi cào (số tin, khoảng đơn giá, trung vị, cảnh báo ít mẫu/không rõ ngày/giá gồm nhà), không cần gọi AI, không bịa.",
       "6.50": "Tin so sánh sát thửa hơn và đỡ tốn: (1) so khớp phường/xã nghiêm ngặt (cần tiền tố phường/xã; không nhận trùng tên thành phố/tên đường; kiểm tra huyện; tin chỉ cùng phường MỚI nhưng khác phường cũ xuống Hàng chờ kèm nhãn); (2) thửa có nhà thì chỉ nhận đất/nhà, loại căn hộ/chung cư/khách sạn/nhà xưởng (thửa là căn hộ thì ngược lại); (3) bán kính 1,5 km quanh vị trí đã ghim cho tin có tọa độ, tin cùng phường nhưng ngoài bán kính xuống Hàng chờ; (4) điểm Sát thửa 0-100 minh bạch (địa danh, cùng đường, diện tích, khoảng cách, ngày, loại) để sắp xếp, mặc định trả 25 tin; (5) cào theo mã phường trước, từ khóa rộng chỉ khi ít tin và tối đa 60 tin/truy vấn, cào tăng dần (dừng khi gặp tin đã lưu); (6) Gemini chỉ đọc tối đa 12 tin tốt nhất mỗi lần và nhớ kết quả đã đọc. Cần máy chủ API v12.",
@@ -2586,7 +2587,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
         return;
       }
 
-      setFloatingStatus('survey', enableGrounding ? 'AI đang quét tin thật từ Facebook & Sàn BĐS...' : 'Gemini AI đang phân tích & tìm TSSS...');
+      setFloatingStatus('survey', enableGrounding ? 'A.I đang quét tin từ nguồn Internet' : 'Gemini AI đang phân tích & tìm TSSS...');
       // v6.32: bước AI cũng dừng được (ngắt kết nối Gemini, bỏ kết quả)
       const run = surveyRun = { id: 'ai' + Date.now().toString(36), kind: 'ai', ctrl: new AbortController(), cancelled: false, snapshot: { cur: currentComps.slice(), pool: backupCompsPool.slice() } };
       setSurveyButtons(true);
