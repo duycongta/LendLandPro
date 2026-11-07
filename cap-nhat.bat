@@ -2,6 +2,10 @@
 chcp 65001 >nul
 cd /d "%~dp0"
 if errorlevel 1 goto nodir
+if "%LLP_SELFUPD%"=="1" goto afterself
+if exist ".git" goto afterself
+goto selfupd
+:afterself
 if not exist ".git" goto zip
 where git >nul 2>nul
 if errorlevel 1 goto nogit
@@ -28,6 +32,28 @@ goto end
 :same
 echo ===== KHONG CO THAY DOI: dang la ban moi nhat =====
 goto end
+:selfupd
+echo Kiem tra file cap-nhat.bat / chay-may-chu.bat moi tren GitHub...
+set LLPT=%TEMP%\llp_bat
+rmdir /s /q "%LLPT%" >nul 2>nul
+mkdir "%LLPT%"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; $u='https://raw.githubusercontent.com/duycongta/lendlandpro/main/'; try { foreach($f in 'cap-nhat.bat','chay-may-chu.bat'){ Invoke-WebRequest -UseBasicParsing ($u+$f+'?t='+[guid]::NewGuid()) -OutFile ('%LLPT%\'+$f) }; exit 0 } catch { exit 1 }" >nul 2>nul
+if errorlevel 1 goto selfskip
+if not exist "%LLPT%\cap-nhat.bat" goto selfskip
+if not exist "%LLPT%\chay-may-chu.bat" goto selfskip
+fc /b "%LLPT%\chay-may-chu.bat" "%~dp0chay-may-chu.bat" >nul 2>nul
+if errorlevel 1 copy /y "%LLPT%\chay-may-chu.bat" "%~dp0chay-may-chu.bat" >nul & echo Da cap nhat chay-may-chu.bat
+fc /b "%LLPT%\cap-nhat.bat" "%~f0" >nul 2>nul
+if errorlevel 1 goto selfswap
+echo File .bat da la ban moi nhat.
+goto selfskip
+:selfswap
+echo Co ban cap-nhat.bat moi: dang thay va chay lai ban moi...
+copy /y "%LLPT%\cap-nhat.bat" "%~f0" >nul & set LLP_SELFUPD=1& cmd /c ""%~f0"" & exit /b
+:selfskip
+rmdir /s /q "%LLPT%" >nul 2>nul
+goto afterself
+
 :zip
 echo Thu muc nay khong phai kho Git (tai bang file zip). Chuyen sang cap nhat bang cach tai zip moi nhat tu GitHub.
 echo Du lieu da luu trong server\data duoc giu nguyen.
