@@ -1097,8 +1097,9 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.50";
+    const APP_VERSION = "6.51";
     const APP_CHANGELOG = {
+      "6.51": "Khung Google AI Overview tự lập nhận định từ số liệu tin thật sau khi cào (số tin, khoảng đơn giá, trung vị, cảnh báo ít mẫu/không rõ ngày/giá gồm nhà), không cần gọi AI, không bịa.",
       "6.50": "Tin so sánh sát thửa hơn và đỡ tốn: (1) so khớp phường/xã nghiêm ngặt (cần tiền tố phường/xã; không nhận trùng tên thành phố/tên đường; kiểm tra huyện; tin chỉ cùng phường MỚI nhưng khác phường cũ xuống Hàng chờ kèm nhãn); (2) thửa có nhà thì chỉ nhận đất/nhà, loại căn hộ/chung cư/khách sạn/nhà xưởng (thửa là căn hộ thì ngược lại); (3) bán kính 1,5 km quanh vị trí đã ghim cho tin có tọa độ, tin cùng phường nhưng ngoài bán kính xuống Hàng chờ; (4) điểm Sát thửa 0-100 minh bạch (địa danh, cùng đường, diện tích, khoảng cách, ngày, loại) để sắp xếp, mặc định trả 25 tin; (5) cào theo mã phường trước, từ khóa rộng chỉ khi ít tin và tối đa 60 tin/truy vấn, cào tăng dần (dừng khi gặp tin đã lưu); (6) Gemini chỉ đọc tối đa 12 tin tốt nhất mỗi lần và nhớ kết quả đã đọc. Cần máy chủ API v12.",
       "6.49": "Mã PIN Khách (song song với PIN chính thức): vào app ở chế độ chỉ xem giao diện để tham quan/thảo luận. Chế độ Khách không dùng khóa API (kể cả khóa lưu sẵn trên máy), không mở Két Cloud, không tra tin/khảo sát, không đọc ảnh GCN bằng AI, không mở Thiết lập App; có banner cam kèm nút Thoát, các nút bị chặn mờ đi và bấm vào sẽ giải thích. Code chỉ lưu bản băm SHA-256 (có muối) của mã Khách; đây là chế độ xem chứ không phải rào bảo mật.",
       "6.48": "Thanh thông báo nổi theo từng bước khi bấm Xác định vị trí hiện tại: Đang lấy vị trí GPS → Đang tra xã/phường, huyện, tỉnh và/hoặc Đang tìm đường gần vị trí → Đã xác định vị trí xong (tự tắt sau vài giây); báo lỗi khi không lấy được GPS; không ghi đè thanh trạng thái đang dùng cho khảo sát. File cap-nhat.bat sửa lỗi tự đóng cửa sổ và hiện danh sách thay đổi sau khi cập nhật.",
@@ -3033,6 +3034,33 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       if (btn) { btn.innerHTML = `<i class="ph-bold ph-magnifying-glass-plus text-base text-amber-300"></i> Khảo Sát Giá Thị Trường & Tìm TSSS`; btn.disabled = false; }
     }
     // Lấy tin THẬT từ máy chủ Python; trả về {ok, usable, error, cancelled}
+    // v6.51: nhận định tự tính từ tin thật (không gọi AI, không bịa)
+    function renderLocalOverview(mainList, poolList) {
+      const up = c => Number(c.rawPrice) * 1000 / Number(c.area);
+      const med = a => { const v = a.slice().sort((x, y) => x - y), m = v.length >> 1; return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2; };
+      const f1 = n => n.toFixed(1).replace('.', ',');
+      const mv = mainList.filter(compIsValid).map(up), pv = poolList.filter(c => c.origin !== 'ai' && compIsValid(c)).map(up);
+      const p1 = document.getElementById('aiSummaryP1'), box = document.getElementById('aiSummaryTips'), ul = document.getElementById('aiSummaryList');
+      const ward = valStr('targetWard') || 'khu vực khảo sát';
+      const tips = [];
+      let t;
+      if (mv.length) {
+        t = `Tại ${escHtml(ward)}: bảng chính có ${mv.length} tin đạt chuẩn (cùng phường, có ngày đăng, đủ giá và diện tích), đơn giá rao ${f1(Math.min(...mv))} - ${f1(Math.max(...mv))} tr/m², trung vị ${f1(med(mv))} tr/m².`;
+        if (pv.length) t += ` Hàng chờ có thêm ${pv.length} tin tham khảo, trung vị ${f1(med(pv))} tr/m² (chưa tính vào giá).`;
+        t += ' Đây là giá RAO, chưa phải giá giao dịch.';
+        if (mv.length < 3) tips.push(`Chỉ ${mv.length} tin đạt chuẩn: mẫu ít, độ tin cậy thấp. Nên bổ sung tin thủ công hoặc kiểm tra các tin ở Hàng chờ rồi mới đưa lên bảng.`);
+      } else {
+        t = `Tại ${escHtml(ward)}: chưa có tin nào đạt chuẩn để tính giá.` + (pv.length ? ` Hàng chờ có ${pv.length} tin tham khảo, trung vị ${f1(med(pv))} tr/m² (chưa kiểm chứng).` : '');
+        tips.push('Không đủ tin cùng phường: dán thêm tin thủ công (Facebook/Zalo) hoặc dùng giá tham khảo khu vực lân cận.');
+      }
+      const all = mainList.concat(poolList);
+      const noDate = all.filter(c => c.poolReason === 'no_date').length;
+      const house = all.filter(c => /\d\s*tầng|\d\s*tang|nhà cấp|nha cap|kiệt|kiet/i.test((c.title || '') + ' ' + (c.description || ''))).length;
+      if (noDate) tips.push(`${noDate} tin không rõ ngày đăng nên chưa được tính giá.`);
+      if (house) tips.push(`${house} tin có dấu hiệu là nhà xây sẵn: giá rao gồm công trình, cần trừ giá trị xây dựng trước khi so với giá đất.`);
+      p1.innerHTML = t;
+      if (tips.length) { box.classList.remove('hidden'); ul.innerHTML = tips.map(x => `<li>${x}</li>`).join(''); } else box.classList.add('hidden');
+    }
     async function fetchRealComps() {
       if (isGuest()) return { ok: false, usable: 0, cancelled: true };
       const run = surveyRun = { id: 'j' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), ctrl: null, cancelled: false, snapshot: { cur: currentComps.slice(), pool: backupCompsPool.slice() } };
@@ -3117,6 +3145,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         ...aiLine, ...hints, ...(data.fetchlog || []).slice(0, 12), ...(data.errors || []).slice(0, 6).map(e => 'Lỗi nguồn: ' + e)
       ]);
       showAdminNames();
+      try { renderLocalOverview(top, rest); } catch (e) {}
       renderMapElements(); recalculateTargetValues(); renderPoolListUI();
       setTimeout(() => { fitAllMarkersSafe(); }, 400);
       setFloatingStatus('success', `Đã lấy ${top.length} tin thật lên bảng chính`);
