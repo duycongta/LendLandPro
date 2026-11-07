@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>LendLand Pro - Thẩm Định Giá BĐS Tín Dụng</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='1' x2='1' y2='0'><stop offset='0' stop-color='%23059669'/><stop offset='1' stop-color='%2314b8a6'/></linearGradient></defs><rect width='64' height='64' rx='15' fill='url(%23g)'/><path fill='%23fff' d='M32 11.5 8.5 31.2c-.9.8-.4 2.3.8 2.3H15V50.5c0 1.4 1.1 2.5 2.5 2.5h29c1.4 0 2.5-1.1 2.5-2.5V33.5h5.7c1.2 0 1.7-1.5.8-2.3L32 11.5Z'/><rect x='40.5' y='14' width='5' height='10' rx='1' fill='%23fff'/><path fill='%230d9488' d='M27 53V40.5a5 5 0 0 1 10 0V53H27Z'/></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='1' x2='1' y2='0'><stop offset='0' stop-color='%23059669'/><stop offset='1' stop-color='%2314b8a6'/></linearGradient></defs><rect width='64' height='64' rx='15' fill='url(%23g)'/><path fill='%23fff' d='M32 11.5 8.5 31.2c-.9.8-.4 2.3.8 2.3H15V50.5c0 1.4 1.1 2.5 2.5 2.5h29c1.4 0 2.5-1.1 2.5-2.5V33.5h5.7c1.2 0 1.7-1.5.8-2.3L32 11.5Z'/><rect x='40.5' y='14' width='5' height='10' rx='1' fill='%23fff'/><path fill='%230f766e' d='M27 53V40.5a5 5 0 0 1 10 0V53H27Z'/><text x='32' y='47.3' text-anchor='middle' font-family='Georgia,serif' font-weight='800' font-size='8.64' fill='%23fff'>$</text></svg>">
   <meta name="theme-color" content="#059669">
   
   <script src="https://cdn.tailwindcss.com"></script>
@@ -65,18 +65,40 @@
       .print-page-break { page-break-after: always; }
       .shadow-sm, .shadow-md, .shadow-lg { box-shadow: none !important; border: 1px solid #cbd5e1 !important; }
     }
-  </style>
+  /* v6.52: logo động (chu kỳ 8s: tĩnh (có $ nhỏ trong cửa) ~5s · phóng to 1,1s · giữ $ ~0,9s · thu nhỏ 1,0s ===== */
+.llp-anim .house{transform-box:view-box;transform-origin:32px 46px;animation:zin var(--cycle) infinite both}
+.llp-anim .inside{animation:inside var(--cycle) infinite both}
+.llp-anim .dollar{transform-box:view-box;transform-origin:32px 32px;animation:dollar var(--cycle) infinite both}
+.llp-anim .spark{transform-box:fill-box;transform-origin:50% 50%;animation:spark var(--cycle) infinite both}
+.llp-anim .spark2{transform-box:fill-box;transform-origin:50% 50%;animation:spark2 var(--cycle) infinite both}
+.llp-anim .spark3{transform-box:fill-box;transform-origin:50% 50%;animation:spark3 var(--cycle) infinite both}
+.llp-anim .glow{transform-box:fill-box;transform-origin:50% 50%;animation:glow var(--cycle) infinite both}
+/* mốc: 62,5% = 5,0s bắt đầu · 76,25% = 6,1s phóng to xong · 87,5% = 7,0s bắt đầu thu · 100% = 8,0s về nhà */
+@keyframes zin{0%,62.5%{transform:scale(1);opacity:1;animation-timing-function:cubic-bezier(.55,0,.25,1)}74%{transform:scale(9);opacity:1}75%{transform:scale(9);opacity:0}88.5%{transform:scale(9);opacity:0}89.5%{transform:scale(9);opacity:1;animation-timing-function:cubic-bezier(.55,0,.25,1)}100%{transform:scale(1);opacity:1}}
+@keyframes inside{0%,62.5%{opacity:0}69%{opacity:1}87.5%{opacity:1}97%{opacity:1}100%{opacity:0}}
+@keyframes dollar{0%,62.5%{transform:translate(0,12.2px) scale(.24);animation-timing-function:cubic-bezier(.55,0,.25,1)}76.25%,87.5%{transform:translate(0,0) scale(1);animation-timing-function:cubic-bezier(.55,0,.25,1)}100%{transform:translate(0,12.2px) scale(.24)}}
+@keyframes spark{0%,75%{opacity:0;transform:scale(0) rotate(-40deg)}78%{opacity:1;transform:scale(1.25) rotate(0)}81%{opacity:1;transform:scale(1) rotate(8deg)}93%{opacity:.35;transform:scale(.55) rotate(25deg)}98%,100%{opacity:0;transform:scale(.2) rotate(40deg)}}
+@keyframes spark2{0%,77%{opacity:0;transform:scale(0) rotate(30deg)}80%{opacity:.95;transform:scale(1.1) rotate(0)}83%{opacity:.9;transform:scale(.9)}92%{opacity:.25;transform:scale(.5)}97%,100%{opacity:0;transform:scale(.1)}}
+@keyframes spark3{0%,78%{opacity:0;transform:scale(0) rotate(20deg)}81%{opacity:1;transform:scale(1.2) rotate(0)}84%{opacity:.95;transform:scale(.95) rotate(-6deg)}93%{opacity:.3;transform:scale(.5) rotate(-20deg)}97%,100%{opacity:0;transform:scale(.1)}}
+@keyframes glow{0%,75%{opacity:0;transform:scale(.3)}79%{opacity:.55;transform:scale(1.2)}95%{opacity:.1;transform:scale(.8)}98%,100%{opacity:0;transform:scale(.4)}}
+@media (prefers-reduced-motion:reduce){.llp-anim *{animation:none!important}.llp-anim .spark,.llp-anim .spark2,.llp-anim .spark3,.llp-anim .glow,.llp-anim .inside{opacity:0}.llp-anim .dollar{transform:translate(0,12.2px) scale(.24)}}
+    .llp-anim{--cycle:8s;overflow:visible}
+    /* v6.52: khóa cuộn nền khi màn hình khóa mở (điện thoại không kéo lộ khoảng trắng) */
+    html.llp-locked,html.llp-locked body{overflow:hidden;overscroll-behavior:none;height:100%}
+    #lockScreenOverlay{overscroll-behavior:none;touch-action:manipulation}
+</style>
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col relative select-none sm:select-auto">
 
   <!-- v6.47: LOGO NGÔI NHÀ CÁCH ĐIỆU (dùng lại bằng <use href="#llpLogo">) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-    <defs><linearGradient id="llpLogoGrad" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#059669"/><stop offset="1" stop-color="#14b8a6"/></linearGradient></defs>
+    <defs><clipPath id="llpClip"><rect width="64" height="64" rx="15"/></clipPath><linearGradient id="llpLogoGrad" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#059669"/><stop offset="1" stop-color="#14b8a6"/></linearGradient></defs>
     <symbol id="llpLogo" viewBox="0 0 64 64">
       <rect width="64" height="64" rx="15" fill="url(#llpLogoGrad)"/>
       <path fill="#fff" d="M32 11.5 8.5 31.2c-.9.8-.4 2.3.8 2.3H15V50.5c0 1.4 1.1 2.5 2.5 2.5h29c1.4 0 2.5-1.1 2.5-2.5V33.5h5.7c1.2 0 1.7-1.5.8-2.3L32 11.5Z"/>
       <rect x="40.5" y="14" width="5" height="10" rx="1" fill="#fff"/>
-      <path fill="#0d9488" d="M27 53V40.5a5 5 0 0 1 10 0V53H27Z"/>
+      <path fill="#0f766e" d="M27 53V40.5a5 5 0 0 1 10 0V53H27Z"/>
+      <text x="32" y="47.3" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="8.64" fill="#fff">$</text>
     </symbol>
   </svg>
 
@@ -84,7 +106,7 @@
   <div id="lockScreenOverlay" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 sm:p-7 shadow-2xl border border-slate-100 text-center space-y-5">
       <div class="w-14 h-14 mx-auto rounded-2xl shadow-lg" id="lockLogo">
-        <svg class="w-full h-full" viewBox="0 0 64 64" role="img" aria-label="LendLand Pro"><use href="#llpLogo"/></svg>
+        <svg class="w-full h-full llp-anim" viewBox="0 0 64 64" role="img" aria-label="LendLand Pro"><rect width="64" height="64" rx="15" fill="url(#llpLogoGrad)"/><g clip-path="url(#llpClip)"><rect class="inside" width="64" height="64" fill="#0f766e"/><g class="house"><path fill="#fff" d="M32 11.5 8.5 31.2c-.9.8-.4 2.3.8 2.3H15V50.5c0 1.4 1.1 2.5 2.5 2.5h29c1.4 0 2.5-1.1 2.5-2.5V33.5h5.7c1.2 0 1.7-1.5.8-2.3L32 11.5Z"/><rect x="40.5" y="14" width="5" height="10" rx="1" fill="#fff"/><path fill="#0f766e" d="M27 53V40.5a5 5 0 0 1 10 0V53H27Z"/></g><circle class="glow" cx="45" cy="18" r="10" fill="#fde68a" opacity="0"/><text class="dollar" x="32" y="45" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="36" fill="#fff">$</text><g transform="translate(45 18)"><path class="spark" fill="#fef08a" d="M0-10 2.4-2.4 10 0 2.4 2.4 0 10-2.4 2.4-10 0-2.4-2.4Z" opacity="0"/></g><g transform="translate(43 43) scale(.62)"><path class="spark3" fill="#fff" d="M0-10 2.4-2.4 10 0 2.4 2.4 0 10-2.4 2.4-10 0-2.4-2.4Z" opacity="0"/></g><g transform="translate(20 24) scale(.55)"><path class="spark2" fill="#fff" d="M0-10 2.4-2.4 10 0 2.4 2.4 0 10-2.4 2.4-10 0-2.4-2.4Z" opacity="0"/></g></g></svg>
       </div>
 
       <div class="space-y-1">
@@ -183,7 +205,7 @@
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 min-h-[4rem] flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center space-x-2.5 overflow-hidden min-w-[210px] flex-1 sm:flex-initial">
         <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl shadow-inner flex-shrink-0" id="headerLogo">
-          <svg class="w-full h-full" viewBox="0 0 64 64" role="img" aria-label="LendLand Pro"><use href="#llpLogo"/></svg>
+          <svg class="w-full h-full llp-anim" viewBox="0 0 64 64" role="img" aria-label="LendLand Pro"><rect width="64" height="64" rx="15" fill="url(#llpLogoGrad)"/><g clip-path="url(#llpClip)"><rect class="inside" width="64" height="64" fill="#0f766e"/><g class="house"><path fill="#fff" d="M32 11.5 8.5 31.2c-.9.8-.4 2.3.8 2.3H15V50.5c0 1.4 1.1 2.5 2.5 2.5h29c1.4 0 2.5-1.1 2.5-2.5V33.5h5.7c1.2 0 1.7-1.5.8-2.3L32 11.5Z"/><rect x="40.5" y="14" width="5" height="10" rx="1" fill="#fff"/><path fill="#0f766e" d="M27 53V40.5a5 5 0 0 1 10 0V53H27Z"/></g><circle class="glow" cx="45" cy="18" r="10" fill="#fde68a" opacity="0"/><text class="dollar" x="32" y="45" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="36" fill="#fff">$</text><g transform="translate(45 18)"><path class="spark" fill="#fef08a" d="M0-10 2.4-2.4 10 0 2.4 2.4 0 10-2.4 2.4-10 0-2.4-2.4Z" opacity="0"/></g><g transform="translate(43 43) scale(.62)"><path class="spark3" fill="#fff" d="M0-10 2.4-2.4 10 0 2.4 2.4 0 10-2.4 2.4-10 0-2.4-2.4Z" opacity="0"/></g><g transform="translate(20 24) scale(.55)"><path class="spark2" fill="#fff" d="M0-10 2.4-2.4 10 0 2.4 2.4 0 10-2.4 2.4-10 0-2.4-2.4Z" opacity="0"/></g></g></svg>
         </div>
         <div class="truncate">
           <div class="font-bold text-sm sm:text-base tracking-wide flex items-center gap-1.5 flex-wrap">
@@ -1097,8 +1119,15 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
-    const APP_VERSION = "6.51";
+    // v6.52: khóa cuộn nền khi màn hình khóa đang mở
+    (function () {
+      const o = document.getElementById('lockScreenOverlay'); if (!o) return;
+      const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
+      sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
+    })();
+    const APP_VERSION = "6.52";
     const APP_CHANGELOG = {
+      "6.52": "Logo động (nhà có chữ $ nhỏ trong cửa; sau ~5 giây phóng to vào cửa, chữ $ to dần kèm 3 tia sao lóe rồi thu nhỏ về ngôi nhà) ở màn hình đăng nhập và thanh menu, ảnh tĩnh có $ là logo chính; khóa cuộn nền khi màn hình khóa mở để không lộ khoảng trắng trên điện thoại; thông báo nổi tìm TSSS đổi thành \"A.I đang tra tin rao bán TSSS ...\".",
       "6.51": "Khung Google AI Overview tự lập nhận định từ số liệu tin thật sau khi cào (số tin, khoảng đơn giá, trung vị, cảnh báo ít mẫu/không rõ ngày/giá gồm nhà), không cần gọi AI, không bịa.",
       "6.50": "Tin so sánh sát thửa hơn và đỡ tốn: (1) so khớp phường/xã nghiêm ngặt (cần tiền tố phường/xã; không nhận trùng tên thành phố/tên đường; kiểm tra huyện; tin chỉ cùng phường MỚI nhưng khác phường cũ xuống Hàng chờ kèm nhãn); (2) thửa có nhà thì chỉ nhận đất/nhà, loại căn hộ/chung cư/khách sạn/nhà xưởng (thửa là căn hộ thì ngược lại); (3) bán kính 1,5 km quanh vị trí đã ghim cho tin có tọa độ, tin cùng phường nhưng ngoài bán kính xuống Hàng chờ; (4) điểm Sát thửa 0-100 minh bạch (địa danh, cùng đường, diện tích, khoảng cách, ngày, loại) để sắp xếp, mặc định trả 25 tin; (5) cào theo mã phường trước, từ khóa rộng chỉ khi ít tin và tối đa 60 tin/truy vấn, cào tăng dần (dừng khi gặp tin đã lưu); (6) Gemini chỉ đọc tối đa 12 tin tốt nhất mỗi lần và nhớ kết quả đã đọc. Cần máy chủ API v12.",
       "6.49": "Mã PIN Khách (song song với PIN chính thức): vào app ở chế độ chỉ xem giao diện để tham quan/thảo luận. Chế độ Khách không dùng khóa API (kể cả khóa lưu sẵn trên máy), không mở Két Cloud, không tra tin/khảo sát, không đọc ảnh GCN bằng AI, không mở Thiết lập App; có banner cam kèm nút Thoát, các nút bị chặn mờ đi và bấm vào sẽ giải thích. Code chỉ lưu bản băm SHA-256 (có muối) của mã Khách; đây là chế độ xem chứ không phải rào bảo mật.",
@@ -3085,7 +3114,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       const dp = splitDistrictProvince(valStr('targetDistrictProvince'));
       params.set('huyen', dp.huyen); params.set('tinh', dp.tinh); params.set('job', run.id);
       if (targetCoordsKnown) { params.set('lat', String(targetCoords.lat)); params.set('lng', String(targetCoords.lng)); params.set('radius_m', '1500'); }
-      setFloatingStatus('survey', 'Đang thu thập tin thật từ các trang rao (có thể mất vài phút)...');
+      setFloatingStatus('survey', 'A.I đang tra tin rao bán TSSS ...');
       let data;
       try {
         const ctrl = new AbortController(); run.ctrl = ctrl; const t = setTimeout(() => ctrl.abort(), 8 * 60 * 1000);
