@@ -12,6 +12,24 @@ if errorlevel 1 goto nogit
 set OLD=
 set NEW=
 for /f %%i in ('git rev-parse HEAD') do set OLD=%%i
+echo ===== SO SANH THU MUC MAY VOI GITHUB =====
+git fetch origin main >nul 2>nul
+if errorlevel 1 goto gitnofetch
+set BEHIND=0
+for /f %%i in ('git rev-list --count HEAD..origin/main') do set BEHIND=%%i
+echo So ban cap nhat tren GitHub chua co o may nay: %BEHIND%
+if "%BEHIND%"=="0" goto gitcmp2
+echo --- File se thay doi khi cap nhat ---
+git diff --stat HEAD origin/main
+:gitcmp2
+echo --- File tren may khac ban da luu (sua cuc bo/chua commit) ---
+git status --short
+echo (Neu khong co dong nao o tren: thu muc may giong het ban da luu.)
+echo.
+goto gitcmpdone
+:gitnofetch
+echo Khong ket noi duoc GitHub de so sanh (kiem tra Internet). Van thu cap nhat.
+:gitcmpdone
 echo Dang cap nhat LendLand Pro: git pull origin main
 echo.
 git pull origin main
@@ -64,6 +82,9 @@ mkdir "%TMPD%"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; try { Invoke-WebRequest -UseBasicParsing 'https://github.com/duycongta/lendlandpro/archive/refs/heads/main.zip' -OutFile '%TMPD%\m.zip'; Expand-Archive -Force '%TMPD%\m.zip' '%TMPD%\x'; exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }"
 if errorlevel 1 goto zipfail
 if not exist "%TMPD%\x\lendlandpro-main\index.html" goto zipfail
+echo ===== SO SANH THU MUC MAY VOI GITHUB =====
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$src='%TMPD%\x\lendlandpro-main'; $dst='%CD%'; $new=@();$diff=@();$same=0; Get-ChildItem -Recurse -File $src | Where-Object { $_.FullName -notmatch '\\\.git\\' } | ForEach-Object { $rel=$_.FullName.Substring($src.Length+1); $l=Join-Path $dst $rel; if(-not (Test-Path $l)){ $new+=$rel } elseif((Get-FileHash $l).Hash -ne (Get-FileHash $_.FullName).Hash){ $diff+=$rel } else { $same++ } }; Write-Host ('Giong ban GitHub: '+$same+' file'); Write-Host ('File MOI tren GitHub (chua co o may): '+$new.Count); $new | Select-Object -First 40 | ForEach-Object { Write-Host ('  + '+$_) }; Write-Host ('File KHAC ban GitHub (se duoc cap nhat): '+$diff.Count); $diff | Select-Object -First 40 | ForEach-Object { Write-Host ('  ~ '+$_) }"
+echo.
 robocopy "%TMPD%\x\lendlandpro-main" "%CD%" /E /XD "%TMPD%\x\lendlandpro-main\server\data" "%TMPD%\x\lendlandpro-main\.git" /NFL /NDL /NJH /NJS /NP >nul
 robocopy "%TMPD%\x\lendlandpro-main\server\data" "%CD%\server\data" /E /XC /XN /XO /NFL /NDL /NJH /NJS /NP >nul
 rmdir /s /q "%TMPD%" >nul 2>nul
