@@ -598,7 +598,7 @@
           <button onclick="openInGoogleMapsTab()" type="button" class="text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded font-bold flex items-center gap-1 shadow-sm cursor-pointer" title="Mở tọa độ tài sản trên Google Maps tab mới">
             <i class="ph-bold ph-arrow-square-out text-sm"></i> Mở Google Maps
           </button>
-          <button id="btnMapPick" onclick="toggleMapPick()" type="button" class="text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 py-1 rounded font-medium flex items-center gap-1"><i class="ph-bold ph-map-pin"></i> Đặt ghim</button>
+          <button id="btnMapPick" onclick="pinButtonClick()" type="button" class="text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 py-1 rounded font-medium flex items-center gap-1"><i class="ph-bold ph-map-pin"></i> Đặt ghim</button>
           <button id="btnRelocate" onclick="relocateMap()" type="button" class="text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 py-1 rounded font-medium flex items-center gap-1" title="Về lại vị trí ghim thửa, hoặc vị trí theo các ô Thôn / Xã-Phường / Huyện-Tỉnh đang nhập"><i class="ph-bold ph-crosshair"></i> Định vị lại</button>
           <button onclick="viewOverview()" type="button" class="text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 sm:px-2.5 py-1 rounded font-medium flex items-center gap-1 shadow-sm cursor-pointer" title="Vừa khít thửa đất và các tin so sánh gần (trong khoảng 1 km)">
             <i class="ph-bold ph-arrows-out"></i> Xem bao quát
@@ -1144,8 +1144,9 @@
       const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
       sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
     })();
-    const APP_VERSION = "6.63";
+    const APP_VERSION = "6.64";
     const APP_CHANGELOG = {
+      "6.64": "Nút Đặt ghim đổi thành Bỏ ghim khi đã có ghim: bấm Bỏ ghim xóa ghim + tọa độ, giữ nguyên các ô địa chỉ và gợi ý đường, bản đồ về khu vực theo ô địa danh.",
       "6.63": "Bản đồ Vệ Tinh và Đường cùng tự đổi nguồn theo thứ tự ưu tiên khi không tải được: Vệ Tinh = Google -> Esri -> EOX Sentinel-2; Đường = Google (mới thêm) -> OpenStreetMap -> OSM Pháp -> Esri; nguồn dự phòng được nhớ 24 giờ, nút lớp hiện nguồn đang dùng.",
       "6.62": "Bản đồ Đường: bỏ nguồn CARTO (nay đòi khóa API, hiện chữ API KEY REQUIRED); chuỗi nguồn dự phòng là OpenStreetMap -> OpenStreetMap Pháp -> Esri.",
       "6.61": "Thanh thông báo nổi khi đang đọc GCN bằng AI có nút Dừng: ngắt kết nối AI, bỏ kết quả lần đọc, giữ nguyên các ô đang nhập.",
@@ -2262,6 +2263,7 @@
     }
 
     function renderMapElements() {
+      try { updatePinButton(); } catch (e) {}
       if (!map || typeof L === 'undefined') return;
       if (targetMarker) map.removeLayer(targetMarker);
       if (radiusCircle) map.removeLayer(radiusCircle);
@@ -4244,10 +4246,40 @@ ${items}`;
     // ---- Chạm bản đồ để đặt/dời ghim ----
     function toggleMapPick(force) {
       mapPickMode = (typeof force === 'boolean') ? force : !mapPickMode;
-      const b = document.getElementById('btnMapPick');
-      if (b) b.className = 'text-[11px] border px-2 py-1 rounded font-medium flex items-center gap-1 ' + (mapPickMode ? 'bg-rose-600 text-white border-rose-700' : 'bg-white hover:bg-slate-100 border-slate-300');
       const g = document.getElementById('gisMap'); if (g) g.style.cursor = mapPickMode ? 'crosshair' : '';
+      updatePinButton();
       if (mapPickMode) showToast('Chạm lên bản đồ ở đúng vị trí thửa đất để đặt ghim.');
+    }
+    // v6.64: nút ghim đổi nhãn: chưa có ghim -> "Đặt ghim"; đã có ghim -> "Bỏ ghim" (màu đỏ nhạt)
+    function updatePinButton() {
+      const b = document.getElementById('btnMapPick'); if (!b) return;
+      if (mapPickMode) {
+        b.className = 'text-[11px] border px-2 py-1 rounded font-medium flex items-center gap-1 bg-rose-600 text-white border-rose-700';
+        b.innerHTML = '<i class="ph-bold ph-map-pin"></i> Chạm bản đồ…';
+      } else if (targetCoordsKnown) {
+        b.className = 'text-[11px] border px-2 py-1 rounded font-medium flex items-center gap-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-300';
+        b.innerHTML = '<i class="ph-bold ph-map-pin-line"></i> Bỏ ghim';
+        b.title = 'Xóa ghim và tọa độ tài sản (giữ nguyên các ô địa chỉ)';
+      } else {
+        b.className = 'text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 py-1 rounded font-medium flex items-center gap-1';
+        b.innerHTML = '<i class="ph-bold ph-map-pin"></i> Đặt ghim';
+        b.title = 'Chạm lên bản đồ để đặt ghim đúng thửa';
+      }
+    }
+    function pinButtonClick() {
+      if (targetCoordsKnown && !mapPickMode) return removePin();
+      toggleMapPick();
+    }
+    // Bỏ ghim: xóa ghim + tọa độ (không còn lọc bán kính 1,5 km); giữ nguyên các ô địa chỉ và gợi ý đường; bản đồ về khu vực theo ô địa danh
+    function removePin() {
+      locPipeId++;
+      targetCoordsKnown = false; targetLocationInfo = null; autoLocationText = '';
+      const inp = document.getElementById('targetLocationInput'); if (inp) inp.value = '';
+      const st = document.getElementById('locationStatus'); if (st) { st.classList.add('hidden'); st.innerHTML = ''; }
+      try { setFloatingStatus('hide'); } catch (e) {}
+      renderMapElements();
+      if (lastAreaView && lastAreaView.sig === areaSig()) drawAreaOnMap(lastAreaView); else locateAddressArea({ auto: true, silent: true });
+      showToast('Đã bỏ ghim. Bấm "Đặt ghim" hoặc "Xác định vị trí hiện tại" để ghim lại.');
     }
 
     // ---- Tự điền Xã/Huyện/Tỉnh từ tọa độ: Google nếu có khóa, OpenStreetMap dự phòng ----
