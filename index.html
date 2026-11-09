@@ -711,6 +711,7 @@
               <p>2. Bấm biểu tượng của bài muốn lấy: link và nội dung bài đó được <b>sao chép</b> (không mở tab mới; bấm nhiều bài thì cộng dồn). Quay lại tab LendLand Pro đang mở: bài tự điền vào ô dán tin nếu bạn tick ô bên dưới, hoặc bấm <b>Dán Clipboard</b>.</p>
               <p>3. Hoặc <b>bôi đen nội dung</b> một bài rồi bấm nút trên thanh dấu trang để lấy đúng phần bôi đen.</p>
               <p>4. Kiểm tra rồi bấm <b>Trích Xuất Vào Bảng</b>. Nội dung chỉ đi qua clipboard của máy bạn, không gửi lên máy chủ nào. Nếu trình duyệt không cho sao chép, nút sẽ mở một tab app như cách cũ.</p>
+              <p>5. Muốn copy lại từ đầu: bấm <b>Xóa Clipboard</b> (xóa ô tin, bộ nhớ và hàng đợi bài trên tab Facebook ở lần bấm bookmarklet kế tiếp). Chức năng này cần <b>kéo lại nút bookmarklet mới (v6.68)</b> lên thanh dấu trang; Chrome có thể hỏi quyền đọc clipboard khi dùng lần đầu.</p>
               <p class="text-slate-500">Không kéo được nút? <button type="button" onclick="copyBookmarkletCode()" class="underline text-sky-700">sao chép mã</button>, tạo dấu trang mới và dán mã vào ô địa chỉ (URL). Facebook hay đổi cấu trúc trang nên biểu tượng có thể không hiện ở một số kiểu trang: khi đó dùng cách bôi đen.</p>
             </div>
           </details>
@@ -721,9 +722,14 @@
         <div class="space-y-2">
           <div class="flex items-center justify-between text-xs font-semibold text-slate-700">
             <span>Nội dung tin rao (Zalo / FB):</span>
-            <button onclick="pasteFromClipboard()" type="button" class="text-blue-600 hover:underline flex items-center gap-1 cursor-pointer">
-              <i class="ph-bold ph-clipboard"></i> Dán Clipboard
-            </button>
+            <span class="flex items-center gap-3">
+              <button onclick="clearFbClipboard()" type="button" class="text-rose-600 hover:underline flex items-center gap-1 cursor-pointer" title="Xóa ô tin, bộ nhớ app, clipboard và hàng đợi bookmarklet trên tab Facebook">
+                <i class="ph-bold ph-trash"></i> Xóa Clipboard
+              </button>
+              <button onclick="pasteFromClipboard()" type="button" class="text-blue-600 hover:underline flex items-center gap-1 cursor-pointer">
+                <i class="ph-bold ph-clipboard"></i> Dán Clipboard
+              </button>
+            </span>
           </div>
           <select id="manualSourceGroup" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"><option value="">Nguồn: Zalo / khác</option></select>
           <textarea id="manualRawText" rows="8" placeholder="Ví dụ: Cần bán đất hẻm 3m đường Hùng Vương P. Trần Quang Diệu, DT 55m2 thổ cư ODT, ngang 4.5m, giá 1 tỷ 150 triệu bớt lộc. Đăng ngày 28/10. LH 0905..." style="resize: vertical; min-height: 8rem; max-height: 85vh;" oninput="updateManualCount()" class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500"></textarea>
@@ -1154,8 +1160,9 @@
       const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
       sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
     })();
-    const APP_VERSION = "6.67";
+    const APP_VERSION = "6.68";
     const APP_CHANGELOG = {
+      "6.68": "Sửa đọc giá tin dán: \"Chỉ từ #5xxTr\" = 5xx triệu (trước bị đọc 5 tỷ/2 tỷ), phân tích nhanh bỏ link Facebook trước khi đọc, số diện tích/kích thước không còn bị hiểu là giá; thêm nút Xóa Clipboard (xóa ô tin, bộ nhớ app, clipboard và đặt dấu xóa để bookmarklet bản mới tự xóa hàng đợi trên tab Facebook; cần kéo lại bookmarklet mới).",
       "6.67": "Phân tích nhanh tin dán: cuối mỗi dòng có ô tick chọn (mặc định tick hết); nút đổi thành \"Trích xuất N tin chọn vào Bảng TSSS chính\" chỉ đưa các tin được tick lên bảng chính, tin không tick ở lại trong ô.",
       "6.66": "Ô dán tin rao: dưới dòng \"Ô này có N bài\" hiện phân tích nhanh từng tin (tiêu đề rút gọn, DT, giá rao, đơn giá ~ tr/m², cảnh báo ngắn: thiếu DT, giá ghi xx, giá gồm nhà) và dòng tổng hợp khoảng đơn giá + trung vị.",
       "6.65": "Chọn và xếp tin theo khoảng cách (API v13): tâm là ghim thửa (hoặc tâm khu vực theo ô địa danh khi chưa ghim), bán kính chỉnh trong Thiết lập App (mặc định 2000 m); tin khác xã nhưng có tọa độ thật trong bán kính lên bảng chính; cột Khoảng cách ở bảng chính và hàng chờ; bỏ tọa độ mặc định/lặp/quá xa; tra tọa độ ước lượng cho vài tin không có tọa độ; nhắc ghim thửa.",
@@ -3611,7 +3618,15 @@ ${items}`;
           if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return false; });
           return Promise.resolve(false);
         }
+        // v6.68: nếu app đã bấm "Xóa Clipboard" (clipboard chứa dấu #LendLandFB-CLEAR) thì bỏ hàng đợi bài cũ trước khi thêm bài mới
+        function wasCleared() {
+          try { if (navigator.clipboard && navigator.clipboard.readText) return navigator.clipboard.readText().then(function (c) { return String(c || '').indexOf('#LendLandFB-CLEAR') === 0; }, function () { return false; }); } catch (e) {}
+          return Promise.resolve(false);
+        }
         function send(u, t) {
+          return wasCleared().then(function (cl) { if (cl && Q.length) { Q.length = 0; say('LendLand: đã xóa hàng đợi bài cũ, bắt đầu bộ mới.'); } return send2(u, t); });
+        }
+        function send2(u, t) {
           var entry = (u ? u + '\n' : '') + t, idx = -1;
           if (u) for (var i = 0; i < Q.length; i++) if (Q[i].u === u) idx = i;
           if (idx >= 0) Q[idx] = { u: u, e: entry }; else Q.push({ u: u, e: entry });
@@ -3668,6 +3683,7 @@ ${items}`;
     }
     // v6.38: nhận bài Facebook qua clipboard (dòng đầu #LendLandFB, các bài cách nhau ---, dòng đầu mỗi bài là link nếu có)
     const FB_CLIP_MARK = '#LendLandFB';
+    const FB_CLEAR_MARK = '#LendLandFB-CLEAR';      // dấu xóa: bookmarklet thấy dấu này trong clipboard thì xóa hàng đợi bài cũ trên tab Facebook
     let lastIngestedClip = '', pickBusy = false;
     const SPECIFIC_POST_LINK = /\/(posts|permalink|videos|reel|photo)\/|story_fbid=|permalink\.php/i;
     const squashWs = x => String(x || '').replace(/\s+/g, ' ').trim();
@@ -3688,19 +3704,20 @@ ${items}`;
       const lines = String(text).split('\n').map(x => x.trim()).filter(Boolean);
       const title = (lines.find(l => !/^https?:\/\//i.test(l)) || '').replace(/\s+/g, ' ');
       const t35 = title.length > 35 ? title.slice(0, 34).trim() + '…' : title;
-      const rx = parsePostRegex(text);
+      const stripped = stripUrls(text);                            // dãy ký tự trong link Facebook không được hiểu là giá/diện tích (giống lúc trích xuất thật)
+      const rx = parsePostRegex(stripped);
       let area = rx.area, areaNote = '';
       if (!(area > 0)) {                                          // chưa có "m2" nhưng có kích thước ngang x dài
-        const m = /(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)/i.exec(text);
+        const m = /(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)/i.exec(stripped);
         if (m) { const a = parseFloat(m[1].replace(',', '.')) * parseFloat(m[2].replace(',', '.')); if (a >= 10 && a <= 100000) { area = Math.round(a * 10) / 10; areaNote = `tính từ ${m[1]}x${m[2]}`; } }
       }
       const price = rx.price > 0 ? rx.price : null;
       const warns = [];
-      const vague = /\d+\s*[x\*]{1,3}(?!\p{L})/iu.test(text.replace(/\d+\s*[x×]\s*\d+/gi, ''));          // "6xx", "2 tỷ xx"
+      const vague = /\d+\s*[x\*]{1,3}(?:\s*(?:tr|triệu|trieu|tỷ|ty))?(?!\p{L})/iu.test(stripped.replace(/\d+\s*[x×]\s*\d+/gi, ''));          // "6xx", "2 tỷ xx"
       if (!(area > 0)) warns.push('thiếu diện tích');
       if (!price) warns.push('chưa đọc được giá');
       else if (vague) warns.push('giá ghi mơ hồ (xx), kết quả chỉ là ước lượng');
-      if (/\b(nhà|cấp 4|cap 4|\d\s*tầng|nhà ở|kiệt)\b/i.test(text) && !/\bđất nền\b/i.test(text)) warns.push('có nhà/công trình: giá gồm cả nhà');
+      if (/\b(nhà|cấp 4|cap 4|\d\s*tầng|nhà ở|kiệt)\b/i.test(stripped) && !/\bđất nền\b/i.test(stripped)) warns.push('có nhà/công trình: giá gồm cả nhà');
       const unit = (area > 0 && price) ? price * 1000 / area : null;
       if (unit !== null && (unit < 1 || unit > 400)) warns.push('đơn giá bất thường, kiểm tra lại số liệu');
       return { title: t35, area, areaNote, price, unit, warns };
@@ -3735,10 +3752,12 @@ ${items}`;
         const v = units.slice().sort((a, b) => a - b), m = v.length >> 1, med = v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
         lines.push(`<div class="pt-1 border-t border-slate-200 text-slate-700">Tổng hợp: ${units.length}/${rows.length} tin có đơn giá, từ ${f1(v[0])} đến ${f1(v[v.length - 1])}, trung vị <b>${f1(med)} tr/m²</b> (giá rao, chưa phải giá giao dịch).</div>`);
       } else lines.push('<div class="pt-1 border-t border-slate-200 text-slate-700">Tổng hợp: chưa tin nào tính được đơn giá.</div>');
+      lines.push('<div class="text-[10px] text-slate-400">Số liệu sai? Sửa chữ trong ô nội dung phía trên (ví dụ ghi rõ "550 triệu", "DT 107m2"), phân tích tự cập nhật.</div>');
       box.innerHTML = lines.join(''); box.classList.remove('hidden');
     }
     function ingestFbClipboard(text, announce) {
       text = String(text || '').replace(/\r\n?/g, '\n');                  // Windows trả clipboard với CRLF: chuẩn hóa để tách đúng các bài
+      if (text.startsWith(FB_CLEAR_MARK)) { setFbPickStatus('clipboard đang chứa dấu xóa, chưa có bài mới.'); return false; }
       if (!text.startsWith(FB_CLIP_MARK)) return false;
       if (text === lastIngestedClip) { setFbPickStatus('nội dung clipboard không đổi so với lần trước, không thêm lại.'); return false; }
       const box = document.getElementById('manualRawText'); if (!box) return false;
@@ -3832,7 +3851,8 @@ ${items}`;
     function parsePostRegex(text) {
       const mArea = text.match(/(\d+[\.,]?\d*)\s*(m2|m²)/i);
       const mFront = text.match(/(ngang|mặt tiền|mt)\s*(\d+[\.,]?\d*)/i);
-      return { area: mArea ? parseFloat(mArea[1].replace(',', '.')) : null, price: normalizePriceToTy(text),
+      const forPrice = text.replace(/\d+(?:[.,]\d+)?\s*(?:m2|m²|m vuông|mét vuông)/gi, ' ').replace(/\d+(?:[.,]\d+)?\s*[x×]\s*\d+(?:[.,]\d+)?(?:\s*m\b)?/gi, ' ');   // số diện tích / ngang x dài không phải giá
+      return { area: mArea ? parseFloat(mArea[1].replace(',', '.')) : null, price: normalizePriceToTy(forPrice),
                frontage: mFront ? parseFloat(mFront[2].replace(',', '.')) : null };
     }
     function buildManualComp(text, rx, ai, group) {
@@ -4796,6 +4816,8 @@ ${items}`;
         }
       }
 
+      const mXxTr = s.match(/(\d{1,2})([x\*]{1,3})\s*(?:tr|triệu|trieu)(?!\p{L})/iu);      // v6.68: "5xxTr" = 5xx triệu (lấy giữa khoảng: 550 triệu), "12xx triệu" = 1,25 tỷ
+      if (mXxTr) { const k = mXxTr[2].length; return Math.round((parseFloat(mXxTr[1]) * Math.pow(10, k) + 5 * Math.pow(10, k - 1)) / 1000 * 1000) / 1000; }
       const mTrXx = s.match(/(\d)[x\*]{2}(?!\p{L})\s*(?:tr|triệu|trieu)?/iu);
       if (mTrXx) return parseFloat(mTrXx[1] + "50") / 1000.0;
       const mTrOnly = s.match(/(\d+(?:\.\d+)?)\s*(?:tr|triệu|trieu)(?!\w)/i);
@@ -4915,9 +4937,20 @@ ${items}`;
       }
     }
 
+    // v6.68: Xóa Clipboard = xóa ô tin + bộ nhớ app + clipboard hệ thống (đặt dấu xóa để bookmarklet xóa luôn hàng đợi trên tab Facebook)
+    async function clearFbClipboard() {
+      const box = document.getElementById('manualRawText'); if (!box) return;
+      if (box.value.trim() && !confirm('Xóa toàn bộ tin đang có trong ô dán tin rao, bộ nhớ clipboard và hàng đợi bookmarklet trên tab Facebook?')) return;
+      box.value = ''; lastIngestedClip = ''; quickOff.clear(); updateManualCount();
+      let wrote = false;
+      try { await navigator.clipboard.writeText(FB_CLEAR_MARK); wrote = true; } catch (e) {}
+      setFbPickStatus('đã xóa ô tin và bộ nhớ' + (wrote ? ', clipboard đã đặt dấu xóa.' : '; không ghi được clipboard (hãy cấp quyền).'));
+      showToast(wrote ? 'Đã xóa ô tin và clipboard. Bài Facebook sao chép tiếp theo sẽ bắt đầu bộ mới (cần bookmarklet bản mới; nếu chưa cập nhật bookmarklet, hãy tải lại tab Facebook bằng F5).' : 'Đã xóa ô tin trong app. Chưa ghi được clipboard: hãy cấp quyền clipboard cho trang rồi bấm lại; muốn xóa hàng đợi bên Facebook thì tải lại tab Facebook (F5).');
+    }
     async function pasteFromClipboard() {
       try {
         const text = await navigator.clipboard.readText();
+        if (text.replace(/\r\n?/g, '\n').startsWith(FB_CLEAR_MARK)) { showToast('Clipboard đang chứa dấu xóa, chưa có bài nào để dán.'); return; }
         if (text.replace(/\r\n?/g, '\n').startsWith(FB_CLIP_MARK)) { lastIngestedClip = ''; ingestFbClipboard(text, true); return; }
         document.getElementById('manualRawText').value = text;
         updateManualCount();
