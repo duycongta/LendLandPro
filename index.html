@@ -599,6 +599,7 @@
             <i class="ph-bold ph-arrow-square-out text-sm"></i> Mở Google Maps
           </button>
           <button id="btnMapPick" onclick="toggleMapPick()" type="button" class="text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 py-1 rounded font-medium flex items-center gap-1"><i class="ph-bold ph-map-pin"></i> Đặt ghim</button>
+          <button id="btnRelocate" onclick="relocateMap()" type="button" class="text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 py-1 rounded font-medium flex items-center gap-1" title="Về lại vị trí ghim thửa, hoặc vị trí theo các ô Thôn / Xã-Phường / Huyện-Tỉnh đang nhập"><i class="ph-bold ph-crosshair"></i> Định vị lại</button>
           <button onclick="viewOverview()" type="button" class="text-[11px] bg-white hover:bg-slate-100 border border-slate-300 px-2 sm:px-2.5 py-1 rounded font-medium flex items-center gap-1 shadow-sm cursor-pointer" title="Vừa khít thửa đất và các tin so sánh gần (trong khoảng 1 km)">
             <i class="ph-bold ph-arrows-out"></i> Xem bao quát
           </button>
@@ -608,6 +609,7 @@
         </div>
       </div>
 
+      <div id="areaNote" class="hidden"></div>
       <div class="relative">
         <div id="gisMap" class="w-full h-64 sm:h-80 bg-slate-100 z-10"></div>
         <div id="mapNotice" class="absolute top-2 left-2 right-2 z-20 text-[11px] bg-amber-50/95 border border-amber-300 text-amber-900 rounded-lg px-2.5 py-1.5"></div>
@@ -1134,14 +1136,17 @@
     // =========================================================================
     // PHIÊN BẢN ỨNG DỤNG - MỖI LẦN SỬA CODE PHẢI NÂNG SỐ NÀY (hiện ở tab, màn hình khóa, header, báo cáo)
     // =========================================================================
+    // v6.59: sửa các ô địa danh -> tự tra lại vị trí khu vực trên bản đồ (chờ 1,5 giây sau lần gõ cuối)
+    ['targetHamlet', 'targetWard', 'targetDistrictProvince'].forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('input', () => scheduleAreaLocate(1500)); });
     // v6.52: khóa cuộn nền khi màn hình khóa đang mở
     (function () {
       const o = document.getElementById('lockScreenOverlay'); if (!o) return;
       const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
       sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
     })();
-    const APP_VERSION = "6.58";
+    const APP_VERSION = "6.59";
     const APP_CHANGELOG = {
+      "6.59": "Bản đồ tự tra Thôn/Xóm, Xã/Phường, Huyện/TP & Tỉnh (Google nếu có khóa, rồi OpenStreetMap, rồi Photon; thử cả tên mới/cũ; chỉ nhận đơn vị hành chính đúng huyện) sau khi đọc GCN hoặc khi sửa các ô địa danh, zoom vừa ranh giới khu vực, KHÔNG đặt ghim, có ghi chú mức định vị; thêm nút Định vị lại cạnh Đặt ghim (về ghim thửa hoặc về khu vực theo ô địa danh).",
       "6.58": "Header trên điện thoại: chữ LendLand Pro và nhãn lật v Live / by duycongta@gmail.com luôn nằm cùng một hàng (không xuống dòng), chữ nhãn co theo bề rộng màn hình.",
       "6.57": "Header: nhãn \"vX Live\" lật (nền xanh chữ đen) sang \"by duycongta@gmail.com\" rồi lật về, đồng bộ chu kỳ 8 giây với logo động, áp dụng mọi màn hình (điện thoại không còn thiếu dòng tác giả).",
       "6.56": "Màn hình đăng nhập: bỏ dòng chữ \"Nhập mã PIN để tự động kết nối Két Cloud & làm việc\".",
@@ -2572,6 +2577,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
 
       renderMapElements();
       recalculateTargetValues();
+      scheduleAreaLocate(300);                  // v6.59: đọc xong GCN -> tra Thôn/Xã/Huyện/Tỉnh và zoom bản đồ tới khu vực
       if (opts && opts.confirmSurvey) { showSurveyConfirm(); return; }     // v6.20: chờ người dùng kiểm tra thông tin đọc từ ảnh rồi mới tìm tin
       generateSmartCompsForArea(data);
     }
@@ -3781,6 +3787,164 @@ ${items}`;
       if (!map) return;
       try { map.invalidateSize(); map.setView([lat, lng], 17, { animate: true }); } catch (e) {}
       setTimeout(() => { try { if (map && targetCoordsKnown && Math.abs(targetCoords.lat - lat) < 1e-9 && Math.abs(targetCoords.lng - lng) < 1e-9) { map.invalidateSize(); map.setView([lat, lng], 17); } } catch (e) {} }, 350);
+    }
+    // =========================================================================
+    // v6.59: TRA ĐỊA DANH (thôn / xã-phường / huyện-TP / tỉnh) RA BẢN ĐỒ. Chỉ định vị mức khu vực, KHÔNG đặt ghim (ghim thửa do người dùng đặt)
+    // =========================================================================
+    let areaSeq = 0, areaLayer = null, lastAreaView = null, areaTimer = null;
+    const AREA_STRIP = /^(xa|phuong|thi tran|thi xa|thanh pho|huyen|quan|tp|tt|tx|p|x|q|h|khu pho|thon|xom|to dan pho|kp)\s+/;
+    const AREA_PLACE_TYPES = new Set(['administrative', 'suburb', 'quarter', 'neighbourhood', 'hamlet', 'village', 'town', 'city', 'municipality', 'county', 'locality', 'city_district', 'borough', 'isolated_dwelling', 'district', 'state_district', 'region', 'political', 'sublocality', 'sublocality_level_1', 'administrative_area_level_2', 'administrative_area_level_3', 'neighborhood']);
+    function areaCore(s) {
+      let t = normVi(String(s || '').split(/[,(]/)[0]);
+      for (let i = 0; i < 2; i++) t = t.replace(AREA_STRIP, '');
+      return t.trim();
+    }
+    function areaHas(name, core) { return !!core && (' ' + normVi(name) + ' ').includes(' ' + core + ' '); }
+    function sleepMs(ms) { return new Promise(r => setTimeout(r, ms)); }
+    // Mỗi nguồn trả về [{lat, lng, bbox:[nam,bắc,tây,đông], type, name, source}]
+    async function areaSearchGoogle(q, key, signal) {
+      const r = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&language=vi&region=vn&key=${encodeURIComponent(key)}`, { signal });
+      if (!r.ok) throw new Error('Google HTTP ' + r.status);
+      const j = await r.json();
+      if (j.status && !['OK', 'ZERO_RESULTS'].includes(j.status)) throw new Error('Google ' + j.status);
+      return (j.results || []).map(x => {
+        const g = x.geometry || {}, v = g.viewport, c = g.location || {};
+        return { lat: c.lat, lng: c.lng, bbox: v ? [v.southwest.lat, v.northeast.lat, v.southwest.lng, v.northeast.lng] : null, types: x.types || [], name: x.formatted_address || '', source: 'Google' };
+      }).map(h => Object.assign(h, { type: (h.types.find(t => AREA_PLACE_TYPES.has(t)) || '') }));
+    }
+    async function areaSearchOsm(q, signal) {
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=vn&accept-language=vi&q=${encodeURIComponent(q)}`, { signal });
+      if (!r.ok) throw new Error('OpenStreetMap HTTP ' + r.status);
+      return ((await r.json()) || []).map(x => ({ lat: +x.lat, lng: +x.lon, bbox: (x.boundingbox || []).length === 4 ? x.boundingbox.map(Number) : null, type: AREA_PLACE_TYPES.has(x.addresstype) ? x.addresstype : (AREA_PLACE_TYPES.has(x.type) ? x.type : ''), name: x.display_name || '', source: 'OpenStreetMap' }));
+    }
+    async function areaSearchPhoton(q, signal) {
+      const r = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=5&lang=default`, { signal });
+      if (!r.ok) throw new Error('Photon HTTP ' + r.status);
+      return (((await r.json()).features) || []).filter(f => f.properties && ['place', 'boundary'].includes(f.properties.osm_key)).map(f => {
+        const p = f.properties, e = p.extent;
+        return { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], bbox: e ? [e[3], e[1], e[0], e[2]] : null, type: p.type || 'locality', name: [p.name, p.district, p.county, p.city, p.state].filter(Boolean).join(', '), source: 'Photon' };
+      });
+    }
+    function areaInVietnam(h) { return h && isFinite(h.lat) && isFinite(h.lng) && h.lat > 8 && h.lat < 24 && h.lng > 102 && h.lng < 110; }
+    // Tìm một địa danh; chỉ nhận kết quả là đơn vị hành chính/khu dân cư (không nhận đường, quán, tòa nhà) và tên có chứa đúng địa danh + huyện
+    async function areaFindPlace(queries, mustCore, alsoCore, signal, state, accept) {
+      const key = (localStorage.getItem('llp_gmaps_key') || '').trim();
+      const providers = [];
+      if (key) providers.push(q => areaSearchGoogle(q, key, signal));
+      providers.push(q => areaSearchOsm(q, signal), q => areaSearchPhoton(q, signal));
+      for (const q of queries) {
+        for (const prov of providers) {
+          let hits = [];
+          try { hits = await prov(q); } catch (e) { if (e && e.name === 'AbortError') throw e; state.errs.push(String(e.message || e)); }
+          if (state.cancelled()) return null;
+          const also = [].concat(alsoCore || []).filter(Boolean);
+          const ok = hits.find(h => areaInVietnam(h) && h.type && areaHas(h.name, mustCore) && (!also.length || also.some(c => areaHas(h.name, c))) && (!accept || accept(h)));
+          if (ok) return ok;
+          await sleepMs(1100);          // Nominatim: tối đa 1 yêu cầu/giây
+        }
+      }
+      return null;
+    }
+    function areaNote(html, cls) {
+      const el = document.getElementById('areaNote'); if (!el) return;
+      el.className = 'px-3 py-1.5 text-[11px] leading-snug border-t border-slate-200 ' + (cls || 'bg-sky-50 text-sky-900'); el.innerHTML = html; el.classList.remove('hidden');
+    }
+    function drawAreaOnMap(view) {
+      if (!map || typeof L === 'undefined') return;
+      try {
+        if (areaLayer) { map.removeLayer(areaLayer); areaLayer = null; }
+        map.invalidateSize();
+        if (view.bbox) {
+          const b = [[view.bbox[0], view.bbox[2]], [view.bbox[1], view.bbox[3]]];
+          areaLayer = L.rectangle(b, { color: '#0284c7', weight: 2, dashArray: '6 5', fillOpacity: 0.05, interactive: false }).addTo(map);
+          map.fitBounds(b, { maxZoom: view.level === 'hamlet' ? 17 : 16, padding: [16, 16] });
+        } else map.setView([view.lat, view.lng], view.level === 'hamlet' ? 16 : 14);
+      } catch (e) {}
+    }
+    async function locateAddressArea(opts) {
+      opts = opts || {};
+      const my = ++areaSeq, cancelled = () => my !== areaSeq;
+      const ward = valStr('targetWard'), dp = splitDistrictProvince(valStr('targetDistrictProvince')), hamlet = valStr('targetHamlet');
+      const wc = areaCore(ward), dc = areaCore(dp.huyen), hc = areaCore(hamlet), province = areaCore(dp.tinh);
+      if (!wc && !dc) { if (opts.manual) showToast('Hãy nhập Xã/Phường và Huyện/TP & Tỉnh trước khi định vị.'); return null; }
+      areaNote('Đang tra vị trí địa danh trên bản đồ...', 'bg-slate-50 text-slate-700');
+      if (!opts.silent) locStatus('survey', 'Đang tra địa danh lên bản đồ ...');
+      const ctrl = new AbortController(); const tmo = setTimeout(() => ctrl.abort(), 40000);
+      const state = { errs: [], cancelled };
+      const provinceAlt = /binh dinh/.test(province) ? ['Gia Lai'] : [];
+      let view = null;
+      try {
+        // 1) xã/phường: thử tên đã nhập, rồi tên mới theo dữ liệu đã học của máy chủ
+        let wardHit = null, usedName = ward;
+        if (wc) {
+          const qs = [dc ? `${wc}, ${dc}` : wc];
+          if (dc && province) qs.push(`${wc}, ${dc}, ${province}`);
+          wardHit = await areaFindPlace(qs, wc, dc, ctrl.signal, state);
+          if (!wardHit && !cancelled()) {
+            try {
+              const r = await fetch(`${getBackendUrl()}/api/admin_names?name=${encodeURIComponent(wc)}`, { signal: ctrl.signal });
+              const j = r.ok ? await r.json() : null; const names = (j && (j.now_named || []).concat(j.formerly || [])) || [];
+              for (const nn of names.slice(0, 3)) {
+                const nc = areaCore(nn); if (!nc || nc === wc) continue;
+                wardHit = await areaFindPlace([dc ? `${nc}, ${dc}` : nc], nc, dc, ctrl.signal, state);
+                if (wardHit) { usedName = nn + ' (tên mới của ' + ward + ')'; break; }
+              }
+            } catch (e) { if (e && e.name === 'AbortError') throw e; }
+          }
+        }
+        if (cancelled()) return null;
+        // 2) thôn/xóm/khu phố: chỉ nhận khi nằm đúng trong xã/phường (hoặc huyện) đã tìm
+        let hamletHit = null;
+        if (hc && (wardHit || dc)) {
+          hamletHit = await areaFindPlace([`${hc}, ${wc || dc}${wc && dc ? ', ' + dc : ''}`].concat(wc && dc ? [`${hc}, ${dc}`] : []), hc, [wc, dc], ctrl.signal, state);
+          if (hamletHit && wardHit && wardHit.bbox) {                 // phải nằm gần xã/phường (dung sai 0,05 độ ≈ 5 km)
+            const b = wardHit.bbox, t = 0.05;
+            if (!(hamletHit.lat >= b[0] - t && hamletHit.lat <= b[1] + t && hamletHit.lng >= b[2] - t && hamletHit.lng <= b[3] + t)) hamletHit = null;
+          }
+        }
+        if (cancelled()) return null;
+        // 3) dự phòng mức huyện/TP
+        let distHit = null;
+        if (!wardHit && dc) {
+          const dq = [province ? `${dc}, ${province}` : dc, dc].concat(provinceAlt.map(p => `${dc}, ${p}`));
+          const notSmallUnit = h => !/^\s*(phuong|xa|thi tran)\s/.test(normVi(String(h.name).split(',')[0]));
+          distHit = await areaFindPlace(dq, dc, null, ctrl.signal, state, notSmallUnit);      // đúng huyện/TP/thị xã
+          if (!distHit && !cancelled()) {                                                     // OSM mới chỉ còn phường trùng tên huyện cũ: định vị gần đúng quanh đó
+            const near = await areaFindPlace(dq, dc, null, ctrl.signal, state);
+            if (near) { const d = 0.08; distHit = Object.assign({}, near, { bbox: [near.lat - d, near.lat + d, near.lng - d, near.lng + d], approx: true }); }
+          }
+        }
+        if (cancelled()) return null;
+        if (hamletHit) view = Object.assign({ level: 'hamlet', label: hamlet + (wardHit ? ', ' + usedName : '') }, hamletHit);
+        else if (wardHit) view = Object.assign({ level: 'ward', label: usedName }, wardHit);
+        else if (distHit) view = Object.assign({ level: 'district', label: dp.huyen }, distHit);
+      } catch (e) {
+        if (!(e && e.name === 'AbortError')) state.errs.push(String(e.message || e));
+      } finally { clearTimeout(tmo); }
+      if (cancelled()) return null;
+      if (!opts.silent) locStatus('hide');
+      if (!view) {
+        areaNote(`Không tra được vị trí của <b>${escHtml(ward || dp.huyen)}</b>${dp.huyen ? ', ' + escHtml(dp.huyen) : ''} trên bản đồ${state.errs.length ? ' (' + escHtml(state.errs[0]) + ')' : ''}. Hãy dùng <b>Đặt ghim</b> hoặc nhập tọa độ / link Google Maps. App không đoán vị trí.`, 'bg-amber-50 text-amber-900');
+        if (opts.manual) showToast('Không tra được địa danh này; hãy đặt ghim thủ công.');
+        return null;
+      }
+      view.sig = areaSig(); lastAreaView = view;
+      drawAreaOnMap(view);
+      const lv = { hamlet: 'mức thôn/khu phố', ward: 'mức xã/phường', district: view.approx ? 'GẦN ĐÚNG quanh ' + escHtml(String(view.name).split(',')[0]) + ' (chưa tìm thấy xã/phường này trong dữ liệu bản đồ)' : 'mức huyện/TP (chưa tìm thấy xã/phường này)' }[view.level];
+      areaNote(`Bản đồ đang hiển thị: <b>${escHtml(view.label)}</b> · định vị ${lv}, nguồn ${view.source}, phạm vi chỉ là ước lượng. <b>Chưa phải vị trí thửa</b>: dùng <b>Đặt ghim</b> hoặc <b>Xác định vị trí hiện tại</b> để ghim đúng thửa.${targetCoordsKnown ? ' (Ghim thửa đã đặt vẫn được giữ.)' : ''}`);
+      return view;
+    }
+    function scheduleAreaLocate(delay) {
+      clearTimeout(areaTimer);
+      areaTimer = setTimeout(() => { try { if (typeof isGuest === 'function' && isGuest()) return; locateAddressArea({ auto: true, silent: true }); } catch (e) {} }, delay == null ? 1500 : delay);
+    }
+    // Nút "Định vị lại": có ghim thửa thì về ghim, chưa có thì tra lại từ các ô địa danh
+    function areaSig() { return [valStr('targetHamlet'), valStr('targetWard'), valStr('targetDistrictProvince')].join('|'); }
+    function relocateMap() {
+      if (!map) { showToast('Bản đồ chưa sẵn sàng.'); return; }
+      if (targetCoordsKnown) { zoomMapToLocation(targetCoords.lat, targetCoords.lng); showToast('Đã về vị trí ghim thửa.'); return; }
+      if (lastAreaView && lastAreaView.sig === areaSig()) { drawAreaOnMap(lastAreaView); showToast('Đã về khu vực theo các ô địa danh.'); return; }
+      locateAddressArea({ manual: true });
     }
     // v6.48: thanh thông báo nổi theo bước khi xác định vị trí (không ghi đè khi đang khảo sát)
     function locStatus(state, msg, opts) { try { if (surveyRun) return; } catch (e) {} setFloatingStatus(state, msg, opts); }
