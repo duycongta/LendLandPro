@@ -120,7 +120,6 @@
       <div class="space-y-1">
         <h2 class="font-bold text-slate-900 text-xl tracking-tight">LendLand Pro</h2>
         <div class="text-xs font-semibold text-emerald-600 tracking-wide">Tiện ích khảo sát giá BĐS tín dụng (V<span data-app-version></span>)</div>
-        <p class="text-xs text-slate-500 pt-1">Nhập mã PIN để tự động kết nối Két Cloud & làm việc</p>
       </div>
 
       <div class="space-y-2 text-left">
@@ -1133,8 +1132,9 @@
       const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
       sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
     })();
-    const APP_VERSION = "6.55";
+    const APP_VERSION = "6.56";
     const APP_CHANGELOG = {
+      "6.56": "Màn hình đăng nhập: bỏ dòng chữ \"Nhập mã PIN để tự động kết nối Két Cloud & làm việc\".",
       "6.55": "Thanh thông báo nổi: vòng xoay tự vẽ (SVG) luôn quay, không phụ thuộc font biểu tượng/hiệu ứng hệ điều hành; thanh nổi và thông báo Toast xếp thành ngăn xếp ở góc phải dưới: thanh xuất hiện trước nằm trên, thanh sau nằm dưới, không che nhau.",
       "6.54": "Thanh thông báo nổi: dấu ... nhấp nháy cuối câu, bước có A.I hiện biểu tượng A.I chớp tắt, bước thường vòng xoay; thanh Đang tìm đường có nút Dừng (giữ vị trí đã ghim); Xem trước báo cáo trên điện thoại vừa khung màn hình, nút Hủy/Đóng và Xuất file luôn hiện ở đáy không cần kéo.",
       "6.53": "Thông báo nổi khi AI quét tin có Google Search đổi thành \"A.I đang quét tin từ nguồn Internet\".",
