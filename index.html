@@ -730,8 +730,8 @@
           <div id="manualCountNote" class="hidden text-[11px] text-slate-500"></div>
           <div id="manualQuickAnalysis" class="hidden text-[11px] leading-snug bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 space-y-1"></div>
           <div class="flex justify-end">
-            <button onclick="parseManualText()" type="button" class="bg-slate-800 hover:bg-slate-900 text-white font-medium text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 shadow cursor-pointer">
-              <i class="ph-bold ph-plus-circle"></i> Trích Xuất Vào Bảng
+            <button id="btnManualExtract" onclick="parseManualText()" type="button" class="bg-slate-800 hover:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 shadow cursor-pointer">
+              <i class="ph-bold ph-plus-circle"></i> <span id="btnManualExtractLabel">Trích Xuất Vào Bảng</span>
             </button>
           </div>
         </div>
@@ -1154,8 +1154,9 @@
       const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
       sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
     })();
-    const APP_VERSION = "6.66";
+    const APP_VERSION = "6.67";
     const APP_CHANGELOG = {
+      "6.67": "Phân tích nhanh tin dán: cuối mỗi dòng có ô tick chọn (mặc định tick hết); nút đổi thành \"Trích xuất N tin chọn vào Bảng TSSS chính\" chỉ đưa các tin được tick lên bảng chính, tin không tick ở lại trong ô.",
       "6.66": "Ô dán tin rao: dưới dòng \"Ô này có N bài\" hiện phân tích nhanh từng tin (tiêu đề rút gọn, DT, giá rao, đơn giá ~ tr/m², cảnh báo ngắn: thiếu DT, giá ghi xx, giá gồm nhà) và dòng tổng hợp khoảng đơn giá + trung vị.",
       "6.65": "Chọn và xếp tin theo khoảng cách (API v13): tâm là ghim thửa (hoặc tâm khu vực theo ô địa danh khi chưa ghim), bán kính chỉnh trong Thiết lập App (mặc định 2000 m); tin khác xã nhưng có tọa độ thật trong bán kính lên bảng chính; cột Khoảng cách ở bảng chính và hàng chờ; bỏ tọa độ mặc định/lặp/quá xa; tra tọa độ ước lượng cho vài tin không có tọa độ; nhắc ghim thửa.",
       "6.64": "Nút Đặt ghim đổi thành Bỏ ghim khi đã có ghim: bấm Bỏ ghim xóa ghim + tọa độ, giữ nguyên các ô địa chỉ và gợi ý đường, bản đồ về khu vực theo ô địa danh.",
@@ -3704,9 +3705,22 @@ ${items}`;
       if (unit !== null && (unit < 1 || unit > 400)) warns.push('đơn giá bất thường, kiểm tra lại số liệu');
       return { title: t35, area, areaNote, price, unit, warns };
     }
+    const quickOff = new Set();       // các tin người dùng bỏ tick (mặc định mọi tin đều được tick), nhận diện theo nội dung
+    const quickKey = t => normVi(stripUrls(String(t))).slice(0, 80);
+    function toggleQuickSel(i) {
+      const posts = manualPosts(); const t = posts[i]; if (t == null) return;
+      const k = quickKey(t); if (quickOff.has(k)) quickOff.delete(k); else quickOff.add(k);
+      updateManualCount();
+    }
+    function manualPosts() { const v = (document.getElementById('manualRawText') || {}).value || ''; const t = v.trim(); return t ? (splitPosts(t).length ? splitPosts(t) : [t]) : []; }
+    function selectedManualCount(posts) { return (posts || manualPosts()).filter(t => !quickOff.has(quickKey(t))).length; }
     function renderQuickAnalysis(posts) {
       const box = document.getElementById('manualQuickAnalysis'); if (!box) return;
-      if (!posts.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+      const lbl = document.getElementById('btnManualExtractLabel'), btn = document.getElementById('btnManualExtract');
+      if (!posts.length) { box.classList.add('hidden'); box.innerHTML = ''; if (lbl) lbl.textContent = 'Trích Xuất Vào Bảng'; if (btn) btn.disabled = false; return; }
+      const nSel = selectedManualCount(posts);
+      if (lbl) lbl.textContent = `Trích xuất ${nSel} tin chọn vào Bảng TSSS chính`;
+      if (btn) btn.disabled = nSel === 0;
       const rows = posts.map(quickAnalyzePost), units = rows.map(r => r.unit).filter(u => u !== null);
       const f1 = n => n.toFixed(1).replace('.', ',');
       const lines = rows.map((r, i) => {
@@ -3714,7 +3728,8 @@ ${items}`;
         const gia = r.price ? `Giá rao ${fmtTyTr(r.price)}` : 'Giá ?';
         const dg = r.unit !== null ? `Đơn giá ~ <b>${f1(r.unit)} tr/m²</b>` : 'chưa tính được đơn giá';
         const w = r.warns.length ? ` <span style="color:#b45309">⚠ ${escHtml(r.warns.join('; '))}</span>` : '';
-        return `<div><b>Tin ${i + 1}</b>${r.title ? ` <span class="text-slate-500">(${escHtml(r.title)})</span>` : ''}: ${dt} · ${gia} ⇒ ${dg}${w}</div>`;
+        const on = !quickOff.has(quickKey(posts[i]));
+        return `<label class="flex items-start gap-2 cursor-pointer ${on ? '' : 'opacity-50'}"><span class="flex-1"><b>Tin ${i + 1}</b>${r.title ? ` <span class="text-slate-500">(${escHtml(r.title)})</span>` : ''}: ${dt} · ${gia} ⇒ ${dg}${w}</span><input type="checkbox" class="mt-0.5 w-4 h-4 flex-none accent-slate-800" ${on ? 'checked' : ''} onchange="toggleQuickSel(${i})" aria-label="Chọn tin ${i + 1}"></label>`;
       });
       if (units.length) {
         const v = units.slice().sort((a, b) => a - b), m = v.length >> 1, med = v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
@@ -3842,10 +3857,10 @@ ${items}`;
       applyAiToComp(comp, ai);
       return { comp };
     }
-    function finishManualAdd(added, errors, dups, skipped, total) {
+    function finishManualAdd(added, errors, dups, skipped, total, left) {
       const box = document.getElementById('manualRawText');
       // bài bị bỏ vì thiếu số liệu/không phải tin bán ở lại trong ô để người dùng sửa; bài đã thêm hoặc trùng thì xóa khỏi ô
-      const keep = (skipped || []).filter(x => !x.dup).map(x => x.t);
+      const keep = (skipped || []).filter(x => !x.dup).map(x => x.t).concat(left || []);     // bài lỗi + bài chưa được tick ở lại trong ô
       box.value = keep.join('\n---\n'); updateManualCount();
       renderMapElements(); recalculateTargetValues();
       if (skipped && skipped.length) showBackendLog([`Trích xuất tin dán: ${total} bài, thêm ${added}, bỏ ${skipped.length}:`, ...skipped.map(x => `- Bài ${x.i + 1} («${x.head}…»): ${x.why}`)]);
@@ -3856,7 +3871,7 @@ ${items}`;
       }
       showToast(`Đã thêm ${added} tin vào bảng` + (errors.length ? `; bỏ ${errors.length} tin thiếu giá/diện tích` : '') + (dups ? `; bỏ ${dups} tin trùng` : '') + '.');
     }
-    function manualAddChunks(chunks, aiList) {
+    function manualAddChunks(chunks, aiList, left) {
       const gi = valStr('manualSourceGroup'); const group = gi !== '' ? customFbGroups[Number(gi)] : null;
       let added = 0, dups = 0; const errors = [], skipped = [];
       chunks.forEach((t, i) => {
@@ -3868,16 +3883,18 @@ ${items}`;
         if (currentComps.concat(backupCompsPool).some(c => c._key === key)) { dups++; skipped.push({ i, t, head, why: 'trùng tin đã có trong bảng', dup: true }); return; }
         r.comp._key = key; currentComps.push(r.comp); added++;
       });
-      finishManualAdd(added, errors, dups, skipped, chunks.length);
+      finishManualAdd(added, errors, dups, skipped, chunks.length, left);
     }
     function parseManualText() {
       const text = document.getElementById('manualRawText').value.trim();
       if (!text) { showToast("Vui lòng nhập nội dung tin rao."); return; }
-      const chunks = splitPosts(text).length ? splitPosts(text) : [text];
-      if (!aiExtractEnabled()) { manualAddChunks(chunks, null); return; }
+      const all = splitPosts(text).length ? splitPosts(text) : [text];
+      const chunks = all.filter(t => !quickOff.has(quickKey(t))), left = all.filter(t => quickOff.has(quickKey(t)));    // v6.67: chỉ tin được tick
+      if (!chunks.length) { showToast('Chưa chọn tin nào: hãy tick ít nhất 1 tin ở phần phân tích nhanh.'); return; }
+      if (!aiExtractEnabled()) { manualAddChunks(chunks, null, left); return; }
       showToast('AI đang đọc ' + chunks.length + ' bài...');
-      return aiExtractBatch(chunks.map(stripUrls)).then(res => manualAddChunks(chunks, res)).catch(e => {
-        showToast('AI không đọc được (' + e.message + '), dùng bộ đọc quy tắc.'); manualAddChunks(chunks, null);
+      return aiExtractBatch(chunks.map(stripUrls)).then(res => manualAddChunks(chunks, res, left)).catch(e => {
+        showToast('AI không đọc được (' + e.message + '), dùng bộ đọc quy tắc.'); manualAddChunks(chunks, null, left);
       });
     }
 
