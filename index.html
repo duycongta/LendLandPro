@@ -94,6 +94,15 @@
     @keyframes llpBlink{0%,100%{opacity:1;box-shadow:0 0 8px rgba(165,180,252,.75)}50%{opacity:.3;box-shadow:none}}
     i.animate-spin{display:inline-block}   /* <i> mặc định inline nên không xoay được */
     .llp-spin{animation:llpSpin .9s linear infinite;flex:none}@keyframes llpSpin{to{transform:rotate(360deg)}}   /* các chỉ báo đang chạy luôn chuyển động (kể cả khi hệ điều hành tắt hiệu ứng) vì là phản hồi trạng thái */
+
+    /* v6.56: nhãn "vX Live" lật sang "by duycongta@gmail.com" đồng bộ chu kỳ 8s với logo (lật khi logo phóng vào cửa, lật về khi logo thu nhỏ) */
+    .llp-flip{display:inline-grid;perspective:700px;flex:none}
+    .llp-flip-in{--cycle:8s;display:grid;transform-style:preserve-3d;animation:llpFlip var(--cycle) infinite both}
+    .llp-face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:#10b981;color:#0f172a;font-weight:800;font-size:9px;letter-spacing:-.01em;line-height:1.3;padding:2px 5px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.35);white-space:nowrap;text-align:center}
+    @media (min-width:640px){.llp-face{font-size:12px;letter-spacing:0;padding:2px 6px}}
+    .llp-back{transform:rotateX(180deg)}
+    @keyframes llpFlip{0%,62.5%{transform:rotateX(0);animation-timing-function:cubic-bezier(.55,0,.25,1)}76.25%,87.5%{transform:rotateX(180deg);animation-timing-function:cubic-bezier(.55,0,.25,1)}100%{transform:rotateX(360deg)}}
+    @media (prefers-reduced-motion:reduce){.llp-flip-in{animation:none}}
 </style>
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col relative select-none sm:select-auto">
@@ -210,8 +219,7 @@
         <div class="truncate">
           <div class="font-bold text-sm sm:text-base tracking-wide flex items-center gap-1.5 flex-wrap">
             <span class="whitespace-nowrap">LendLand Pro</span>
-            <span class="text-[10px] sm:text-xs bg-emerald-500 text-slate-900 font-extrabold px-1.5 py-0.5 rounded shadow whitespace-nowrap">v<span data-app-version></span> Live</span>
-            <span class="text-[10px] text-slate-400 font-normal hidden md:inline">by duycongta@gmail.com</span>
+            <span class="llp-flip" aria-label="Phiên bản và tác giả"><span class="llp-flip-in"><span class="llp-face llp-front">v<span data-app-version></span> Live</span><span class="llp-face llp-back">by duycongta@gmail.com</span></span></span>
           </div>
           <div class="text-[11px] text-slate-300 truncate">Khảo sát giá BĐS & Thẩm định tài sản bảo đảm</div>
         </div>
@@ -1132,8 +1140,9 @@
       const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
       sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
     })();
-    const APP_VERSION = "6.56";
+    const APP_VERSION = "6.57";
     const APP_CHANGELOG = {
+      "6.57": "Header: nhãn \"vX Live\" lật (nền xanh chữ đen) sang \"by duycongta@gmail.com\" rồi lật về, đồng bộ chu kỳ 8 giây với logo động, áp dụng mọi màn hình (điện thoại không còn thiếu dòng tác giả).",
       "6.56": "Màn hình đăng nhập: bỏ dòng chữ \"Nhập mã PIN để tự động kết nối Két Cloud & làm việc\".",
       "6.55": "Thanh thông báo nổi: vòng xoay tự vẽ (SVG) luôn quay, không phụ thuộc font biểu tượng/hiệu ứng hệ điều hành; thanh nổi và thông báo Toast xếp thành ngăn xếp ở góc phải dưới: thanh xuất hiện trước nằm trên, thanh sau nằm dưới, không che nhau.",
       "6.54": "Thanh thông báo nổi: dấu ... nhấp nháy cuối câu, bước có A.I hiện biểu tượng A.I chớp tắt, bước thường vòng xoay; thanh Đang tìm đường có nút Dừng (giữ vị trí đã ghim); Xem trước báo cáo trên điện thoại vừa khung màn hình, nút Hủy/Đóng và Xuất file luôn hiện ở đáy không cần kéo.",
