@@ -1144,8 +1144,9 @@
       const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
       sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
     })();
-    const APP_VERSION = "6.59";
+    const APP_VERSION = "6.60";
     const APP_CHANGELOG = {
+      "6.60": "Bản đồ lớp Đường không còn trắng khi mạng chặn OpenStreetMap: tự đổi nguồn OpenStreetMap -> CARTO -> Esri khi 4 ô đầu bị lỗi hoặc sau 7 giây chưa tải được, nhớ nguồn đã chạy được và báo nguồn đang dùng.",
       "6.59": "Bản đồ tự tra Thôn/Xóm, Xã/Phường, Huyện/TP & Tỉnh (Google nếu có khóa, rồi OpenStreetMap, rồi Photon; thử cả tên mới/cũ; chỉ nhận đơn vị hành chính đúng huyện) sau khi đọc GCN hoặc khi sửa các ô địa danh, zoom vừa ranh giới khu vực, KHÔNG đặt ghim, có ghi chú mức định vị; thêm nút Định vị lại cạnh Đặt ghim (về ghim thửa hoặc về khu vực theo ô địa danh).",
       "6.58": "Header trên điện thoại: chữ LendLand Pro và nhãn lật v Live / by duycongta@gmail.com luôn nằm cùng một hàng (không xuống dòng), chữ nhãn co theo bề rộng màn hình.",
       "6.57": "Header: nhãn \"vX Live\" lật (nền xanh chữ đen) sang \"by duycongta@gmail.com\" rồi lật về, đồng bộ chu kỳ 8 giây với logo động, áp dụng mọi màn hình (điện thoại không còn thiếu dòng tác giả).",
@@ -2179,6 +2180,36 @@
     }
 
     // === QUẢN LÝ BẢN ĐỒ GIS LEAFLET ===
+    // v6.60: bản đồ "Đường" tự đổi nguồn khi nguồn hiện tại không tải được (mạng chặn OpenStreetMap): OSM -> CARTO -> Esri
+    const STREET_PROVIDERS = [
+      { name: 'OpenStreetMap', url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', opts: { maxZoom: 19 } },
+      { name: 'CARTO', url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', opts: { maxZoom: 19, subdomains: 'abcd' } },
+      { name: 'Esri', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', opts: { maxZoom: 19 } }
+    ];
+    let streetIdx = 0, streetLoads = 0, streetErrs = 0, streetTimer = null;
+    function buildStreetLayer() {
+      const pv = STREET_PROVIDERS[streetIdx]; streetLoads = 0; streetErrs = 0;
+      const l = L.tileLayer(pv.url, Object.assign({ attribution: pv.name }, pv.opts));
+      l.on('tileload', () => { streetLoads++; });
+      l.on('tileerror', () => { streetErrs++; if (streetLoads === 0 && streetErrs >= 4) nextStreetProvider('tải ô bản đồ bị lỗi'); });
+      return l;
+    }
+    function armStreetTimer() {
+      clearTimeout(streetTimer);
+      streetTimer = setTimeout(() => { if (map && osmLayer && map.hasLayer(osmLayer) && streetLoads === 0) nextStreetProvider('hơn 7 giây chưa tải được'); }, 7000);
+    }
+    function nextStreetProvider(why) {
+      if (streetIdx >= STREET_PROVIDERS.length - 1) {
+        if (!window._streetWarned) { window._streetWarned = true; showToast('Không tải được bản đồ Đường từ các nguồn (OpenStreetMap, CARTO, Esri). Hãy dùng lớp Vệ Tinh hoặc kiểm tra mạng.'); }
+        return;
+      }
+      const wasShown = !!(map && osmLayer && map.hasLayer(osmLayer));
+      if (wasShown) map.removeLayer(osmLayer);
+      streetIdx++; try { localStorage.setItem('llp_street_idx', String(streetIdx)); } catch (e) {}
+      osmLayer = buildStreetLayer();
+      if (wasShown) { osmLayer.addTo(map); armStreetTimer(); }
+      showToast(`Bản đồ Đường: chuyển sang nguồn ${STREET_PROVIDERS[streetIdx].name} (${why}).`);
+    }
     function initLeafletMap() {
       try {
         if (typeof L === 'undefined') return;
@@ -2186,9 +2217,8 @@
         satLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
           maxZoom: 20, attribution: 'Google Maps Satellite'
         });
-        osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19, attribution: 'OpenStreetMap'
-        });
+        try { streetIdx = Math.min(STREET_PROVIDERS.length - 1, Math.max(0, parseInt(localStorage.getItem('llp_street_idx') || '0', 10) || 0)); } catch (e) {}
+        osmLayer = buildStreetLayer();
         satLayer.addTo(map);
         map.on('click', e => { if (mapPickMode) { setTargetLocation(e.latlng.lat, e.latlng.lng, { source: 'map' }); toggleMapPick(false); } });
         renderMapElements();
@@ -2206,7 +2236,7 @@
         document.getElementById('btnMapOSM').className = "text-[11px] bg-slate-100 text-slate-700 hover:bg-slate-200 px-2 py-1 rounded font-medium border border-slate-300 cursor-pointer";
       } else {
         map.removeLayer(satLayer);
-        osmLayer.addTo(map);
+        osmLayer.addTo(map); armStreetTimer();
         document.getElementById('btnMapOSM').className = "text-[11px] bg-blue-600 text-white px-2 py-1 rounded font-medium shadow-sm cursor-pointer";
         document.getElementById('btnMapSat').className = "text-[11px] bg-slate-100 text-slate-700 hover:bg-slate-200 px-2 py-1 rounded font-medium border border-slate-300 cursor-pointer";
       }
