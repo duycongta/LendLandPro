@@ -9,6 +9,7 @@ def _conn():
     c = sqlite3.connect(DB)
     c.execute("""CREATE TABLE IF NOT EXISTS listing(
         id INTEGER PRIMARY KEY, source TEXT, url TEXT, fetched_at TEXT, data TEXT)""")
+    c.execute("""CREATE TABLE IF NOT EXISTS geocache(key TEXT PRIMARY KEY, lat REAL, lng REAL, ts TEXT)""")
     return c
 
 def save(listings: list[Listing]):
@@ -33,3 +34,18 @@ def known_urls() -> set:
     """Các link đã lưu trong máy chủ: dùng để cào tăng dần (gặp tin đã lưu thì dừng, khỏi tải lại)."""
     with _conn() as c:
         return {u for (u,) in c.execute("SELECT url FROM listing WHERE url!=''")}
+
+
+def geocache_get(key: str):
+    """(found, (lat, lng) hoặc None): đã tra địa chỉ này chưa (cả kết quả 'không tìm thấy' cũng được nhớ để không tra lại)."""
+    with _conn() as c:
+        r = c.execute("SELECT lat, lng FROM geocache WHERE key=?", (key,)).fetchone()
+    if r is None:
+        return False, None
+    return True, ((r[0], r[1]) if r[0] is not None else None)
+
+def geocache_put(key: str, pt):
+    import datetime as dt
+    with _conn() as c:
+        c.execute("INSERT OR REPLACE INTO geocache(key, lat, lng, ts) VALUES(?,?,?,?)",
+                  (key, pt[0] if pt else None, pt[1] if pt else None, dt.datetime.now().isoformat(timespec="seconds")))

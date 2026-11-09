@@ -143,6 +143,8 @@ def select_comps(items, admin, xa, huyen, tinh, thon="", scope="ward", area=None
 
 import math
 
+MAX_COORD_KM = 120      # tọa độ cách tâm quá 120 km (vd mặc định ở TP.HCM) coi là sai
+
 def haversine_m(lat1, lng1, lat2, lng2) -> float:
     """Khoảng cách đường chim bay (mét) giữa hai tọa độ."""
     r = 6371000.0
@@ -150,28 +152,49 @@ def haversine_m(lat1, lng1, lat2, lng2) -> float:
     a = math.sin((p2 - p1) / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(math.radians(lng2 - lng1) / 2) ** 2
     return 2 * r * math.asin(math.sqrt(a))
 
-def listing_coords(l: Listing):
-    """(lat, lng) thật do nguồn cung cấp (hiện chỉ Chợ Tốt), hoặc None. Không suy đoán tọa độ."""
+def _street_key(l: Listing) -> str:
+    raw = l.raw if isinstance(l.raw, dict) else {}
+    return norm(str(raw.get("street_name") or (l.address or "").split(",")[0] or l.title))[:40]
+
+def suspect_coords(items, min_listings: int = 3, min_streets: int = 3) -> set:
+    """Tọa độ 'mặc định' của nguồn (tâm xã/thành phố khi người đăng không ghim): cùng một điểm (làm tròn ~100 m) lặp ở >= 3 tin có >= 3 tên đường khác nhau.
+    Cụm tin ở cùng một dự án (cùng đường) KHÔNG bị coi là mặc định."""
+    groups = {}
+    for l in items:
+        raw = l.raw if isinstance(l.raw, dict) else {}
+        try:
+            lat, lng = float(raw.get("latitude")), float(raw.get("longitude"))
+        except (TypeError, ValueError):
+            continue
+        groups.setdefault((round(lat, 3), round(lng, 3)), []).append(_street_key(l))
+    return {k for k, v in groups.items() if len(v) >= min_listings and len(set(v)) >= min_streets}
+
+def listing_coords(l: Listing, bad=None):
+    """(lat, lng) thật do nguồn cung cấp (hiện chỉ Chợ Tốt), hoặc None. Không suy đoán tọa độ. `bad`: tập tọa độ mặc định/lặp (suspect_coords) bị bỏ."""
     raw = l.raw if isinstance(l.raw, dict) else {}
     try:
         lat, lng = float(raw.get("latitude")), float(raw.get("longitude"))
     except (TypeError, ValueError):
         return None
-    return (lat, lng) if (8 < lat < 24 and 102 < lng < 110) else None
+    if not (8 < lat < 24 and 102 < lng < 110):
+        return None
+    if bad and (round(lat, 3), round(lng, 3)) in bad:
+        return None
+    return (lat, lng)
 
-def select_near(items, exclude_urls, admin, tinh, lat, lng, radius_m, area=None, tol=0.5, land_type="", kind=""):
+def select_near(items, exclude_urls, admin, tinh, lat, lng, radius_m, area=None, tol=0.5, land_type="", kind="", bad=None):
     """Tin KHÁC xã/phường nhưng có tọa độ thật nằm trong bán kính quanh thửa đất: [(Listing, distance_m)] gần nhất trước.
-    Chỉ để tham khảo (Hàng chờ), không tự đưa vào bảng chính."""
+    Dùng cho cả bảng chính (khi tâm là ghim thật) lẫn Hàng chờ (khi tâm chỉ là ước lượng khu vực)."""
     allowed = province_aliases(admin, tinh)
     out = []
     for l in items:
         if l.url in exclude_urls:
             continue
-        c = listing_coords(l)
+        c = listing_coords(l, bad)
         if not c:
             continue
         d = haversine_m(lat, lng, c[0], c[1])
-        if d > radius_m:
+        if d > radius_m or d > MAX_COORD_KM * 1000:
             continue
         if allowed and province_conflict(norm(l.address + " " + l.title), allowed):
             continue

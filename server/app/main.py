@@ -7,7 +7,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import store
-from .search import build_keywords, location_terms, filter_listings, same_street, rank, select_comps, select_near, listing_coords, haversine_m, parse_kinds, relevance, LEVEL_ORDER
+from .search import build_keywords, location_terms, filter_listings, same_street, rank, select_comps, select_near, listing_coords, suspect_coords, MAX_COORD_KM, haversine_m, parse_kinds, relevance, LEVEL_ORDER
 from . import geo, cancel
 from .textnorm import core_name, norm, province_aliases, province_conflict
 from .learn import learn_pairs
@@ -235,7 +235,7 @@ def listing_to_api(l):
         "lat": lat if ok_coord else None, "lng": lng if ok_coord else None,
     }
 
-API_VERSION = 12     # 12: so khớp phường nghiêm ngặt (xa_moi), lọc loại tài sản nhiều loại, bán kính 1.5 km, điểm sát thửa (score), limit mặc định 25, cào ít và tăng dần. 11: /api/roads mở rộng bán kính 60->150 m khi trống. 10: /api/reverse chuẩn hóa tổ/khu phố->hamlet, hạ ưu tiên tên tiếng Anh. 9: /api/reverse có chuỗi dự phòng. 8: thêm /api/roads. 7: thêm job + /api/cancel (dừng khảo sát). 6: thêm diagnostics trong /api/comps. 5: thêm /api/reverse. 4: thêm /api/resolve, /api/admin_names, lat/lng/radius_m + distance_m. 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
+API_VERSION = 13     # 13: tâm khảo sát center=pin|area (area = ước lượng khu vực, không loại tin), tin 'near' có tọa độ thật trong bán kính LÊN BẢNG CHÍNH khi tâm là ghim thật, bỏ tọa độ mặc định/lặp/quá xa, tra tọa độ ước lượng (est) cho tin không có tọa độ (distance_est), radius_m mặc định 2000, tin không có tọa độ -> Hàng chờ (no_coord) khi đã có >= 3 tin đạt chuẩn có khoảng cách thật. 12: so khớp phường nghiêm ngặt (xa_moi), lọc loại tài sản nhiều loại, bán kính 1.5 km, điểm sát thửa (score), limit mặc định 25, cào ít và tăng dần. 11: /api/roads mở rộng bán kính 60->150 m khi trống. 10: /api/reverse chuẩn hóa tổ/khu phố->hamlet, hạ ưu tiên tên tiếng Anh. 9: /api/reverse có chuỗi dự phòng. 8: thêm /api/roads. 7: thêm job + /api/cancel (dừng khảo sát). 6: thêm diagnostics trong /api/comps. 5: thêm /api/reverse. 4: thêm /api/resolve, /api/admin_names, lat/lng/radius_m + distance_m. 3: lọc địa danh nghiêm ngặt (match_level) + bộ lọc chất lượng. Giao diện từ chối máy chủ có API_VERSION thấp hơn.
 
 @app.get("/api/health")
 def api_health():
@@ -245,7 +245,7 @@ def api_health():
 def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", tinh: str = "Gia Lai", area: float = 0, kind: str = "",
               land_type: str = "", months: int = 6, tol: float = 50, discount: float = 10, scope: str = "ward",
               live: int = 0, maxn: int = 100, limit: int = 25, src: str = "",
-              lat: float = 0, lng: float = 0, radius_m: float = 1500, job: str = ""):
+              lat: float = 0, lng: float = 0, radius_m: float = 2000, job: str = "", center: str = "pin", est: int = 8):
     """Tin so sánh THẬT (có link), đã qua các bộ lọc chất lượng:
     - bắt buộc cùng xã/phường và không thuộc tỉnh khác; cùng thôn/xóm, cùng đường xếp trước (scope=district: thêm tin cùng huyện, khác xã);
     - gộp tin trùng (cùng SĐT+diện tích+giá, hoặc nội dung giống nhau), giữ bản từ nguồn tin cậy hơn;
@@ -278,37 +278,56 @@ def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", ti
     if scope != "district":
         deduped = [t for t in deduped if t[1] != "huyen"]
     have_pt = bool(lat and lng and geo.in_vietnam(lat, lng))
+    soft = (center == "area")                    # tâm chỉ là ước lượng khu vực (chưa ghim thửa): dùng để xếp hạng/hiển thị, không loại tin và không đưa tin 'near' lên bảng chính
     radius = min(max(radius_m, 100), 5000)
     kinds = parse_kinds(kind)
+    bad = suspect_coords(allr)                   # tọa độ mặc định/lặp của nguồn: bỏ
     near_pairs = []
-    if have_pt:          # tin khác xã nhưng có tọa độ thật trong bán kính -> chỉ vào Hàng chờ, kèm khoảng cách
+    if have_pt:          # tin khác xã nhưng có tọa độ thật trong bán kính: lên bảng chính khi tâm là ghim thật (nếu đủ ngày, giá, diện tích), ngược lại chỉ Hàng chờ
         taken = {l.url for l, _, _ in deduped}
         near_pairs = [(l, "near", {"dup_count": 0, "also_on": []}) for l, _ in
-                      select_near(rec, taken, admin_eff, tinh, lat, lng, radius, area or None, tol / 100, land_type, kind)]
+                      select_near(rec, taken, admin_eff, tinh, lat, lng, radius, area or None, tol / 100, land_type, kind, bad)]
         deduped = deduped + near_pairs
-    # khoảng cách thật (chỉ nguồn có tọa độ, và chỉ khi đã ghim vị trí thửa)
-    dist = {}
+    # khoảng cách thật (chỉ nguồn có tọa độ) quanh tâm
+    dist, dist_est = {}, {}
     if have_pt:
         for l, _, _ in deduped:
-            c = listing_coords(l)
+            c = listing_coords(l, bad)
             if c:
-                dist[l.url] = haversine_m(lat, lng, c[0], c[1])
+                d0 = haversine_m(lat, lng, c[0], c[1])
+                if d0 <= MAX_COORD_KM * 1000:    # quá xa (vd tọa độ mặc định ở TP.HCM) là tọa độ sai: bỏ
+                    dist[l.url] = d0
+        if est and live:     # tin không có tọa độ: ước lượng từ đường + xã (chỉ cho vài tin điểm cao nhất, có nhớ kết quả)
+            from .estimate import estimate_points
+            cands = [l for l, lv, _ in sorted(deduped, key=lambda t: (-relevance(t[0], t[1], None, radius, area or None, duong, kinds, recency_tier(t[0]))[0], LEVEL_ORDER[t[1]]))
+                     if l.url not in dist]
+            try:
+                pts = estimate_points(cands, (lat, lng), max_new=max(0, min(est, 12)))
+            except cancel.Cancelled:
+                pts = {}
+            for u, pt in pts.items():
+                dist_est[u] = haversine_m(lat, lng, pt[0], pt[1])
     def far(l, lv):
-        return lv in ("thon", "xa") and dist.get(l.url) is not None and dist[l.url] > radius      # cùng phường nhưng ngoài bán kính quanh thửa
+        return (not soft) and lv in ("thon", "xa") and dist.get(l.url) is not None and dist[l.url] > radius      # cùng phường nhưng ngoài bán kính quanh thửa (chỉ khi đã ghim thật)
     # ngoại lai về đơn giá: tính trên tin cùng xã/phường đúng tên, trong bán kính, có ngày rõ
-    base = [l.price_per_m2 for l, lv, _ in deduped if lv in ("thon", "xa") and not far(l, lv) and recency_tier(l) <= 2 and l.price_per_m2]
+    base = [l.price_per_m2 for l, lv, _ in deduped if (lv in ("thon", "xa") or (lv == "near" and not soft)) and not far(l, lv) and recency_tier(l) <= 2 and l.price_per_m2]
     bounds = price_bounds(base)
     rows = []
     for l, lv, info in deduped:
         tier = recency_tier(l); ppm = l.price_per_m2
         outlier = bool(bounds and ppm and (ppm < bounds[0] or ppm > bounds[1]))
-        reason = ("near_ward" if lv == "near" else "new_ward" if lv == "xa_moi" else "district" if lv == "huyen" else "far" if far(l, lv) else
+        reason = ("near_ward" if (lv == "near" and soft) else "new_ward" if lv == "xa_moi" else "district" if lv == "huyen" else "far" if far(l, lv) else
                   "no_date" if tier == 3 else "outlier" if outlier else "incomplete" if not (l.price_vnd and l.area_m2) else "")
-        score, parts = relevance(l, lv, dist.get(l.url), radius, area or None, duong, kinds, tier)
+        score, parts = relevance(l, lv, dist.get(l.url, dist_est.get(l.url)), radius, area or None, duong, kinds, tier)
         rows.append((l, lv, info, tier, outlier, reason, source_weight(l.source, weights), score, parts))
     def key(r):
         l, lv, info, tier, outlier, reason, w, score, parts = r
         return (0 if reason == "" else 1, -score, LEVEL_ORDER[lv], tier, -w)
+    # Có ghim thật và đã có >= 3 tin đạt chuẩn với khoảng cách thật trong bán kính: tin cùng xã nhưng KHÔNG có tọa độ không kiểm chứng được độ gần -> Hàng chờ (xã mới sáp nhập rất rộng)
+    if have_pt and not soft:
+        verified = sum(1 for r in rows if r[5] == "" and r[0].url in dist and dist[r[0].url] <= radius)
+        if verified >= 3:
+            rows = [(r[0], r[1], r[2], r[3], r[4], ("no_coord" if (r[5] == "" and r[0].url not in dist) else r[5]), r[6], r[7], r[8]) for r in rows]
     rows.sort(key=key)
     ok_rows = [r for r in rows if r[5] == ""]
     res = summarize([r[0] for r in ok_rows], discount=discount / 100)
@@ -321,10 +340,12 @@ def api_comps(duong: str = "", xa: str = "", thon: str = "", huyen: str = "", ti
                  eligible_main=(reason == ""), pool_reason=reason, distance_m=None, score=score, score_parts=parts)
         if l.url in dist:
             d["distance_m"] = round(dist[l.url])
+        elif l.url in dist_est:
+            d["distance_m"] = round(dist_est[l.url]); d["distance_est"] = True
         out.append(d)
     return {
         "api_version": API_VERSION,
-        "items": out, "total_matched": len(rows), "match_counts": counts, "extra_district_available": extra_district,
+        "items": out, "center": ("area" if soft else "pin") if have_pt else "", "radius_m": radius, "total_matched": len(rows), "match_counts": counts, "extra_district_available": extra_district,
         "same_street": sum(1 for r in rows if duong and same_street(r[0], duong)),
         "quality": {"learned_admin_pairs": len(learned), "merged_duplicates": merged, "outliers": sum(1 for r in rows if r[5] == "outlier"),
                     "no_date": sum(1 for r in rows if r[5] == "no_date"), "eligible": len(ok_rows),

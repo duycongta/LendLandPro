@@ -610,6 +610,10 @@
       </div>
 
       <div id="areaNote" class="hidden"></div>
+      <div id="pinReminder" class="hidden px-3 py-1.5 text-[11px] bg-amber-50 border-t border-amber-200 text-amber-900 flex flex-wrap items-center gap-2">
+        <span><b>Chưa ghim vị trí thửa:</b> tin chỉ được chọn theo tên xã/phường (xã mới sáp nhập rất rộng nên có thể ở xa thửa). Ghim đúng thửa để chọn và xếp tin theo khoảng cách thật.</span>
+        <button type="button" onclick="toggleMapPick(true)" class="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-700 text-white font-bold">Đặt ghim ngay</button>
+      </div>
       <div class="relative">
         <div id="gisMap" class="w-full h-64 sm:h-80 bg-slate-100 z-10"></div>
         <div id="mapNotice" class="absolute top-2 left-2 right-2 z-20 text-[11px] bg-amber-50/95 border border-amber-300 text-amber-900 rounded-lg px-2.5 py-1.5"></div>
@@ -771,6 +775,7 @@
                 <th class="py-3 px-2 text-center w-12">STT</th>
                 <th class="py-3 px-3" style="min-width: 250px; max-width: 320px;">Đặc điểm TS</th>
                 <th class="py-3 px-2 text-center w-24">Ngày Đăng</th>
+                <th class="py-3 px-2 text-center w-24">Khoảng cách</th>
                 <th class="py-3 px-2 text-center w-20">DT (m²)</th>
                 <th class="py-3 px-2 text-center w-24">Kích Thước</th>
                 <th class="py-3 px-3 text-right w-24">Giá Rao Bán</th>
@@ -782,7 +787,7 @@
             </thead>
             <tbody id="comparisonTableBody" class="divide-y divide-slate-200">
               <tr>
-                <td colspan="10" class="text-center py-8 text-slate-400">
+                <td colspan="11" class="text-center py-8 text-slate-400">
                   <i class="ph-bold ph-magnifying-glass text-2xl mb-1 block"></i>
                   Chưa có tài sản so sánh. Nhập xã/phường hoặc nạp ảnh GCN để bắt đầu.
                 </td>
@@ -818,6 +823,7 @@
                   <th class="py-2.5 px-2 text-center w-12">#</th>
                   <th class="py-2.5 px-3">Đặc điểm TS</th>
                   <th class="py-2.5 px-2 text-center w-24">Ngày Đăng</th>
+                  <th class="py-2.5 px-2 text-center w-24">Khoảng cách</th>
                   <th class="py-2.5 px-2 text-center w-20">DT (m²)</th>
                   <th class="py-2.5 px-3 text-right w-24">Giá Rao Bán</th>
                   <th class="py-2.5 px-3 text-right w-28">Đơn giá rao</th>
@@ -826,7 +832,7 @@
                 </tr>
               </thead>
               <tbody id="poolTableBody" class="divide-y divide-slate-200">
-                <tr><td colspan="8" class="text-center py-4 text-slate-400 italic">Hàng chờ hiện đang trống.</td></tr>
+                <tr><td colspan="9" class="text-center py-4 text-slate-400 italic">Hàng chờ hiện đang trống.</td></tr>
               </tbody>
             </table>
           </div>
@@ -913,6 +919,9 @@
           <label class="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" id="chkAiEnrich" checked> Dùng AI (Gemini) trích thông tin từ tin rao (mặt tiền, đường vào, loại đất, pháp lý, thôn/đường) và chấm tương đồng</label>
           <label class="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" id="chkAlwaysAi"> Luôn chạy thêm AI gợi ý (tin chưa kiểm chứng) sau khi lấy tin thật</label>
           <label class="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" id="chkExpandDistrict"> Hiển thị thêm tin cùng huyện (khác xã) trong Hàng chờ để tham khảo; không bao giờ tự đưa lên bảng chính hay tính giá</label>
+          <label class="flex flex-wrap items-center gap-2 text-[11px] text-slate-700">Bán kính chọn tin gần thửa (mét, 500 - 5000):
+            <input type="number" id="radiusInput" min="500" max="5000" step="100" value="2000" class="w-24 px-2 py-1 border border-slate-300 rounded text-[11px]">
+            <span class="text-slate-500">Tin có tọa độ thật trong bán kính quanh ghim thửa được ưu tiên lên bảng chính; xã mới sáp nhập rất rộng nên nên giữ 1000-3000 m.</span></label>
           <div id="backendTestResult" class="text-[11px] text-slate-600"></div>
         </div>
         <div class="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
@@ -1144,8 +1153,9 @@
       const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
       sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
     })();
-    const APP_VERSION = "6.64";
+    const APP_VERSION = "6.65";
     const APP_CHANGELOG = {
+      "6.65": "Chọn và xếp tin theo khoảng cách (API v13): tâm là ghim thửa (hoặc tâm khu vực theo ô địa danh khi chưa ghim), bán kính chỉnh trong Thiết lập App (mặc định 2000 m); tin khác xã nhưng có tọa độ thật trong bán kính lên bảng chính; cột Khoảng cách ở bảng chính và hàng chờ; bỏ tọa độ mặc định/lặp/quá xa; tra tọa độ ước lượng cho vài tin không có tọa độ; nhắc ghim thửa.",
       "6.64": "Nút Đặt ghim đổi thành Bỏ ghim khi đã có ghim: bấm Bỏ ghim xóa ghim + tọa độ, giữ nguyên các ô địa chỉ và gợi ý đường, bản đồ về khu vực theo ô địa danh.",
       "6.63": "Bản đồ Vệ Tinh và Đường cùng tự đổi nguồn theo thứ tự ưu tiên khi không tải được: Vệ Tinh = Google -> Esri -> EOX Sentinel-2; Đường = Google (mới thêm) -> OpenStreetMap -> OSM Pháp -> Esri; nguồn dự phòng được nhớ 24 giờ, nút lớp hiện nguồn đang dùng.",
       "6.62": "Bản đồ Đường: bỏ nguồn CARTO (nay đòi khóa API, hiện chữ API KEY REQUIRED); chuỗi nguồn dự phòng là OpenStreetMap -> OpenStreetMap Pháp -> Esri.",
@@ -1375,7 +1385,7 @@
       if (poolCount) poolCount.innerText = backupCompsPool.length;
 
       if (!backupCompsPool || backupCompsPool.length === 0) {
-        if (poolBody) poolBody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-slate-400 italic">Hàng chờ hiện đang trống.</td></tr>`;
+        if (poolBody) poolBody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-slate-400 italic">Hàng chờ hiện đang trống.</td></tr>`;
         if (poolStats) poolStats.innerText = '';
         return;
       }
@@ -1402,6 +1412,7 @@
               <div class="mt-1 flex flex-wrap items-center gap-1">${originBadgeHtml(c)} ${matchBadgeHtml(c)} ${qualityBadgesHtml(c)} ${compLinkHtml(c)}</div>
             </td>
             <td class="py-2 px-2 text-center text-slate-600 whitespace-nowrap">${escHtml(c.postedDate || '--')}</td>
+            <td class="py-2 px-2 text-center text-slate-700 whitespace-nowrap">${distCellHtml(c)}</td>
             <td class="py-2 px-2 text-center font-semibold">${fmtMaybe(c.area)}</td>
             <td class="py-2 px-3 text-right font-bold text-slate-800 whitespace-nowrap">${c.rawPrice > 0 ? Number(c.rawPrice).toFixed(2) + ' Tỷ' : '--'}</td>
             <td class="py-2 px-3 text-right font-semibold text-indigo-700 whitespace-nowrap">${ok ? rawUnit + ' tr/m²' : 'thiếu số liệu'}</td>
@@ -1442,7 +1453,7 @@
       const valid = backupCompsPool.filter(compIsValid), rest = backupCompsPool.length - valid.length;
       if (!valid.length) { showToast('Hàng chờ không có tin nào đủ giá và diện tích để chuyển.'); return; }
       const ai = valid.filter(c => c.origin === 'ai').length;
-      const flagged = valid.filter(c => c.matchLevel === 'huyen' || c.matchLevel === 'near' || c.matchLevel === 'xa_moi' || c.outlier || c.poolReason === 'no_date' || c.poolReason === 'far').length;
+      const flagged = valid.filter(c => c.matchLevel === 'huyen' || c.matchLevel === 'near' || c.matchLevel === 'xa_moi' || c.poolReason === 'no_coord' || c.outlier || c.poolReason === 'no_date' || c.poolReason === 'far').length;
       const msg = `Chuyển ${valid.length} tin đủ giá và diện tích lên Danh mục TSSS chính thức?` +
         (ai ? `\n\n- ${ai} tin do AI tạo CHƯA được kiểm chứng: bạn xác nhận là đã tra cứu/chấp nhận (trọng số thấp).` : '') +
         (flagged ? `\n- ${flagged} tin đang bị gắn cờ (khác xã, lân cận, ngoại lai giá hoặc không rõ ngày) cũng sẽ được tính vào đơn giá.` : '') +
@@ -1728,6 +1739,7 @@
         const elGk = document.getElementById('gmapsKeyInput'); if (elGk) elGk.value = localStorage.getItem('llp_gmaps_key') || '';
         const elAe = document.getElementById('chkAiEnrich'); if (elAe) elAe.checked = localStorage.getItem('llp_ai_extract') !== 'false';
         const elEx = document.getElementById('chkExpandDistrict'); if (elEx) elEx.checked = localStorage.getItem('llp_expand_district') !== 'false';
+        const elRd = document.getElementById('radiusInput'); if (elRd) elRd.value = String(getRadiusM());
 
         const radioP = document.getElementById('radioModePayg');
         const radioF = document.getElementById('radioModeFree');
@@ -1763,6 +1775,7 @@
         localStorage.setItem('llp_backend_url', valStr('backendUrlInput'));
         localStorage.setItem('llp_always_ai', document.getElementById('chkAlwaysAi').checked ? 'true' : 'false');
         localStorage.setItem('llp_expand_district', document.getElementById('chkExpandDistrict').checked ? 'true' : 'false');
+        { const rv = parseInt(valStr('radiusInput'), 10); if (rv >= 500 && rv <= 5000) localStorage.setItem('llp_radius_m', String(rv)); }
         localStorage.setItem('llp_ai_extract', document.getElementById('chkAiEnrich').checked ? 'true' : 'false');
         localStorage.setItem('llp_gmaps_key', valStr('gmapsKeyInput'));
       } catch (e) {}
@@ -2656,6 +2669,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
 
       renderMapElements();
       recalculateTargetValues();
+      updatePinReminder(true);
       scheduleAreaLocate(300);                  // v6.59: đọc xong GCN -> tra Thôn/Xã/Huyện/Tỉnh và zoom bản đồ tới khu vực
       if (opts && opts.confirmSurvey) { showSurveyConfirm(); return; }     // v6.20: chờ người dùng kiểm tra thông tin đọc từ ảnh rồi mới tìm tin
       generateSmartCompsForArea(data);
@@ -3055,6 +3069,12 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       return '<span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300">Nhập tay</span>';
     }
     const MATCH_LABEL = { xa_moi: 'Cùng phường MỚI · khác phường cũ', near: 'Xã/phường lân cận · gần thửa', thon: 'Cùng thôn/xóm', xa: 'Cùng xã/phường', huyen: 'Cùng huyện · KHÁC xã', nhac: 'Tin có nhắc xã/phường', khong: 'Chưa thấy nhắc xã/phường' };
+    function distCellHtml(c) {
+      if (typeof c.distanceMeters !== 'number') return '<span class="text-slate-400">--</span>';
+      const m = c.distanceMeters, t = m >= 1000 ? (m / 1000).toFixed(2).replace('.', ',') + ' km' : m + ' m';
+      const soft = lastSurveyCenter && lastSurveyCenter.kind === 'area';
+      return `<b>${c.distanceEst ? '≈ ' : ''}${t}</b>${(c.distanceEst || soft) ? `<div style="font-size:9px;color:#92400e" title="${c.distanceEst ? 'Tọa độ ước lượng từ địa chỉ trong tin' : 'Tâm là khu vực theo ô địa danh, chưa phải ghim thửa'}">${c.distanceEst ? 'ước lượng' : 'tâm khu vực'}</div>` : ''}`;
+    }
     function matchBadgeHtml(c) {
       if (!c.matchLevel || !MATCH_LABEL[c.matchLevel]) return '';
       const cls = c.matchLevel === 'thon' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : (c.matchLevel === 'xa' || c.matchLevel === 'nhac') ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-amber-50 text-amber-800 border-amber-300';
@@ -3068,7 +3088,8 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       if (c.poolReason === 'no_date' || c.dateTier === 3) out.push(tag('Không rõ ngày đăng', 'bg-amber-50 text-amber-800 border-amber-300'));
       if (c.aiFields && c.aiFields.length) out.push(tag('AI trích: ' + escHtml(c.aiFields.join(', ')), 'bg-indigo-50 text-indigo-700 border-indigo-300'));
       if (c.poolReason === 'not_sale') out.push(tag('Không phải tin bán', 'bg-rose-50 text-rose-700 border-rose-300'));
-      if (c.poolReason === 'far') out.push(tag('Ngoài bán kính 1,5 km quanh thửa', 'bg-amber-50 text-amber-800 border-amber-300'));
+      if (c.poolReason === 'far') out.push(tag('Ngoài bán kính quanh thửa', 'bg-amber-50 text-amber-800 border-amber-300'));
+      if (c.poolReason === 'no_coord') out.push(tag('Không có tọa độ: chưa kiểm chứng được độ gần thửa', 'bg-amber-50 text-amber-800 border-amber-300'));
       if (c.origin === 'backend' && c.relevance > 0) { const parts = Object.entries(c.scoreParts || {}).filter(([, v]) => v > 0).map(([k, v]) => `+${v} ${k}`).join('; '); out.push(`<span title="${escHtml(parts)}" class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold border bg-violet-50 text-violet-800 border-violet-300 cursor-help">Sát thửa ${c.relevance}</span>`); }
       if (c.corner) out.push(tag('Lô góc' + (isCornerPos() ? '' : ' · khác vị trí thửa'), isCornerPos() ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-amber-50 text-amber-800 border-amber-300'));
       else if (isCornerPos() && c.origin !== 'ai') out.push(tag('Không phải lô góc', 'bg-slate-50 text-slate-600 border-slate-300'));
@@ -3135,7 +3156,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
         area: Number(it.area_m2) > 0 ? Number(it.area_m2) : null,
         frontage: Number(it.frontage_m) > 0 ? Number(it.frontage_m) : null, depth: null,
         rawPrice: price, link: it.url || '', sourceType: it.source || 'khac', sourceName: it.source_label || it.source || 'Tin rao',
-        distanceMeters: (typeof it.distance_m === 'number') ? it.distance_m : null, description: it.description || '',
+        distanceMeters: (typeof it.distance_m === 'number') ? it.distance_m : null, distanceEst: !!it.distance_est, description: it.description || '',
         lat: typeof it.lat === 'number' ? it.lat : null, lng: typeof it.lng === 'number' ? it.lng : null,
         corner: isCornerText((it.title || '') + ' ' + (it.description || '')),
         relevance: Number(it.score) || 0, scoreParts: it.score_parts || {}
@@ -3228,6 +3249,15 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       finally { if (surveyRun === run) { surveyRun = null; setSurveyButtons(false); } }
     }
     // v6.50: loại tài sản cần so sánh. Thửa có nhà -> nhận đất/nhà (loại căn hộ/chung cư/khách sạn/nhà xưởng); thửa là căn hộ -> chỉ căn hộ; còn lại chỉ đất
+    // v6.65: bán kính chọn tin gần thửa (Thiết lập App, mặc định 2000 m) và tâm khảo sát
+    let lastSurveyCenter = null;
+    function getRadiusM() { const v = parseInt(localStorage.getItem('llp_radius_m') || '', 10); return (v >= 500 && v <= 5000) ? v : 2000; }
+    function surveyCenter() {
+      if (targetCoordsKnown) return { lat: targetCoords.lat, lng: targetCoords.lng, kind: 'pin' };
+      const v = lastAreaView;
+      if (v && v.sig === areaSig() && v.level !== 'district' && isFinite(v.lat) && isFinite(v.lng)) return { lat: v.lat, lng: v.lng, kind: 'area' };
+      return null;
+    }
     function surveyKind() {
       const bt = normVi(valStr('targetBuildingType'));
       if (/(^| )(can ho|chung cu)( |$)/.test(bt)) return 'can_ho';
@@ -3243,8 +3273,14 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       });
       const dp = splitDistrictProvince(valStr('targetDistrictProvince'));
       params.set('huyen', dp.huyen); params.set('tinh', dp.tinh); params.set('job', run.id);
-      if (targetCoordsKnown) { params.set('lat', String(targetCoords.lat)); params.set('lng', String(targetCoords.lng)); params.set('radius_m', '1500'); }
-      setFloatingStatus('survey', 'A.I đang tra tin rao bán TSSS ...');
+      if (!targetCoordsKnown && !(lastAreaView && lastAreaView.sig === areaSig()) && (valStr('targetWard') || valStr('targetDistrictProvince'))) {
+        setFloatingStatus('survey', 'Đang tra vị trí khu vực trên bản đồ ...', { stop: true });
+        try { await locateAddressArea({ auto: true, silent: true, timeoutMs: 8000 }); } catch (e) {}
+        if (run.cancelled) return { ok: false, usable: 0, cancelled: true };
+      }
+      setFloatingStatus('survey', 'A.I đang tra tin rao bán TSSS ...', { stop: true });
+      const cen = surveyCenter(); lastSurveyCenter = cen;
+      if (cen) { params.set('lat', String(cen.lat)); params.set('lng', String(cen.lng)); params.set('radius_m', String(getRadiusM())); params.set('center', cen.kind); }
       let data;
       try {
         const ctrl = new AbortController(); run.ctrl = ctrl; const t = setTimeout(() => ctrl.abort(), 8 * 60 * 1000);
@@ -3265,9 +3301,10 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       }
       const mapped = (data.items || []).map(mapBackendItem);
       // Bảng chính CHỈ nhận tin cùng xã/phường (thôn trước); tin cùng huyện khác xã (nếu bật mở rộng) chỉ vào Hàng chờ
-      const nearOnly = mapped.filter(c => c.matchLevel === 'near');       // khác xã nhưng có tọa độ thật trong bán kính: chỉ Hàng chờ
+      const nearMain = mapped.filter(c => c.matchLevel === 'near' && c.eligibleMain && compIsValid(c));   // v6.65: khác xã nhưng có tọa độ thật trong bán kính quanh ghim thửa, đủ ngày/giá/diện tích: lên bảng chính
+      const nearOnly = mapped.filter(c => c.matchLevel === 'near' && !(c.eligibleMain && compIsValid(c)));   // còn lại (tâm chỉ là ước lượng khu vực, thiếu số liệu...): Hàng chờ
       const newWardOnly = mapped.filter(c => c.matchLevel === 'xa_moi');   // chỉ cùng phường MỚI (khác phường cũ đã nhập): chỉ Hàng chờ
-      const inWard = mapped.filter(c => c.matchLevel !== 'huyen' && c.matchLevel !== 'near' && c.matchLevel !== 'xa_moi');
+      const inWard = mapped.filter(c => c.matchLevel !== 'huyen' && c.matchLevel !== 'near' && c.matchLevel !== 'xa_moi').concat(nearMain);
       const districtOnly = mapped.filter(c => c.matchLevel === 'huyen');
       // Bảng chính CHỈ nhận tin đạt chuẩn: cùng xã/phường, có ngày đăng rõ, không ngoại lai giá, đủ giá + diện tích
       const usableList = inWard.filter(c => c.eligibleMain && compIsValid(c));
@@ -3300,10 +3337,12 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
       showBackendLog([
         ...(data.quality ? [`Bộ lọc chất lượng: gộp ${data.quality.merged_duplicates} tin trùng; ${data.quality.outliers} tin ngoại lai đơn giá và ${data.quality.no_date} tin không rõ ngày đăng được đưa vào Hàng chờ (không tính giá); ${data.quality.eligible} tin đạt chuẩn.`] : []),
         `Máy chủ khảo giá: cùng thôn/xóm ${mc.thon || 0} tin, cùng xã/phường ${mc.xa || 0} tin${districtOnly.length ? ', cùng huyện khác xã ' + districtOnly.length + ' tin (Hàng chờ)' : ''}${nearOnly.length ? ', lân cận trong 1,5 km (có tọa độ) ' + nearOnly.length + ' tin (Hàng chờ, kèm khoảng cách)' : ''}${newWardOnly.length ? ', cùng phường MỚI khác phường cũ ' + newWardOnly.length + ' tin (Hàng chờ)' : ''}${mapped.filter(c => c.poolReason === 'far').length ? ', cùng phường nhưng ngoài 1,5 km ' + mapped.filter(c => c.poolReason === 'far').length + ' tin (Hàng chờ)' : ''}; đưa ${top.length} tin lên bảng chính.`,
-        ...(targetCoordsKnown && !(Number(data.api_version) >= 4) ? ['Máy chủ chưa hỗ trợ tìm theo bán kính (cần API v4): hãy kéo bản mới về và chạy lại.'] : []),
+        ...(lastSurveyCenter && !(Number(data.api_version) >= 13) ? ['Máy chủ chưa hỗ trợ chọn tin theo khoảng cách mới (cần API v13): hãy cập nhật (cap-nhat.bat) và chạy lại máy chủ.'] : []),
+        ...(lastSurveyCenter ? [`Tâm khảo sát: ${lastSurveyCenter.kind === 'pin' ? 'ghim thửa' : 'tâm khu vực theo ô địa danh (chưa ghim thửa)'}; bán kính ${getRadiusM()} m${nearMain.length ? `; ${nearMain.length} tin khác xã nhưng gần thửa đã lên bảng chính` : ''}.`] : ['Chưa có tâm khảo sát (chưa ghim thửa và chưa tra được địa danh): tin chỉ được chọn theo tên xã/phường.']),
         ...aiLine, ...hints, ...(data.fetchlog || []).slice(0, 12), ...(data.errors || []).slice(0, 6).map(e => 'Lỗi nguồn: ' + e)
       ]);
       showAdminNames();
+      updatePinReminder(true);
       try { renderLocalOverview(top, rest); } catch (e) {}
       renderMapElements(); recalculateTargetValues(); renderPoolListUI();
       setTimeout(() => { fitAllMarkersSafe(); }, 400);
@@ -3949,7 +3988,7 @@ ${items}`;
       if (!wc && !dc) { if (opts.manual) showToast('Hãy nhập Xã/Phường và Huyện/TP & Tỉnh trước khi định vị.'); return null; }
       areaNote('Đang tra vị trí địa danh trên bản đồ...', 'bg-slate-50 text-slate-700');
       if (!opts.silent) locStatus('survey', 'Đang tra địa danh lên bản đồ ...');
-      const ctrl = new AbortController(); const tmo = setTimeout(() => ctrl.abort(), 40000);
+      const ctrl = new AbortController(); const tmo = setTimeout(() => ctrl.abort(), opts.timeoutMs || 40000);
       const state = { errs: [], cancelled };
       const provinceAlt = /binh dinh/.test(province) ? ['Gia Lai'] : [];
       let view = null;
@@ -4251,8 +4290,13 @@ ${items}`;
       if (mapPickMode) showToast('Chạm lên bản đồ ở đúng vị trí thửa đất để đặt ghim.');
     }
     // v6.64: nút ghim đổi nhãn: chưa có ghim -> "Đặt ghim"; đã có ghim -> "Bỏ ghim" (màu đỏ nhạt)
+    function updatePinReminder(show) {
+      const el = document.getElementById('pinReminder'); if (!el) return;
+      el.classList.toggle('hidden', !(show && !targetCoordsKnown));
+    }
     function updatePinButton() {
       const b = document.getElementById('btnMapPick'); if (!b) return;
+      if (targetCoordsKnown) updatePinReminder(false);
       if (mapPickMode) {
         b.className = 'text-[11px] border px-2 py-1 rounded font-medium flex items-center gap-1 bg-rose-600 text-white border-rose-700';
         b.innerHTML = '<i class="ph-bold ph-map-pin"></i> Chạm bản đồ…';
@@ -4461,7 +4505,7 @@ ${items}`;
 
       if (currentComps.filter(compIsValid).length === 0) {
         document.getElementById('compsCountBadge').innerText = currentComps.length ? `Có ${currentComps.length} tin nhưng thiếu giá/diện tích nên chưa tính được` : "Chưa có tài sản so sánh";
-        tbody.innerHTML = (currentComps.length ? `<tr><td colspan="10" class="text-center py-8 text-amber-700">Bảng có ${currentComps.length} tin nhưng thiếu giá hoặc diện tích nên chưa tính được. Hãy nhập lại đủ giá và diện tích.</td></tr>` : `<tr><td colspan="10" class="text-center py-8 text-slate-400"><i class="ph-bold ph-magnifying-glass text-2xl mb-1 block"></i>Chưa có tài sản so sánh. Nhập xã/phường hoặc nạp ảnh GCN để bắt đầu.</td></tr>`);
+        tbody.innerHTML = (currentComps.length ? `<tr><td colspan="11" class="text-center py-8 text-amber-700">Bảng có ${currentComps.length} tin nhưng thiếu giá hoặc diện tích nên chưa tính được. Hãy nhập lại đủ giá và diện tích.</td></tr>` : `<tr><td colspan="10" class="text-center py-8 text-slate-400"><i class="ph-bold ph-magnifying-glass text-2xl mb-1 block"></i>Chưa có tài sản so sánh. Nhập xã/phường hoặc nạp ảnh GCN để bắt đầu.</td></tr>`);
         document.getElementById('statAvgSurveyPrice').innerHTML = `-- <span class="text-xs font-normal text-slate-500">tr/m²</span>`;
         document.getElementById('statProposedPrice').innerHTML = `-- <span class="text-xs font-normal text-emerald-700">tr/m²</span>`;
         document.getElementById('statTotalAssetValue').innerHTML = `-- <span class="text-xs font-normal text-slate-500">Tỷ</span>`;
@@ -4502,6 +4546,7 @@ ${items}`;
             <div class="mt-1 flex flex-wrap gap-1">${originBadgeHtml(comp)} ${matchBadgeHtml(comp)} ${qualityBadgesHtml(comp)}</div>
           </td>
           <td class="py-3 px-2 text-center text-slate-600 font-medium whitespace-nowrap">${escHtml(comp.postedDate || '--')}</td>
+          <td class="py-3 px-2 text-center text-slate-700 whitespace-nowrap">${distCellHtml(comp)}</td>
           <td class="py-3 px-2 text-center font-semibold">${fmtMaybe(comp.area)}</td>
           <td class="py-3 px-2 text-center text-slate-600">${fmtMaybe(comp.frontage, 'm')} × ${fmtMaybe(comp.depth, 'm')}</td>
           <td class="py-3 px-3 text-right font-bold text-slate-800 whitespace-nowrap">

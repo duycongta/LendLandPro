@@ -333,9 +333,9 @@ def test_api_version_and_user_scenario(monkeypatch, tmp_path):
     ]
     store.save([Listing("chotot", f"https://x/{n}", t, address=a, price_vnd=pr, area_m2=ar, kind="dat", posted_at=_ago(10)) for n, a, t, pr, ar in rows])
     c = TestClient(m.app)
-    assert c.get("/api/health").json()["api_version"] == 12 and "folder" in c.get("/api/health").json()
+    assert c.get("/api/health").json()["api_version"] == 13 and "folder" in c.get("/api/health").json()
     r = c.get("/api/comps", params={"xa": "Xã Phước Sơn", "huyen": "Huyện Tuy Phước", "tinh": "Tỉnh Bình Định", "thon": "Thôn Xuân Phương", "area": 751.4, "kind": "dat", "tol": 50}).json()
-    assert r["api_version"] == 12
+    assert r["api_version"] == 13
     assert [i["url"].split("/")[-1] for i in r["items"]] == ["6"] and r["items"][0]["match_level"] == "thon"
 
 
@@ -469,11 +469,58 @@ def test_near_ward_distance_pool(monkeypatch, tmp_path):
     r = c.get("/api/comps", params=p).json()
     by = {i["url"].split("/")[-1]: i for i in r["items"]}
     assert set(by) == {"1", "2"}
-    assert by["2"]["match_level"] == "near" and by["2"]["eligible_main"] is False and by["2"]["pool_reason"] == "near_ward" and 300 < by["2"]["distance_m"] < 600
+    # v13: tâm là ghim thật -> tin near trong bán kính có đủ ngày/giá/diện tích LÊN BẢNG CHÍNH, kèm khoảng cách
+    assert by["2"]["match_level"] == "near" and by["2"]["eligible_main"] is True and by["2"]["pool_reason"] == "" and 300 < by["2"]["distance_m"] < 600
     assert by["1"]["match_level"] == "xa" and by["1"]["distance_m"] < 50 and r["match_counts"]["near"] == 1
-    assert r["stats"]["n_used"] == 1                                       # tin near không tính giá
+    assert r["stats"]["n_used"] == 2 and r["center"] == "pin"
+    # tâm chỉ là ước lượng khu vực (center=area): tin near chỉ vào Hàng chờ, không tính giá
+    r3 = c.get("/api/comps", params={**p, "center": "area"}).json()
+    by3 = {i["url"].split("/")[-1]: i for i in r3["items"]}
+    assert by3["2"]["eligible_main"] is False and by3["2"]["pool_reason"] == "near_ward" and r3["stats"]["n_used"] == 1 and r3["center"] == "area"
     r2 = c.get("/api/comps", params={k: v for k, v in p.items() if k not in ("lat", "lng")}).json()
     assert {i["url"].split("/")[-1] for i in r2["items"]} == {"1"} and r2["items"][0]["distance_m"] is None
+
+def test_suspect_coords_default_points_dropped():
+    from app.search import suspect_coords, listing_coords
+    def mk(n, street, lat, lng):
+        return Listing("chotot", f"https://x/{n}", "t", address=street + ", Xã A", raw={"latitude": lat, "longitude": lng, "street_name": street})
+    items = [mk(1, "Đường 1", 13.7646, 109.1992), mk(2, "Đường 2", 13.7646, 109.1992), mk(3, "Đường 3", 13.7646, 109.1992),     # 3 đường khác nhau, cùng điểm -> mặc định
+             mk(4, "Đường Dự Án", 13.9, 109.1), mk(5, "Đường Dự Án", 13.9, 109.1), mk(6, "Đường Dự Án", 13.9, 109.1),            # cùng một đường (dự án) -> thật
+             mk(7, "Đường 7", 13.95, 109.2)]
+    bad = suspect_coords(items)
+    assert (13.765, 109.199) in bad and (13.9, 109.1) not in bad and (13.95, 109.2) not in bad
+    assert listing_coords(items[0], bad) is None and listing_coords(items[3], bad) == (13.9, 109.1) and listing_coords(items[0]) is not None
+
+def test_far_coordinate_ignored_and_soft_center_keeps_far_ward_items(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+    import app.main as m, app.store as store
+    monkeypatch.setattr(store, "DB", tmp_path / "f.sqlite")
+    def mkl(n, lat, lng):
+        return Listing("chotot", f"https://x/{n}", f"Bán đất lô {n} khu {n}", address="Xã Phước Sơn, Huyện Tuy Phước, Bình Định", price_vnd=1e9, area_m2=100, kind="dat", posted_at=_ago(10),
+                       raw={"latitude": lat, "longitude": lng, "street_name": f"Đường {n}"})
+    store.save([mkl(1, 13.7951, 109.1904), mkl(2, 10.84, 106.64), mkl(3, 13.9300, 109.1904)])       # 2: tọa độ mặc định ở TP.HCM; 3: ~15 km
+    c = TestClient(m.app)
+    p = {"xa": "Xã Phước Sơn", "huyen": "Huyện Tuy Phước", "tinh": "Bình Định", "area": 100, "kind": "dat", "lat": 13.795063, "lng": 109.190325, "radius_m": 1000}
+    by = {i["url"].split("/")[-1]: i for i in c.get("/api/comps", params=p).json()["items"]}
+    assert by["2"]["distance_m"] is None and by["2"]["eligible_main"] is True          # tọa độ sai bị bỏ, không bị gắn 'far'
+    assert by["3"]["pool_reason"] == "far"                                              # ghim thật: cùng xã nhưng ngoài bán kính
+    by2 = {i["url"].split("/")[-1]: i for i in c.get("/api/comps", params={**p, "center": "area"}).json()["items"]}
+    assert by2["3"]["pool_reason"] == "" and by2["3"]["distance_m"] > 10000            # tâm ước lượng: chỉ hiển thị khoảng cách, không loại
+
+def test_estimate_points_cache_and_sanity(monkeypatch, tmp_path):
+    import app.store as store
+    from app.estimate import estimate_points, query_for
+    monkeypatch.setattr(store, "DB", tmp_path / "g.sqlite")
+    def mk(n, addr): return Listing("alonhadat", f"https://x/{n}", "t", address=addr)
+    ls = [mk(1, "Đường Nguyễn Nhạc, Xã Tuy Phước, Huyện Tuy Phước, Bình Định"), mk(2, "Đường Xa Lắc, Xã Tuy Phước, Huyện Tuy Phước"), mk(3, "Quận 1"), mk(4, "Đường Thứ Ba, Xã A, Huyện B")]
+    assert query_for(ls[0]).startswith("Đường Nguyễn Nhạc") and query_for(ls[2]) == ""
+    calls = []
+    def geo(q):
+        calls.append(q); return {"Đường Nguyễn Nhạc": (13.79, 109.19), "Đường Xa Lắc": (12.0, 109.0)}.get(q.split(",")[0])
+    out = estimate_points(ls, (13.795, 109.190), geocoder=geo, sleep=lambda s: None, max_new=2)
+    assert set(out) == {"https://x/1"}                      # điểm quá xa tâm bị bỏ; tin 4 vượt hạn mức tra mới
+    n = len(calls); out2 = estimate_points(ls, (13.795, 109.190), geocoder=geo, sleep=lambda s: None, max_new=2)
+    assert len(calls) == n + 1 and set(out2) == {"https://x/1"}   # lần sau dùng bộ nhớ, chỉ tra thêm tin còn lại
 
 def test_admin_names_from_data(monkeypatch, tmp_path):
     from fastapi.testclient import TestClient
@@ -804,3 +851,22 @@ def test_collect_live_precise_first_and_caps(monkeypatch):
         assert bool(kw_calls) is expect_kw
         assert all(c[2] <= 60 and c[3] is True for c in kw_calls) and len(kw_calls) <= 4
         assert f.known_urls == {"u1"}
+
+
+def test_no_coord_items_demoted_when_enough_verified_neighbours(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+    import app.main as m, app.store as store
+    monkeypatch.setattr(store, "DB", tmp_path / "nc.sqlite")
+    def mkl(n, lat=None, lng=None):
+        raw = {"latitude": lat, "longitude": lng, "street_name": f"Đường {n}"} if lat else {}
+        return Listing("chotot", f"https://x/{n}", f"Bán đất lô {n} khu {n}", address="Xã Phước Sơn, Huyện Tuy Phước, Bình Định", price_vnd=1e9 + n * 1e6, area_m2=100, kind="dat", posted_at=_ago(10), raw=raw)
+    store.save([mkl(1, 13.7951, 109.1904), mkl(2, 13.7955, 109.1906), mkl(3, 13.7960, 109.1910), mkl(4), mkl(5)])
+    c = TestClient(m.app)
+    p = {"xa": "Xã Phước Sơn", "huyen": "Huyện Tuy Phước", "tinh": "Bình Định", "area": 100, "kind": "dat", "lat": 13.795063, "lng": 109.190325, "radius_m": 1000}
+    by = {i["url"].split("/")[-1]: i for i in c.get("/api/comps", params=p).json()["items"]}
+    assert by["4"]["pool_reason"] == "no_coord" and by["5"]["eligible_main"] is False and by["1"]["eligible_main"] is True
+    by2 = {i["url"].split("/")[-1]: i for i in c.get("/api/comps", params={**p, "center": "area"}).json()["items"]}
+    assert by2["4"]["eligible_main"] is True                      # tâm ước lượng: không hạ tin không tọa độ
+    store.save([mkl(6)]); only = {k: v for k, v in p.items() if k != "lat"}
+    by3 = {i["url"].split("/")[-1]: i for i in c.get("/api/comps", params=only).json()["items"]}
+    assert by3["4"]["eligible_main"] is True                      # chưa có tâm: không hạ

@@ -195,3 +195,21 @@ def reverse_chain(lat, lng, session=None, providers=None):
     best, src = max(((r, n) for r, n in cands), key=lambda t: _score(t[0], [c[1] for c in cands].index(t[1])))
     return {"ok": True, "ward": best["ward"], "district": best["district"], "province": best["province"], "hamlet": best["hamlet"] or hamlet,
             "english": best["english"], "source": src, "tried": tried}
+
+
+def nominatim_search(q: str, session=None):
+    """Tra một địa chỉ ra (lat, lng) bằng OpenStreetMap Nominatim (nhiều nhất 1 yêu cầu/giây do bên gọi giữ nhịp). None nếu không thấy/lỗi."""
+    import requests
+    s = session or requests
+    try:
+        r = s.get("https://nominatim.openstreetmap.org/search", params={"format": "jsonv2", "limit": 1, "countrycodes": "vn", "accept-language": "vi", "q": q},
+                  timeout=15, headers=UA)
+        if r.status_code != 200:
+            return None
+        j = r.json()
+        if not j:
+            return None
+        lat, lng = float(j[0]["lat"]), float(j[0]["lon"])
+        return (lat, lng) if in_vietnam(lat, lng) else None
+    except Exception:
+        return None
