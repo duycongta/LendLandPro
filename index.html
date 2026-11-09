@@ -1144,8 +1144,9 @@
       const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
       sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
     })();
-    const APP_VERSION = "6.61";
+    const APP_VERSION = "6.62";
     const APP_CHANGELOG = {
+      "6.62": "Bản đồ Đường: bỏ nguồn CARTO (nay đòi khóa API, hiện chữ API KEY REQUIRED); chuỗi nguồn dự phòng là OpenStreetMap -> OpenStreetMap Pháp -> Esri.",
       "6.61": "Thanh thông báo nổi khi đang đọc GCN bằng AI có nút Dừng: ngắt kết nối AI, bỏ kết quả lần đọc, giữ nguyên các ô đang nhập.",
       "6.60": "Bản đồ lớp Đường không còn trắng khi mạng chặn OpenStreetMap: tự đổi nguồn OpenStreetMap -> CARTO -> Esri khi 4 ô đầu bị lỗi hoặc sau 7 giây chưa tải được, nhớ nguồn đã chạy được và báo nguồn đang dùng.",
       "6.59": "Bản đồ tự tra Thôn/Xóm, Xã/Phường, Huyện/TP & Tỉnh (Google nếu có khóa, rồi OpenStreetMap, rồi Photon; thử cả tên mới/cũ; chỉ nhận đơn vị hành chính đúng huyện) sau khi đọc GCN hoặc khi sửa các ô địa danh, zoom vừa ranh giới khu vực, KHÔNG đặt ghim, có ghi chú mức định vị; thêm nút Định vị lại cạnh Đặt ghim (về ghim thửa hoặc về khu vực theo ô địa danh).",
@@ -2181,10 +2182,10 @@
     }
 
     // === QUẢN LÝ BẢN ĐỒ GIS LEAFLET ===
-    // v6.60: bản đồ "Đường" tự đổi nguồn khi nguồn hiện tại không tải được (mạng chặn OpenStreetMap): OSM -> CARTO -> Esri
+    // v6.60: bản đồ "Đường" tự đổi nguồn khi nguồn hiện tại không tải được (mạng chặn OpenStreetMap): OSM -> OSM Pháp -> Esri
     const STREET_PROVIDERS = [
       { name: 'OpenStreetMap', url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', opts: { maxZoom: 19 } },
-      { name: 'CARTO', url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', opts: { maxZoom: 19, subdomains: 'abcd' } },
+      { name: 'OpenStreetMap Pháp', url: 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', opts: { maxZoom: 19, subdomains: 'abc' } },
       { name: 'Esri', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', opts: { maxZoom: 19 } }
     ];
     let streetIdx = 0, streetLoads = 0, streetErrs = 0, streetTimer = null;
@@ -2206,7 +2207,7 @@
       }
       const wasShown = !!(map && osmLayer && map.hasLayer(osmLayer));
       if (wasShown) map.removeLayer(osmLayer);
-      streetIdx++; try { localStorage.setItem('llp_street_idx', String(streetIdx)); } catch (e) {}
+      streetIdx++; try { localStorage.setItem('llp_street_idx2', String(streetIdx)); } catch (e) {}
       osmLayer = buildStreetLayer();
       if (wasShown) { osmLayer.addTo(map); armStreetTimer(); }
       showToast(`Bản đồ Đường: chuyển sang nguồn ${STREET_PROVIDERS[streetIdx].name} (${why}).`);
@@ -2218,7 +2219,7 @@
         satLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
           maxZoom: 20, attribution: 'Google Maps Satellite'
         });
-        try { streetIdx = Math.min(STREET_PROVIDERS.length - 1, Math.max(0, parseInt(localStorage.getItem('llp_street_idx') || '0', 10) || 0)); } catch (e) {}
+        try { streetIdx = Math.min(STREET_PROVIDERS.length - 1, Math.max(0, parseInt(localStorage.getItem('llp_street_idx2') || '0', 10) || 0)); } catch (e) {}
         osmLayer = buildStreetLayer();
         satLayer.addTo(map);
         map.on('click', e => { if (mapPickMode) { setTargetLocation(e.latlng.lat, e.latlng.lng, { source: 'map' }); toggleMapPick(false); } });
