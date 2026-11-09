@@ -98,7 +98,7 @@
     /* v6.56: nhãn "vX Live" lật sang "by duycongta@gmail.com" đồng bộ chu kỳ 8s với logo (lật khi logo phóng vào cửa, lật về khi logo thu nhỏ) */
     .llp-flip{display:inline-grid;perspective:700px;flex:none}
     .llp-flip-in{--cycle:8s;display:grid;transform-style:preserve-3d;animation:llpFlip var(--cycle) infinite both}
-    .llp-face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:#10b981;color:#0f172a;font-weight:800;font-size:9px;letter-spacing:-.01em;line-height:1.3;padding:2px 5px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.35);white-space:nowrap;text-align:center}
+    .llp-face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:#10b981;color:#0f172a;font-weight:800;font-size:clamp(7px,2.2vw,9px);letter-spacing:-.01em;line-height:1.3;padding:2px 4px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.35);white-space:nowrap;text-align:center}
     @media (min-width:640px){.llp-face{font-size:12px;letter-spacing:0;padding:2px 6px}}
     .llp-back{transform:rotateX(180deg)}
     @keyframes llpFlip{0%,62.5%{transform:rotateX(0);animation-timing-function:cubic-bezier(.55,0,.25,1)}76.25%,87.5%{transform:rotateX(180deg);animation-timing-function:cubic-bezier(.55,0,.25,1)}100%{transform:rotateX(360deg)}}
@@ -217,7 +217,7 @@
           <svg class="w-full h-full llp-anim" viewBox="0 0 64 64" role="img" aria-label="LendLand Pro"><rect width="64" height="64" rx="15" fill="url(#llpLogoGrad)"/><g clip-path="url(#llpClip)"><rect class="inside" width="64" height="64" fill="#0f766e"/><g class="house"><path fill="#fff" d="M32 11.5 8.5 31.2c-.9.8-.4 2.3.8 2.3H15V50.5c0 1.4 1.1 2.5 2.5 2.5h29c1.4 0 2.5-1.1 2.5-2.5V33.5h5.7c1.2 0 1.7-1.5.8-2.3L32 11.5Z"/><rect x="40.5" y="14" width="5" height="10" rx="1" fill="#fff"/><path fill="#0f766e" d="M27 53V40.5a5 5 0 0 1 10 0V53H27Z"/></g><circle class="glow" cx="45" cy="18" r="10" fill="#fde68a" opacity="0"/><text class="dollar" x="32" y="45" text-anchor="middle" font-family="Georgia,serif" font-weight="800" font-size="36" fill="#fff">$</text><g transform="translate(45 18)"><path class="spark" fill="#fef08a" d="M0-10 2.4-2.4 10 0 2.4 2.4 0 10-2.4 2.4-10 0-2.4-2.4Z" opacity="0"/></g><g transform="translate(43 43) scale(.62)"><path class="spark3" fill="#fff" d="M0-10 2.4-2.4 10 0 2.4 2.4 0 10-2.4 2.4-10 0-2.4-2.4Z" opacity="0"/></g><g transform="translate(20 24) scale(.55)"><path class="spark2" fill="#fff" d="M0-10 2.4-2.4 10 0 2.4 2.4 0 10-2.4 2.4-10 0-2.4-2.4Z" opacity="0"/></g></g></svg>
         </div>
         <div class="truncate">
-          <div class="font-bold text-sm sm:text-base tracking-wide flex items-center gap-1.5 flex-wrap">
+          <div class="font-bold text-[13px] sm:text-base tracking-wide flex items-center gap-1.5 flex-nowrap">
             <span class="whitespace-nowrap">LendLand Pro</span>
             <span class="llp-flip" aria-label="Phiên bản và tác giả"><span class="llp-flip-in"><span class="llp-face llp-front">v<span data-app-version></span> Live</span><span class="llp-face llp-back">by duycongta@gmail.com</span></span></span>
           </div>
@@ -1140,8 +1140,9 @@
       const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
       sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
     })();
-    const APP_VERSION = "6.57";
+    const APP_VERSION = "6.58";
     const APP_CHANGELOG = {
+      "6.58": "Header trên điện thoại: chữ LendLand Pro và nhãn lật v Live / by duycongta@gmail.com luôn nằm cùng một hàng (không xuống dòng), chữ nhãn co theo bề rộng màn hình.",
       "6.57": "Header: nhãn \"vX Live\" lật (nền xanh chữ đen) sang \"by duycongta@gmail.com\" rồi lật về, đồng bộ chu kỳ 8 giây với logo động, áp dụng mọi màn hình (điện thoại không còn thiếu dòng tác giả).",
       "6.56": "Màn hình đăng nhập: bỏ dòng chữ \"Nhập mã PIN để tự động kết nối Két Cloud & làm việc\".",
       "6.55": "Thanh thông báo nổi: vòng xoay tự vẽ (SVG) luôn quay, không phụ thuộc font biểu tượng/hiệu ứng hệ điều hành; thanh nổi và thông báo Toast xếp thành ngăn xếp ở góc phải dưới: thanh xuất hiện trước nằm trên, thanh sau nằm dưới, không che nhau.",
