@@ -1160,8 +1160,9 @@
       const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
       sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
     })();
-    const APP_VERSION = "6.68";
+    const APP_VERSION = "6.69";
     const APP_CHANGELOG = {
+      "6.69": "Báo cáo PDF: link tin rao ở bảng so sánh là liên kết thật bấm được (chữ \"Xem tin gốc\"); trước đây in link thành chữ bị ngắt dòng nên trình xem PDF tự gắn liên kết sai (file:///...book.com/group).",
       "6.68": "Sửa đọc giá tin dán: \"Chỉ từ #5xxTr\" = 5xx triệu (trước bị đọc 5 tỷ/2 tỷ), phân tích nhanh bỏ link Facebook trước khi đọc, số diện tích/kích thước không còn bị hiểu là giá; thêm nút Xóa Clipboard (xóa ô tin, bộ nhớ app, clipboard và đặt dấu xóa để bookmarklet bản mới tự xóa hàng đợi trên tab Facebook; cần kéo lại bookmarklet mới).",
       "6.67": "Phân tích nhanh tin dán: cuối mỗi dòng có ô tick chọn (mặc định tick hết); nút đổi thành \"Trích xuất N tin chọn vào Bảng TSSS chính\" chỉ đưa các tin được tick lên bảng chính, tin không tick ở lại trong ô.",
       "6.66": "Ô dán tin rao: dưới dòng \"Ô này có N bài\" hiện phân tích nhanh từng tin (tiêu đề rút gọn, DT, giá rao, đơn giá ~ tr/m², cảnh báo ngắn: thiếu DT, giá ghi xx, giá gồm nhà) và dòng tổng hợp khoảng đơn giá + trung vị.",
@@ -2050,7 +2051,7 @@
             <td class="text-right font-semibold whitespace-nowrap">${comp.rawPrice > 0 ? Number(comp.rawPrice).toFixed(2) + ' Tỷ' : '--'}</td>
             <td class="text-right font-bold text-emerald-700 whitespace-nowrap">${okc ? discountedUnitPrice.toFixed(2) + ' tr/m²' : 'không tính'}</td>
             <td class="text-center font-bold">${okc ? score + '%' : '--'}</td>
-            <td class="text-center">${escHtml(comp.sourceName)}<br><span style="font-size:8px; color:#64748b;">(${escHtml(originLabel(comp))}${comp.matchLevel ? '; ' + MATCH_LABEL[comp.matchLevel] : ''})</span>${realLink ? '<br><span style="font-size:8px; color:#64748b; word-break:break-all;">' + escHtml(realLink) + '</span>' : ''}</td>
+            <td class="text-center">${escHtml(comp.sourceName)}<br><span style="font-size:8px; color:#64748b;">(${escHtml(originLabel(comp))}${comp.matchLevel ? '; ' + MATCH_LABEL[comp.matchLevel] : ''})</span>${realLink ? '<br><a href="' + escHtml(realLink) + '" target="_blank" rel="noopener noreferrer" style="font-size:9px; color:#1d4ed8; text-decoration:underline; font-weight:600;">Xem tin gốc ›</a>' : ''}</td>
           `;
           printTbody.appendChild(ptr);
         });
