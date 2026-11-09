@@ -278,7 +278,7 @@
           <div class="flex items-center justify-between text-xs font-semibold text-slate-600">
             <span id="filesCountBadge" class="text-indigo-700 font-bold">Đã nạp 0 tệp</span>
             <div class="flex items-center gap-3">
-              <button onclick="executeOCRWithRealAI()" type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded text-xs font-bold shadow flex items-center gap-1 cursor-pointer">
+              <button id="btnOcrStart" onclick="executeOCRWithRealAI()" type="button" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded text-xs font-bold shadow flex items-center gap-1 cursor-pointer">
                 <i class="ph-bold ph-sparkle"></i> Đọc lại AI
               </button>
               <button onclick="clearAllFiles()" type="button" class="text-rose-600 hover:underline cursor-pointer">Xóa hết</button>
@@ -1144,8 +1144,9 @@
       const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
       sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
     })();
-    const APP_VERSION = "6.60";
+    const APP_VERSION = "6.61";
     const APP_CHANGELOG = {
+      "6.61": "Thanh thông báo nổi khi đang đọc GCN bằng AI có nút Dừng: ngắt kết nối AI, bỏ kết quả lần đọc, giữ nguyên các ô đang nhập.",
       "6.60": "Bản đồ lớp Đường không còn trắng khi mạng chặn OpenStreetMap: tự đổi nguồn OpenStreetMap -> CARTO -> Esri khi 4 ô đầu bị lỗi hoặc sau 7 giây chưa tải được, nhớ nguồn đã chạy được và báo nguồn đang dùng.",
       "6.59": "Bản đồ tự tra Thôn/Xóm, Xã/Phường, Huyện/TP & Tỉnh (Google nếu có khóa, rồi OpenStreetMap, rồi Photon; thử cả tên mới/cũ; chỉ nhận đơn vị hành chính đúng huyện) sau khi đọc GCN hoặc khi sửa các ô địa danh, zoom vừa ranh giới khu vực, KHÔNG đặt ghim, có ghi chú mức định vị; thêm nút Định vị lại cạnh Đặt ghim (về ghim thửa hoặc về khu vực theo ô địa danh).",
       "6.58": "Header trên điện thoại: chữ LendLand Pro và nhãn lật v Live / by duycongta@gmail.com luôn nằm cùng một hàng (không xuống dòng), chữ nhãn co theo bề rộng màn hình.",
@@ -2383,6 +2384,7 @@
       document.getElementById('loadedFilesContainer').classList.add('hidden');
     }
 
+    let ocrRun = null;
     async function executeOCRWithRealAI() {
       if (guestBlock('đọc ảnh GCN bằng AI')) return;
       if (uploadedFilesList.length === 0) return;
@@ -2403,7 +2405,10 @@
         return;
       }
 
-      setFloatingStatus('ocr', 'Đang đọc hiểu tài liệu GCN bằng AI...');
+      if (ocrRun && !ocrRun.cancelled) return;                    // đang đọc rồi, tránh chạy chồng
+      const run = ocrRun = { cancelled: false, ctrl: new AbortController() };    // v6.61: đọc GCN dừng được
+      const ocrBtn = document.getElementById('btnOcrStart'); if (ocrBtn) ocrBtn.disabled = true;
+      setFloatingStatus('ocr', 'Đang đọc hiểu tài liệu GCN bằng AI...', { stop: true });
 
       statusBox.className = "mt-3 p-3 bg-blue-50 border border-blue-300 rounded-xl text-blue-900 text-xs flex items-start gap-2.5 shadow-sm";
       statusBox.innerHTML = `
@@ -2415,7 +2420,7 @@
       `;
 
       try {
-        const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, { signal: run.ctrl.signal });
         if (!listResponse.ok) throw await geminiHttpError(listResponse);
         const listData = await listResponse.json();
         let validModels = (listData.models || []).filter(m => 
@@ -2483,6 +2488,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
           });
         }
 
+        if (run.cancelled) return;
         let parsedData = null;
         let usedModelName = "";
         let ocrHttpErr = null;
@@ -2493,7 +2499,8 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
             const genResponse = await fetch(generateUrl, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { temperature: 0.1 } })
+              body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { temperature: 0.1 } }),
+              signal: run.ctrl.signal
             });
 
             if (!genResponse.ok && !ocrHttpErr) { try { ocrHttpErr = await geminiHttpError(genResponse); } catch (e) {} }
@@ -2509,8 +2516,9 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
                 break;
               }
             }
-          } catch (e) {}
+          } catch (e) { if (run.cancelled) break; }
         }
+        if (run.cancelled) return;
 
         if (parsedData) {
           applyParsedData(parsedData, { confirmSurvey: true });
@@ -2529,6 +2537,7 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
         }
 
       } catch (err) {
+        if (run.cancelled) return;
         setFloatingStatus('error', 'Lỗi trích xuất ảnh tài sản');
         statusBox.className = "mt-3 p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-900 text-xs flex items-start gap-2.5 shadow-sm";
         statusBox.innerHTML = `
@@ -2538,7 +2547,27 @@ Lưu ý quan trọng: Chỉ trả về duy nhất chuỗi JSON hợp lệ, tuy�
             <p class="mt-0.5 text-rose-800 text-[11px]">${err.message}</p>
           </div>
         `;
+      } finally {
+        if (ocrRun === run) ocrRun = null;
+        const ob = document.getElementById('btnOcrStart'); if (ob) ob.disabled = false;
       }
+    }
+    // v6.61: nút Dừng khi đang đọc GCN: ngắt kết nối AI, bỏ kết quả lần này, giữ nguyên các ô đang nhập
+    function stopOcr() {
+      const run = ocrRun; if (!run || run.cancelled) return false;
+      run.cancelled = true;
+      try { run.ctrl.abort(); } catch (e) {}
+      ocrRun = null;
+      setFloatingStatus('hide');
+      const ob = document.getElementById('btnOcrStart'); if (ob) ob.disabled = false;
+      const box = document.getElementById('ocrStatusNotice');
+      if (box) {
+        box.classList.remove('hidden');
+        box.className = "mt-3 p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 text-xs flex items-start gap-2.5 shadow-sm";
+        box.innerHTML = `<i class="ph-fill ph-stop-circle text-slate-600 text-xl flex-shrink-0"></i><div><div class="font-bold text-xs sm:text-sm">Đã dừng đọc GCN.</div><p class="mt-0.5 text-[11px]">Kết quả lần này không được dùng và chưa có ô nào bị điền. Ảnh đã nạp vẫn còn, bấm đọc lại khi cần.</p></div>`;
+      }
+      showToast('Đã dừng đọc GCN.');
+      return true;
     }
 
     // v6.7: đưa kết quả đọc ảnh về các ô, đánh dấu "AI đề xuất - cần xác nhận"
@@ -3123,6 +3152,7 @@ Trả về duy nhất định dạng JSON thuần túy (không kèm markdown \`\
     }
     // v6.54: nút Dừng trên thanh nổi: dừng khảo sát, hoặc dừng việc tìm đường gần vị trí (giữ nguyên vị trí đã ghim)
     function stopFloating() {
+      if (ocrRun && !ocrRun.cancelled) return stopOcr();
       if (surveyRun) return stopSurvey();
       locPipeId++; roadReqId++;
       setFloatingStatus('hide');
