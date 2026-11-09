@@ -1144,8 +1144,9 @@
       const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
       sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
     })();
-    const APP_VERSION = "6.62";
+    const APP_VERSION = "6.63";
     const APP_CHANGELOG = {
+      "6.63": "Bản đồ Vệ Tinh và Đường cùng tự đổi nguồn theo thứ tự ưu tiên khi không tải được: Vệ Tinh = Google -> Esri -> EOX Sentinel-2; Đường = Google (mới thêm) -> OpenStreetMap -> OSM Pháp -> Esri; nguồn dự phòng được nhớ 24 giờ, nút lớp hiện nguồn đang dùng.",
       "6.62": "Bản đồ Đường: bỏ nguồn CARTO (nay đòi khóa API, hiện chữ API KEY REQUIRED); chuỗi nguồn dự phòng là OpenStreetMap -> OpenStreetMap Pháp -> Esri.",
       "6.61": "Thanh thông báo nổi khi đang đọc GCN bằng AI có nút Dừng: ngắt kết nối AI, bỏ kết quả lần đọc, giữ nguyên các ô đang nhập.",
       "6.60": "Bản đồ lớp Đường không còn trắng khi mạng chặn OpenStreetMap: tự đổi nguồn OpenStreetMap -> CARTO -> Esri khi 4 ô đầu bị lỗi hoặc sau 7 giây chưa tải được, nhớ nguồn đã chạy được và báo nguồn đang dùng.",
@@ -2182,46 +2183,62 @@
     }
 
     // === QUẢN LÝ BẢN ĐỒ GIS LEAFLET ===
-    // v6.60: bản đồ "Đường" tự đổi nguồn khi nguồn hiện tại không tải được (mạng chặn OpenStreetMap): OSM -> OSM Pháp -> Esri
-    const STREET_PROVIDERS = [
-      { name: 'OpenStreetMap', url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', opts: { maxZoom: 19 } },
-      { name: 'OpenStreetMap Pháp', url: 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', opts: { maxZoom: 19, subdomains: 'abc' } },
-      { name: 'Esri', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', opts: { maxZoom: 19 } }
-    ];
-    let streetIdx = 0, streetLoads = 0, streetErrs = 0, streetTimer = null;
-    function buildStreetLayer() {
-      const pv = STREET_PROVIDERS[streetIdx]; streetLoads = 0; streetErrs = 0;
+    // v6.63: cả hai lớp bản đồ tự đổi nguồn theo thứ tự ưu tiên khi nguồn hiện tại không tải được (mạng chặn, nguồn lỗi/đổi).
+    // Thứ tự ưu tiên: Vệ Tinh = Google -> Esri World Imagery -> EOX Sentinel-2; Đường = Google -> OpenStreetMap -> OSM Pháp -> Esri.
+    const MAP_CHAINS = {
+      sat: [
+        { name: 'Google Vệ tinh', url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', opts: { maxZoom: 20 } },
+        { name: 'Esri Vệ tinh', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', opts: { maxZoom: 19 } },
+        { name: 'EOX Sentinel-2', url: 'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/{z}/{y}/{x}.jpg', opts: { maxZoom: 14 } }
+      ],
+      street: [
+        { name: 'Google Đường', url: 'https://mt1.google.com/vt/lyrs=m&hl=vi&x={x}&y={y}&z={z}', opts: { maxZoom: 20 } },
+        { name: 'OpenStreetMap', url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', opts: { maxZoom: 19 } },
+        { name: 'OpenStreetMap Pháp', url: 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', opts: { maxZoom: 19, subdomains: 'abc' } },
+        { name: 'Esri Đường', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', opts: { maxZoom: 19 } }
+      ]
+    };
+    const MAP_ST = { sat: { idx: 0, loads: 0, errs: 0, timer: null, warned: false }, street: { idx: 0, loads: 0, errs: 0, timer: null, warned: false } };
+    const mapKey = kind => 'llp_map_src_' + kind;
+    function loadRememberedMapSrc(kind) {          // nguồn dự phòng chỉ được nhớ 24 giờ, sau đó thử lại từ nguồn ưu tiên đầu tiên
+      try { const o = JSON.parse(localStorage.getItem(mapKey(kind)) || 'null'); if (o && Date.now() - o.t < 24 * 3600 * 1000) return Math.min(MAP_CHAINS[kind].length - 1, Math.max(0, o.i | 0)); } catch (e) {}
+      return 0;
+    }
+    function buildMapLayer(kind) {
+      const st = MAP_ST[kind], pv = MAP_CHAINS[kind][st.idx]; st.loads = 0; st.errs = 0;
       const l = L.tileLayer(pv.url, Object.assign({ attribution: pv.name }, pv.opts));
-      l.on('tileload', () => { streetLoads++; });
-      l.on('tileerror', () => { streetErrs++; if (streetLoads === 0 && streetErrs >= 4) nextStreetProvider('tải ô bản đồ bị lỗi'); });
+      l.on('tileload', () => { st.loads++; });
+      l.on('tileerror', () => { st.errs++; if (st.loads === 0 && st.errs >= 4) nextMapProvider(kind, 'tải ô bản đồ bị lỗi'); });
+      const b = document.getElementById(kind === 'sat' ? 'btnMapSat' : 'btnMapOSM'); if (b) b.title = 'Nguồn đang dùng: ' + pv.name;
       return l;
     }
-    function armStreetTimer() {
-      clearTimeout(streetTimer);
-      streetTimer = setTimeout(() => { if (map && osmLayer && map.hasLayer(osmLayer) && streetLoads === 0) nextStreetProvider('hơn 7 giây chưa tải được'); }, 7000);
+    function curMapLayer(kind) { return kind === 'sat' ? satLayer : osmLayer; }
+    function armMapTimer(kind) {
+      const st = MAP_ST[kind]; clearTimeout(st.timer);
+      st.timer = setTimeout(() => { const l = curMapLayer(kind); if (map && l && map.hasLayer(l) && st.loads === 0) nextMapProvider(kind, 'hơn 7 giây chưa tải được'); }, 7000);
     }
-    function nextStreetProvider(why) {
-      if (streetIdx >= STREET_PROVIDERS.length - 1) {
-        if (!window._streetWarned) { window._streetWarned = true; showToast('Không tải được bản đồ Đường từ các nguồn (OpenStreetMap, CARTO, Esri). Hãy dùng lớp Vệ Tinh hoặc kiểm tra mạng.'); }
+    function nextMapProvider(kind, why) {
+      const st = MAP_ST[kind], chain = MAP_CHAINS[kind];
+      if (st.idx >= chain.length - 1) {
+        if (!st.warned) { st.warned = true; showToast('Không tải được bản đồ ' + (kind === 'sat' ? 'Vệ Tinh' : 'Đường') + ' từ mọi nguồn. Hãy thử lớp còn lại hoặc kiểm tra mạng.'); }
         return;
       }
-      const wasShown = !!(map && osmLayer && map.hasLayer(osmLayer));
-      if (wasShown) map.removeLayer(osmLayer);
-      streetIdx++; try { localStorage.setItem('llp_street_idx2', String(streetIdx)); } catch (e) {}
-      osmLayer = buildStreetLayer();
-      if (wasShown) { osmLayer.addTo(map); armStreetTimer(); }
-      showToast(`Bản đồ Đường: chuyển sang nguồn ${STREET_PROVIDERS[streetIdx].name} (${why}).`);
+      const old = curMapLayer(kind), wasShown = !!(map && old && map.hasLayer(old));
+      if (wasShown) map.removeLayer(old);
+      st.idx++; try { localStorage.setItem(mapKey(kind), JSON.stringify({ i: st.idx, t: Date.now() })); } catch (e) {}
+      const nl = buildMapLayer(kind);
+      if (kind === 'sat') satLayer = nl; else osmLayer = nl;
+      if (wasShown) { nl.addTo(map); armMapTimer(kind); }
+      showToast(`Bản đồ ${kind === 'sat' ? 'Vệ Tinh' : 'Đường'}: chuyển sang nguồn ${chain[st.idx].name} (${why}).`);
     }
     function initLeafletMap() {
       try {
         if (typeof L === 'undefined') return;
         map = L.map('gisMap').setView([targetCoords.lat, targetCoords.lng], 14);
-        satLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-          maxZoom: 20, attribution: 'Google Maps Satellite'
-        });
-        try { streetIdx = Math.min(STREET_PROVIDERS.length - 1, Math.max(0, parseInt(localStorage.getItem('llp_street_idx2') || '0', 10) || 0)); } catch (e) {}
-        osmLayer = buildStreetLayer();
-        satLayer.addTo(map);
+        MAP_ST.sat.idx = loadRememberedMapSrc('sat'); MAP_ST.street.idx = loadRememberedMapSrc('street');
+        satLayer = buildMapLayer('sat');
+        osmLayer = buildMapLayer('street');
+        satLayer.addTo(map); armMapTimer('sat');
         map.on('click', e => { if (mapPickMode) { setTargetLocation(e.latlng.lat, e.latlng.lng, { source: 'map' }); toggleMapPick(false); } });
         renderMapElements();
       } catch (e) {
@@ -2233,12 +2250,12 @@
       if (!map) return;
       if (type === 'satellite') {
         map.removeLayer(osmLayer);
-        satLayer.addTo(map);
+        satLayer.addTo(map); armMapTimer('sat');
         document.getElementById('btnMapSat').className = "text-[11px] bg-blue-600 text-white px-2 py-1 rounded font-medium shadow-sm cursor-pointer";
         document.getElementById('btnMapOSM').className = "text-[11px] bg-slate-100 text-slate-700 hover:bg-slate-200 px-2 py-1 rounded font-medium border border-slate-300 cursor-pointer";
       } else {
         map.removeLayer(satLayer);
-        osmLayer.addTo(map); armStreetTimer();
+        osmLayer.addTo(map); armMapTimer('street');
         document.getElementById('btnMapOSM').className = "text-[11px] bg-blue-600 text-white px-2 py-1 rounded font-medium shadow-sm cursor-pointer";
         document.getElementById('btnMapSat').className = "text-[11px] bg-slate-100 text-slate-700 hover:bg-slate-200 px-2 py-1 rounded font-medium border border-slate-300 cursor-pointer";
       }
