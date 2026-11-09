@@ -728,6 +728,7 @@
           <select id="manualSourceGroup" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"><option value="">Nguồn: Zalo / khác</option></select>
           <textarea id="manualRawText" rows="8" placeholder="Ví dụ: Cần bán đất hẻm 3m đường Hùng Vương P. Trần Quang Diệu, DT 55m2 thổ cư ODT, ngang 4.5m, giá 1 tỷ 150 triệu bớt lộc. Đăng ngày 28/10. LH 0905..." style="resize: vertical; min-height: 8rem; max-height: 85vh;" oninput="updateManualCount()" class="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500"></textarea>
           <div id="manualCountNote" class="hidden text-[11px] text-slate-500"></div>
+          <div id="manualQuickAnalysis" class="hidden text-[11px] leading-snug bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 space-y-1"></div>
           <div class="flex justify-end">
             <button onclick="parseManualText()" type="button" class="bg-slate-800 hover:bg-slate-900 text-white font-medium text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 shadow cursor-pointer">
               <i class="ph-bold ph-plus-circle"></i> Trích Xuất Vào Bảng
@@ -1153,8 +1154,9 @@
       const sync = () => document.documentElement.classList.toggle('llp-locked', !o.classList.contains('hidden'));
       sync(); new MutationObserver(sync).observe(o, { attributes: true, attributeFilter: ['class'] });
     })();
-    const APP_VERSION = "6.65";
+    const APP_VERSION = "6.66";
     const APP_CHANGELOG = {
+      "6.66": "Ô dán tin rao: dưới dòng \"Ô này có N bài\" hiện phân tích nhanh từng tin (tiêu đề rút gọn, DT, giá rao, đơn giá ~ tr/m², cảnh báo ngắn: thiếu DT, giá ghi xx, giá gồm nhà) và dòng tổng hợp khoảng đơn giá + trung vị.",
       "6.65": "Chọn và xếp tin theo khoảng cách (API v13): tâm là ghim thửa (hoặc tâm khu vực theo ô địa danh khi chưa ghim), bán kính chỉnh trong Thiết lập App (mặc định 2000 m); tin khác xã nhưng có tọa độ thật trong bán kính lên bảng chính; cột Khoảng cách ở bảng chính và hàng chờ; bỏ tọa độ mặc định/lặp/quá xa; tra tọa độ ước lượng cho vài tin không có tọa độ; nhắc ghim thửa.",
       "6.64": "Nút Đặt ghim đổi thành Bỏ ghim khi đã có ghim: bấm Bỏ ghim xóa ghim + tọa độ, giữ nguyên các ô địa chỉ và gợi ý đường, bản đồ về khu vực theo ô địa danh.",
       "6.63": "Bản đồ Vệ Tinh và Đường cùng tự đổi nguồn theo thứ tự ưu tiên khi không tải được: Vệ Tinh = Google -> Esri -> EOX Sentinel-2; Đường = Google (mới thêm) -> OpenStreetMap -> OSM Pháp -> Esri; nguồn dự phòng được nhớ 24 giờ, nút lớp hiện nguồn đang dùng.",
@@ -3677,6 +3679,48 @@ ${items}`;
       const box = document.getElementById('manualRawText'), note = document.getElementById('manualCountNote'); if (!box || !note) return;
       const v = box.value.trim(); const n = v ? (splitPosts(v).length || 1) : 0;
       note.textContent = n ? `Ô này có ${n} bài` : ''; note.classList.toggle('hidden', !n);
+      try { renderQuickAnalysis(n ? splitPosts(v) : []); } catch (e) {}
+    }
+    // v6.66: phân tích nhanh từng tin đã dán (không cần AI): DT, giá rao, đơn giá, cảnh báo ngắn, tóm tắt
+    function fmtTyTr(ty) { return ty >= 1 ? ty.toFixed(2).replace(/\.?0+$/, '').replace('.', ',') + ' tỷ' : Math.round(ty * 1000) + ' triệu'; }
+    function quickAnalyzePost(text) {
+      const lines = String(text).split('\n').map(x => x.trim()).filter(Boolean);
+      const title = (lines.find(l => !/^https?:\/\//i.test(l)) || '').replace(/\s+/g, ' ');
+      const t35 = title.length > 35 ? title.slice(0, 34).trim() + '…' : title;
+      const rx = parsePostRegex(text);
+      let area = rx.area, areaNote = '';
+      if (!(area > 0)) {                                          // chưa có "m2" nhưng có kích thước ngang x dài
+        const m = /(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)/i.exec(text);
+        if (m) { const a = parseFloat(m[1].replace(',', '.')) * parseFloat(m[2].replace(',', '.')); if (a >= 10 && a <= 100000) { area = Math.round(a * 10) / 10; areaNote = `tính từ ${m[1]}x${m[2]}`; } }
+      }
+      const price = rx.price > 0 ? rx.price : null;
+      const warns = [];
+      const vague = /\d+\s*[x\*]{1,3}(?!\p{L})/iu.test(text.replace(/\d+\s*[x×]\s*\d+/gi, ''));          // "6xx", "2 tỷ xx"
+      if (!(area > 0)) warns.push('thiếu diện tích');
+      if (!price) warns.push('chưa đọc được giá');
+      else if (vague) warns.push('giá ghi mơ hồ (xx), kết quả chỉ là ước lượng');
+      if (/\b(nhà|cấp 4|cap 4|\d\s*tầng|nhà ở|kiệt)\b/i.test(text) && !/\bđất nền\b/i.test(text)) warns.push('có nhà/công trình: giá gồm cả nhà');
+      const unit = (area > 0 && price) ? price * 1000 / area : null;
+      if (unit !== null && (unit < 1 || unit > 400)) warns.push('đơn giá bất thường, kiểm tra lại số liệu');
+      return { title: t35, area, areaNote, price, unit, warns };
+    }
+    function renderQuickAnalysis(posts) {
+      const box = document.getElementById('manualQuickAnalysis'); if (!box) return;
+      if (!posts.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+      const rows = posts.map(quickAnalyzePost), units = rows.map(r => r.unit).filter(u => u !== null);
+      const f1 = n => n.toFixed(1).replace('.', ',');
+      const lines = rows.map((r, i) => {
+        const dt = r.area > 0 ? `DT ${String(r.area).replace('.', ',')} m²${r.areaNote ? ` (${r.areaNote})` : ''}` : 'DT ?';
+        const gia = r.price ? `Giá rao ${fmtTyTr(r.price)}` : 'Giá ?';
+        const dg = r.unit !== null ? `Đơn giá ~ <b>${f1(r.unit)} tr/m²</b>` : 'chưa tính được đơn giá';
+        const w = r.warns.length ? ` <span style="color:#b45309">⚠ ${escHtml(r.warns.join('; '))}</span>` : '';
+        return `<div><b>Tin ${i + 1}</b>${r.title ? ` <span class="text-slate-500">(${escHtml(r.title)})</span>` : ''}: ${dt} · ${gia} ⇒ ${dg}${w}</div>`;
+      });
+      if (units.length) {
+        const v = units.slice().sort((a, b) => a - b), m = v.length >> 1, med = v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
+        lines.push(`<div class="pt-1 border-t border-slate-200 text-slate-700">Tổng hợp: ${units.length}/${rows.length} tin có đơn giá, từ ${f1(v[0])} đến ${f1(v[v.length - 1])}, trung vị <b>${f1(med)} tr/m²</b> (giá rao, chưa phải giá giao dịch).</div>`);
+      } else lines.push('<div class="pt-1 border-t border-slate-200 text-slate-700">Tổng hợp: chưa tin nào tính được đơn giá.</div>');
+      box.innerHTML = lines.join(''); box.classList.remove('hidden');
     }
     function ingestFbClipboard(text, announce) {
       text = String(text || '').replace(/\r\n?/g, '\n');                  // Windows trả clipboard với CRLF: chuẩn hóa để tách đúng các bài
